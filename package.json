@@ -1,0 +1,19 @@
+{
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "libs/*"
+  ],
+  "scripts": {
+    "postinstall": "husky"
+  },
+  "name": "taro-monorepo",
+  "version": "1.0.0",
+  "license": "MIT",
+  "devDependencies": {
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
+    "@tarojs/cli": "^3.6.0",
+    "husky": "^9.1.6"
+  }
+}
