@@ -2,7 +2,7 @@
 	"miniprogramRoot": "dist/",
 	"projectname": "react-app",
 	"description": "react18 + ts + nutui4 + taro3",
-	"appid": "wx1952a7abc5673274",
+	"appid": "wxa8e1142a8ef1f107",
 	"setting": {
 		"urlCheck": true,
 		"es6": false,
