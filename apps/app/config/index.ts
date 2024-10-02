@@ -3,7 +3,7 @@ const path = require("path");
 const config = {
   projectName: "scapp",
   alias: {
-    src: path.resolve(__dirname, "src/"),
+    src: path.resolve(__dirname, "..", "src/"),
   },
   date: "2024-9-29",
   designWidth: 375,
