@@ -2,8 +2,8 @@ import React from "react";
 import Tabbar from "src/components/tabbar/tabbar";
 import "./index.scss";
 import Page from "src/components/page/page";
-import IndexQuick from "./components/index-quick/index-quick";
-import IndexMe from "./components/index-me/index-me";
+import IndexQuick from "./views/index-quick/index-quick";
+import IndexMe from "./views/index-me/index-me";
 
 function Index() {
   const [tabMenu] = React.useState([
