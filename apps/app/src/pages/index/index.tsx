@@ -1,11 +1,7 @@
 import React from "react";
-import { View, Image } from "@tarojs/components";
-import Taro from "@tarojs/taro";
-import Tabbar from "../../components/tabbar/tabbar";
+import Tabbar from "src/components/tabbar/tabbar";
 import "./index.scss";
-import Navbar from "../../components/navbar/navbar";
-import Page from "../../components/page/page";
-import Body from "../../components/body/body";
+import Page from "src/components/page/page";
 import IndexQuick from "./components/index-quick/index-quick";
 import IndexMe from "./components/index-me/index-me";
 
@@ -19,14 +15,12 @@ function Index() {
 
   return (
     <Page className="page">
-      <Navbar>Redmi K60s</Navbar>
-      <Body>
-        {active === 0 ? (
-          <IndexQuick></IndexQuick>
-        ) : active === 2 ? (
-          <IndexMe></IndexMe>
-        ) : null}
-      </Body>
+      {active === 0 ? (
+        <IndexQuick></IndexQuick>
+      ) : active === 2 ? (
+        <IndexMe></IndexMe>
+      ) : null}
+
       <Tabbar
         list={tabMenu}
         active={active}

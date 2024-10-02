@@ -42,9 +42,7 @@ export default function Page(props: any) {
 
   return (
     <PageCtx.Provider value={newCtx}>
-      <View className="page" style={{ height: "100vh" }}>
-        {props.children}
-      </View>
+      <View style={{ height: "100vh" }}>{props.children}</View>
     </PageCtx.Provider>
   );
 }
