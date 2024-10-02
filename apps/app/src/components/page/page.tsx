@@ -28,7 +28,7 @@ export default function Page(props: any) {
 
     const topHeight = navbar.height + navbar.statusBarHeight;
     const bodyHeightFull =
-      (windowInfo.safeArea?.bottom ?? windowInfo.screenHeight) - topHeight;
+      (windowInfo.safeArea?.bottom || windowInfo.screenHeight) - topHeight;
 
     const footerHeight = 50;
     const tCtx = Object.assign({}, newCtx, {
