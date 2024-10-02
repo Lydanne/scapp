@@ -4,7 +4,7 @@
 
 - apps/
   - vue-app => vue3 + ts + nutui4 + taro3
-  - react-app => react18 + ts + nutui4 + taro3
+  - scapp => react18 + ts + nutui4 + taro3
 - libs/
   - 存放你的项目库
 - scripts/

@@ -1,6 +1,6 @@
 {
   "miniprogramRoot": "./",
-  "projectname": "react-app",
+  "projectname": "scapp",
   "description": "react18 + ts + nutui4 + taro3",
   "appid": "touristappid",
   "setting": {

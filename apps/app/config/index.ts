@@ -1,7 +1,7 @@
 const path = require("path");
 
 const config = {
-  projectName: "react-app",
+  projectName: "scapp",
   alias: {
     src: path.resolve(__dirname, "src/"),
   },
