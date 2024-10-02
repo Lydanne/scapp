@@ -1,25 +1,27 @@
 import { View } from "@tarojs/components";
-import Taro from "@tarojs/taro";
 import { useContext, useEffect, useState } from "react";
 import { PageCtx } from "./page-ctx";
+import tapi from "src/libs/tapi";
 
 export default function Page(props: any) {
   const ctx = useContext(PageCtx);
   const [newCtx, setNewCtx] = useState(ctx);
 
   useEffect(() => {
-    const isSupport = !!Taro.getMenuButtonBoundingClientRect;
-    const rect = Taro.getMenuButtonBoundingClientRect();
-    const windowInfo = Taro.getWindowInfo();
-    const deviceInfo = Taro.getDeviceInfo();
-    // console.log({ windowInfo, rect, deviceInfo });
+    const rect = tapi.getMenuButtonBoundingClientRect();
+    const windowInfo = tapi.getWindowInfo();
+    const deviceInfo = tapi.getDeviceInfo();
+    console.log(
+      { windowInfo, rect, deviceInfo },
+      tapi.canIUse("getMenuButtonBoundingClientRect")
+    );
 
     const ios = !!(deviceInfo.system.toLowerCase().search("ios") + 1);
     const leftWidth = 24;
     const navbar = {
       ios,
-      height: isSupport ? rect.height + 4 : 45,
-      statusBarHeight: isSupport ? rect.top : windowInfo.statusBarHeight || 20,
+      height: rect.height + 4,
+      statusBarHeight: rect.top,
       leftWidth,
       middleWidth: windowInfo.screenWidth - leftWidth * 2,
     };
