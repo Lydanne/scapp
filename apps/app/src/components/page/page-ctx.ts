@@ -5,4 +5,5 @@ export const PageCtx = createContext({
   footerHeight: 50,
   bodyHeight: 400,
   navbarLeft: 10,
+  disableScroll: false,
 });

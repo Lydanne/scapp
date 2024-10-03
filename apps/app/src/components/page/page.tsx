@@ -7,6 +7,9 @@ import { Toast } from "@nutui/nutui-react-taro";
 
 export type PageProps = {
   footer?: boolean;
+  footerHeight?: number;
+  disableNavbar?: boolean;
+  disableScroll?: boolean;
   children: any;
 } & StandardProps;
 
@@ -23,7 +26,7 @@ export default function Page(props: PageProps) {
       tapi.canIUse("getMenuButtonBoundingClientRect")
     );
 
-    const ios = !!(deviceInfo.system.toLowerCase().search("ios") + 1);
+    const ios = !!(deviceInfo.platform.toLowerCase().search("ios") + 1);
     const leftWidth = 24;
     const navbar = {
       ios,
@@ -35,13 +38,15 @@ export default function Page(props: PageProps) {
 
     const topHeight = navbar.height + navbar.statusBarHeight;
     const bodyHeightFull =
-      (windowInfo.safeArea?.bottom || windowInfo.windowHeight) - topHeight;
+      (windowInfo.safeArea?.bottom || windowInfo.windowHeight) -
+      (props.disableNavbar ? 0 : topHeight);
 
-    const footerHeight = 50;
+    const footerHeight = props.footerHeight || 50;
     const tCtx = Object.assign({}, newCtx, {
-      navbarHeight: topHeight,
+      navbarHeight: props.disableNavbar ? 0 : topHeight,
       footerHeight: footerHeight,
       bodyHeight: bodyHeightFull - (props.footer ? footerHeight : 0),
+      disableScroll: props.disableScroll,
     });
     // console.log({ navbar, topHeight, bodyHeightFull, footerHeight, tCtx });
     setNewCtx(tCtx);

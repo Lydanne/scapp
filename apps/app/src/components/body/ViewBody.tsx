@@ -4,10 +4,10 @@ import { ScrollView, View, type StandardProps } from "@tarojs/components";
 
 export type BodyProps = {} & StandardProps;
 
-export default function Body(props: BodyProps) {
+export default function ViewBody(props: BodyProps) {
   const ctx = useContext(PageCtx);
 
-  return ctx.disableScroll ? (
+  return (
     <View
       className={props.className}
       style={{
@@ -18,13 +18,5 @@ export default function Body(props: BodyProps) {
     >
       {props.children}
     </View>
-  ) : (
-    <ScrollView
-      className={props.className}
-      style={{ height: ctx.bodyHeight }}
-      scrollY
-    >
-      {props.children}
-    </ScrollView>
   );
 }

@@ -1,32 +1,33 @@
-import { Image, Text, View } from "@tarojs/components";
-import Body from "src/components/body/body";
-import Navbar from "src/components/navbar/navbar";
+import { View } from "@tarojs/components";
 import Page from "src/components/page/page";
-import testJpg from "./test.jpg";
 import Style from "./scanqr.module.scss";
-import { ImageRectangle, Retweet } from "@nutui/icons-react-taro";
+import { Close, ImageRectangle, Retweet } from "@nutui/icons-react-taro";
+import Footer from "src/components/footer/footer";
+import { useRouter } from "src/libs/tapi/router";
+import Scan from "./components/scan/scan";
 
 export default function Scanqr() {
+  const { back } = useRouter();
+
   return (
-    <Page>
-      <Navbar style={{ background: "#000000", color: "#fff" }}></Navbar>
-      <Body>
-        <View className={Style["scan"]}>
-          <Image className={Style["scan-img"]} src={testJpg}></Image>
-          <View className={Style["mark-top"]}></View>
-          <View className={Style["mark-middle"]}></View>
-          <View className={Style["mark-bottom"]}></View>
-        </View>
+    <Page disableScroll disableNavbar footer footerHeight={130}>
+      <View className={Style["close"]} onClick={back}>
+        <Close />
+      </View>
+      <Scan></Scan>
+      <Footer>
         <View className={Style["btns"]}>
-          <View className={Style["btns-left"]}>
-            <ImageRectangle />
+          <View className={Style["btns-icon"]}>
+            <ImageRectangle size={24} color="#666" />
           </View>
-          <View className={Style["btns-mid"]}></View>
-          <View className={Style["btns-right"]}>
-            <Retweet />
+          <View className={Style["btns-mid"]}>
+            <View className={Style["mid-border"]}></View>
+          </View>
+          <View className={Style["btns-icon"]}>
+            <Retweet size={24} color="#666" />
           </View>
         </View>
-      </Body>
+      </Footer>
     </Page>
   );
 }
