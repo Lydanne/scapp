@@ -1,6 +1,6 @@
 import React from "react";
 import Tabbar from "src/components/tabbar/tabbar";
-import "./index.scss";
+import Style from "./index.module.scss";
 import Page from "src/components/page/page";
 import IndexQuick from "./views/index-quick/index-quick";
 import IndexMe from "./views/index-me/index-me";
