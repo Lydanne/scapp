@@ -1,0 +1,23 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #05c15f;
+}
+
+.btn {
+  text-align: center;
+  background-color: #05c15f;
+  color: #fff;
+  padding: 10px 0;
+  border-radius: 30px;
+  border: 1px solid #fff;
+  font-size: 18px;
+  width: 200px;
+  transition: all 0.3s;
+  &:active {
+    background-color: #fff;
+    color: #05c15f;
+  }
+}

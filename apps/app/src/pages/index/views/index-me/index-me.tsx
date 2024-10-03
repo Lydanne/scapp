@@ -4,6 +4,7 @@ import Navbar from "src/components/navbar/navbar";
 import Style from "./index-me.module.scss";
 import React, { useEffect } from "react";
 import Taro from "@tarojs/taro";
+import { toggleFullScreen } from "src/libs/shared/screen";
 
 export default function IndexMe() {
   const [clickQiafan, setClickQiafan] = React.useState(false);

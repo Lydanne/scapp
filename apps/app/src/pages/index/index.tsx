@@ -4,8 +4,10 @@ import "./index.scss";
 import Page from "src/components/page/page";
 import IndexQuick from "./views/index-quick/index-quick";
 import IndexMe from "./views/index-me/index-me";
+import { useRouter } from "src/libs/tapi/router";
 
-function Index() {
+export default function Index() {
+  const { props } = useRouter();
   const [tabMenu] = React.useState([
     { id: "quick", text: "快传", icon: "home", activeIcon: "home-fill" },
     { id: "scan", text: "扫码", icon: "message", activeIcon: "message-fill" },
@@ -13,8 +15,10 @@ function Index() {
   ]);
   const [active, setActive] = React.useState(0);
 
+  console.log(props);
+
   return (
-    <Page className="page">
+    <Page className="page" footer>
       {active === 0 ? (
         <IndexQuick></IndexQuick>
       ) : active === 2 ? (
@@ -33,5 +37,3 @@ function Index() {
     </Page>
   );
 }
-
-export default Index;

@@ -1,13 +1,20 @@
-import { View } from "@tarojs/components";
-import { useContext, useEffect, useState } from "react";
+import { View, type StandardProps } from "@tarojs/components";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { PageCtx } from "./page-ctx";
 import tapi from "src/libs/tapi";
+import Taro, { useResize } from "@tarojs/taro";
+import { Toast } from "@nutui/nutui-react-taro";
 
-export default function Page(props: any) {
+export type PageProps = {
+  footer?: boolean;
+  children: any;
+} & StandardProps;
+
+export default function Page(props: PageProps) {
   const ctx = useContext(PageCtx);
   const [newCtx, setNewCtx] = useState(ctx);
 
-  useEffect(() => {
+  const updateWindow = useCallback(() => {
     const rect = tapi.getMenuButtonBoundingClientRect();
     const windowInfo = tapi.getWindowInfo();
     const deviceInfo = tapi.getDeviceInfo();
@@ -28,17 +35,23 @@ export default function Page(props: any) {
 
     const topHeight = navbar.height + navbar.statusBarHeight;
     const bodyHeightFull =
-      (windowInfo.safeArea?.bottom || windowInfo.screenHeight) - topHeight;
+      (windowInfo.safeArea?.bottom || windowInfo.windowHeight) - topHeight;
 
     const footerHeight = 50;
     const tCtx = Object.assign({}, newCtx, {
       navbarHeight: topHeight,
       footerHeight: footerHeight,
-      bodyHeight: bodyHeightFull - footerHeight,
+      bodyHeight: bodyHeightFull - (props.footer ? footerHeight : 0),
     });
     // console.log({ navbar, topHeight, bodyHeightFull, footerHeight, tCtx });
     setNewCtx(tCtx);
   }, []);
+
+  useEffect(updateWindow, []);
+
+  useResize(() => {
+    updateWindow();
+  });
 
   return (
     <PageCtx.Provider value={newCtx}>
