@@ -1,0 +1,57 @@
+.mark {
+  &-top {
+    position: relative;
+    background-color: rgba(0, 0, 0, 0.5);
+    width: 100%;
+    height: 100px;
+    top: 0;
+    left: 0;
+    z-index: 100;
+  }
+  &-middle {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border: 50px solid rgba(0, 0, 0, 0.5); /* 黑色半透明边框 */
+    box-sizing: border-box;
+    z-index: 100;
+  }
+  &-bottom {
+    position: relative;
+    background-color: rgba(0, 0, 0, 0.5);
+    width: 100%;
+    height: 200px;
+    left: 0;
+    z-index: 100;
+  }
+}
+
+.scan {
+  position: absolute;
+  width: 100%;
+}
+
+.scan-img {
+  position: absolute;
+  width: 100%;
+}
+
+.btns {
+  position: absolute;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  bottom: 20px;
+  &-mid {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    height: 70px;
+    aspect-ratio: 1 / 1;
+    background-color: #05c15f;
+    border-radius: 50%;
+  }
+}

@@ -6,8 +6,8 @@ import Style from "./tabbar.module.scss";
 export type TabbarItem = {
   id: string;
   text: string;
-  icon: string;
-  activeIcon: string;
+  icon: any;
+  activeIcon: any;
 };
 export type TabbarProps = {
   list: TabbarItem[];

@@ -2,7 +2,7 @@ import Taro from "@tarojs/taro";
 import { useEffect, useRef } from "react";
 
 export class Router {
-  static singleProps = {};
+  static singleProps: any = undefined;
   constructor() {}
 
   to(path: string, props: any) {
@@ -31,7 +31,7 @@ export const router = new Router();
 export function useRouter() {
   const props = useRef(Router.singleProps);
   useEffect(() => {
-    Router.singleProps = {};
+    Router.singleProps = undefined;
   }, []);
   return {
     to: router.to.bind(router),

@@ -17,8 +17,8 @@ export default function Start() {
 
   return (
     <Page>
-      <Navbar></Navbar>
-      <Body className={Style["body"]}>
+      <Navbar style={{ background: "#05C15F", color: "#000" }}></Navbar>
+      <Body className={Style["body"]} disableScroll>
         <View className={Style["btn"]} onClick={onClickStart}>
           打开
         </View>

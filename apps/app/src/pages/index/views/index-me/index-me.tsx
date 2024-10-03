@@ -24,7 +24,7 @@ export default function IndexMe() {
 
   return (
     <>
-      <Navbar>设备状态</Navbar>
+      <Navbar style={{ background: "#05C15F", color: "#000" }}>设备状态</Navbar>
       <Body>
         <View className={Style["top"]}>
           <View className={Style["top-name"]}>Redmi K60s</View>

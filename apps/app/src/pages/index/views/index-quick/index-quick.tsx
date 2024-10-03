@@ -7,7 +7,9 @@ import Body from "src/components/body/body";
 export default function IndexQuick() {
   return (
     <>
-      <Navbar>Redmi K60s</Navbar>
+      <Navbar style={{ background: "#05C15F", color: "#000" }}>
+        Redmi K60s
+      </Navbar>
       <Body>
         <View className={Style["top"]}>
           <View className={Style["top-qr"]}>
