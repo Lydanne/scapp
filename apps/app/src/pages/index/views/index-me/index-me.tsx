@@ -50,19 +50,19 @@ export default function IndexMe() {
         </View>
         <View className={Style["menu-list"]}>
           <View className={Style["menu-list-item"]}>
-            <View className={Style["item-label"]}>我的文件</View>
+            <View className={Style["item-label"]}>系统设置</View>
             <View className={Style["item-icon"]}></View>
           </View>
           <View className={Style["menu-list-item"]}>
-            <View className={Style["item-label"]}>我的文件</View>
+            <View className={Style["item-label"]}>帮助文档</View>
             <View className={Style["item-icon"]}></View>
           </View>
           <View className={Style["menu-list-item"]}>
-            <View className={Style["item-label"]}>我的文件</View>
+            <View className={Style["item-label"]}>关于我们</View>
             <View className={Style["item-icon"]}></View>
           </View>
           <View className={Style["menu-list-item"]}>
-            <View className={Style["item-label"]}>我的文件</View>
+            <View className={Style["item-label"]}>分享给朋友</View>
             <View className={Style["item-icon"]}></View>
           </View>
         </View>
