@@ -13,7 +13,7 @@ export default function Scan() {
   useDidShow(() => {
     setTimeout(() => {
       setShowScan(true);
-    }, 1000);
+    }, 600);
   });
 
   return (
