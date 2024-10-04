@@ -7,7 +7,12 @@ import { useRouter } from "src/libs/tapi/router";
 import Scan from "./components/scan/scan";
 
 export default function Scanqr() {
-  const { back } = useRouter();
+  const { back, to } = useRouter();
+
+  const onClickTake = () => {
+    console.log("onClickTake");
+    to("/pages/trans/trans");
+  };
 
   return (
     <Page disableScroll disableNavbar footer footerHeight={130}>
@@ -20,7 +25,7 @@ export default function Scanqr() {
           <View className={Style["btns-icon"]}>
             <ImageRectangle size={24} color="#666" />
           </View>
-          <View className={Style["btns-mid"]}>
+          <View className={Style["btns-mid"]} onClick={onClickTake}>
             <View className={Style["mid-border"]}></View>
           </View>
           <View className={Style["btns-icon"]}>
