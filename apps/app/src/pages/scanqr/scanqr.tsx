@@ -1,10 +1,11 @@
-import { View } from "@tarojs/components";
 import Page from "src/components/page/page";
-import Style from "./scanqr.module.scss";
-import { Close, ImageRectangle, Retweet } from "@nutui/icons-react-taro";
 import Footer from "src/components/footer/footer";
 import { useRouter } from "src/libs/tapi/router";
 import Scan from "./components/scan/scan";
+import { View } from "@tarojs/components";
+import { Close, ImageRectangle, Retweet } from "@nutui/icons-react-taro";
+
+import Style from "./scanqr.module.scss";
 
 export default function Scanqr() {
   const { back, to } = useRouter();

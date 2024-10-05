@@ -1,11 +1,12 @@
 import React from "react";
-import Tabbar from "src/components/tabbar/tabbar";
-import Style from "./index.module.scss";
 import Page from "src/components/page/page";
+import Tabbar from "src/components/tabbar/tabbar";
 import IndexQuick from "./views/index-quick/index-quick";
 import IndexMe from "./views/index-me/index-me";
 import { useRouter } from "src/libs/tapi/router";
 import { Scan } from "@nutui/icons-react-taro";
+
+import Style from "./index.module.scss";
 
 export default function Index() {
   const { props, to } = useRouter();

@@ -1,10 +1,10 @@
 import { View } from "@tarojs/components";
 import Body from "src/components/body/body";
 import Navbar from "src/components/navbar/navbar";
-import Style from "./index-me.module.scss";
 import React, { useEffect } from "react";
 import Taro from "@tarojs/taro";
-import { toggleFullScreen } from "src/libs/shared/screen";
+
+import Style from "./index-me.module.scss";
 
 export default function IndexMe() {
   const [clickQiafan, setClickQiafan] = React.useState(false);

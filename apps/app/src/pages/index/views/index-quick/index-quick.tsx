@@ -1,8 +1,10 @@
 import { Image, View } from "@tarojs/components";
 
-import Style from "./index-quick.module.scss";
 import Navbar from "src/components/navbar/navbar";
 import Body from "src/components/body/body";
+import Mlist from "src/components/mlist/mlist";
+
+import Style from "./index-quick.module.scss";
 
 export default function IndexQuick() {
   return (
@@ -19,78 +21,8 @@ export default function IndexQuick() {
             ></Image>
           </View>
         </View>
-        <View className={Style["list"]}>
-          <View className={Style["item"]}>
-            <View className={Style["item-author"]}></View>
-            <View className={Style["item-right"]}>
-              <View className={Style["item-derive"]}>Redmi K60s</View>
-              <View className={Style["item-time"]}>2022-03-01 12:00</View>
-              <View className={Style["item-body"]}>
-                <View className={Style["file"]}>
-                  <View className={Style["file-info"]}>
-                    <View className={Style["file-name"]}>文件名</View>
-                    <View className={Style["file-size"]}>1.2MB</View>
-                  </View>
-                  <View className={Style["file-icon"]}></View>
-                </View>
-                <View className={Style["file"]}>
-                  <View className={Style["file-info"]}>
-                    <View className={Style["file-name"]}>文件名</View>
-                    <View className={Style["file-size"]}>1.2MB</View>
-                  </View>
-                  <View className={Style["file-icon"]}></View>
-                </View>
-              </View>
-            </View>
-          </View>
-          <View className={Style["item"]}>
-            <View className={Style["item-author"]}></View>
-            <View className={Style["item-right"]}>
-              <View className={Style["item-derive"]}>Redmi K60s</View>
-              <View className={Style["item-time"]}>2022-03-01 12:00</View>
-              <View className={Style["item-body"]}>
-                <View className={Style["file"]}>
-                  <View className={Style["file-info"]}>
-                    <View className={Style["file-name"]}>文件名</View>
-                    <View className={Style["file-size"]}>1.2MB</View>
-                  </View>
-                  <View className={Style["file-icon"]}></View>
-                </View>
-                <View className={Style["file"]}>
-                  <View className={Style["file-info"]}>
-                    <View className={Style["file-name"]}>文件名</View>
-                    <View className={Style["file-size"]}>1.2MB</View>
-                  </View>
-                  <View className={Style["file-icon"]}></View>
-                </View>
-              </View>
-            </View>
-          </View>
-          <View className={Style["item"]}>
-            <View className={Style["item-author"]}></View>
-            <View className={Style["item-right"]}>
-              <View className={Style["item-derive"]}>Redmi K60s</View>
-              <View className={Style["item-time"]}>2022-03-01 12:00</View>
-              <View className={Style["item-body"]}>
-                <View className={Style["file"]}>
-                  <View className={Style["file-info"]}>
-                    <View className={Style["file-name"]}>文件名</View>
-                    <View className={Style["file-size"]}>1.2MB</View>
-                  </View>
-                  <View className={Style["file-icon"]}></View>
-                </View>
-                <View className={Style["file"]}>
-                  <View className={Style["file-info"]}>
-                    <View className={Style["file-name"]}>文件名</View>
-                    <View className={Style["file-size"]}>1.2MB</View>
-                  </View>
-                  <View className={Style["file-icon"]}></View>
-                </View>
-              </View>
-            </View>
-          </View>
-          <View style={{ height: 50 }}></View>
-        </View>
+        <Mlist></Mlist>
+        <View style={{ height: 100 }}></View>
       </Body>
     </>
   );

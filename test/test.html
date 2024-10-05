@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>WebRTC Browser A</title>
+</head>
+
+<body>
+  <h2>浏览器 A（发起方）</h2>
+  <button id="start">开始连接</button>
+  <textarea id="offer" placeholder="复制此处的 Offer SDP"></textarea>
+  <textarea id="answer" placeholder="粘贴浏览器 B 的 Answer SDP"></textarea>
+  <button id="set-answer">设置 Answer</button>
+  <pre id="log"></pre>
+
+  <script>
+    const startButton = document.getElementById('start');
+    const offerTextarea = document.getElementById('offer');
+    const answerTextarea = document.getElementById('answer');
+    const setAnswerButton = document.getElementById('set-answer');
+    const log = document.getElementById('log');
+
+    const peerConnection = new RTCPeerConnection({
+      iceServers: [] // 不使用 STUN/TURN 服务器
+    });
+
+    // 创建数据通道
+    const dataChannel = peerConnection.createDataChannel('dataChannel');
+
+    dataChannel.binaryType = 'arraybuffer';
+
+    dataChannel.onopen = () => {
+      log.innerText += '数据通道已打开\n';
+      // 发送二进制数据示例
+      const buffer = new Uint8Array([1, 2, 3, 4]).buffer;
+      dataChannel.send(buffer);
+      log.innerText += '发送二进制数据: [1, 2, 3, 4]\n';
+    };
+
+    dataChannel.onmessage = (event) => {
+      const receivedData = new Uint8Array(event.data);
+      log.innerText += `接收到二进制数据: [${receivedData.join(', ')}]\n`;
+    };
+
+    peerConnection.onicecandidate = (event) => {
+      if (event.candidate) {
+        // 等待所有候选生成完毕
+        return;
+      }
+      // 生成 Offer SDP
+      const offer = peerConnection.localDescription;
+      offerTextarea.value = JSON.stringify(offer);
+      log.innerText += '生成 Offer SDP，已复制到文本框\n';
+    };
+
+    startButton.onclick = async () => {
+      try {
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        log.innerText += '创建并设置本地 Offer\n';
+      } catch (err) {
+        console.error(err);
+        log.innerText += `错误: ${err}\n`;
+      }
+    };
+
+    setAnswerButton.onclick = async () => {
+      try {
+        const answer = JSON.parse(answerTextarea.value);
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        log.innerText += '设置远程 Answer SDP\n';
+      } catch (err) {
+        console.error(err);
+        log.innerText += `错误: ${err}\n`;
+      }
+    };
+  </script>
+</body>
+
+</html>

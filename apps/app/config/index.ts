@@ -27,6 +27,9 @@ const config = {
     prebundle: { enable: false },
   },
   mini: {
+    miniCssExtractPluginOption: {
+      // ignoreOrder: true,
+    },
     postcss: {
       pxtransform: {
         enable: true,
