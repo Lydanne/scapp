@@ -1,9 +1,10 @@
-import { View, type StandardProps } from "@tarojs/components";
-import Taro from "@tarojs/taro";
-import { useContext, useEffect, useState } from "react";
-import { PageCtx } from "../page/page-ctx";
+import { useContext, useEffect, useState } from 'react';
 
-import Style from "./footer.module.scss";
+import { type StandardProps, View } from '@tarojs/components';
+import Taro from '@tarojs/taro';
+
+import { PageCtx } from '../page/page-ctx';
+import Style from './footer.module.scss';
 
 export type FooterProps = {
   fixedBottom?: boolean;
@@ -14,12 +15,12 @@ export default function Footer(props: FooterProps) {
 
   const fixedStyle = props.fixedBottom
     ? {
-        position: "fixed",
+        position: 'fixed',
         bottom: `calc(100vh - ${
           ctx.navbarHeight + ctx.footerHeight + ctx.bodyHeight
         }px)`,
         left: 0,
-        width: "100%",
+        width: '100%',
         zIndex: 100,
         minHeight: ctx.footerHeight,
       }
@@ -28,11 +29,11 @@ export default function Footer(props: FooterProps) {
       };
   return (
     <View
-      className={Style["footer"] + " " + props.className}
+      className={Style['footer'] + ' ' + props.className}
       style={Object.assign(
         {
-          boxSizing: "border-box",
-          overflow: "hidden",
+          boxSizing: 'border-box',
+          overflow: 'hidden',
         },
         fixedStyle,
         props.style,

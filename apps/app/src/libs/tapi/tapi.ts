@@ -1,4 +1,4 @@
-import Taro from "@tarojs/taro";
+import Taro from '@tarojs/taro';
 
 export function getMenuButtonBoundingClientRect() {
   if (Taro.getEnv() === Taro.ENV_TYPE.WEAPP) {

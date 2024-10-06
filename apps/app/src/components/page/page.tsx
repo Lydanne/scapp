@@ -1,9 +1,12 @@
-import { View, type StandardProps } from "@tarojs/components";
-import { useCallback, useContext, useEffect, useState } from "react";
-import { PageCtx } from "./page-ctx";
-import tapi from "src/libs/tapi";
-import Taro, { useResize } from "@tarojs/taro";
-import Style from "./page.module.scss";
+import { useCallback, useContext, useEffect, useState } from 'react';
+
+import { type StandardProps, View } from '@tarojs/components';
+import Taro, { useResize } from '@tarojs/taro';
+
+import tapi from 'src/libs/tapi';
+
+import { PageCtx } from './page-ctx';
+import Style from './page.module.scss';
 
 export type PageProps = {
   footer?: boolean;
@@ -23,10 +26,10 @@ export default function Page(props: PageProps) {
     const deviceInfo = tapi.getDeviceInfo();
     console.log(
       { windowInfo, rect, deviceInfo },
-      tapi.canIUse("getMenuButtonBoundingClientRect"),
+      tapi.canIUse('getMenuButtonBoundingClientRect'),
     );
 
-    const ios = !!(deviceInfo.platform.toLowerCase().search("ios") + 1);
+    const ios = !!(deviceInfo.platform.toLowerCase().search('ios') + 1);
     const leftWidth = 24;
     const navbar = {
       ios,
@@ -60,7 +63,7 @@ export default function Page(props: PageProps) {
 
   return (
     <PageCtx.Provider value={newCtx}>
-      <View className={Style["page"]}>{props.children}</View>
+      <View className={Style['page']}>{props.children}</View>
     </PageCtx.Provider>
   );
 }
