@@ -28,7 +28,7 @@ const config = {
   },
   mini: {
     miniCssExtractPluginOption: {
-      // ignoreOrder: true,
+      ignoreOrder: true,
     },
     postcss: {
       pxtransform: {
