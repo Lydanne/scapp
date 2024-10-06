@@ -1,3 +1,3 @@
-import * as tapi from "./tapi";
+import * as tapi from './tapi';
 
 export default tapi;
