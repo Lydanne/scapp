@@ -1,6 +1,6 @@
-import { useContext } from 'react';
-import { PageCtx } from '../page/page-ctx';
-import { ScrollView, View, type StandardProps } from '@tarojs/components';
+import { useContext } from "react";
+import { PageCtx } from "../page/page-ctx";
+import { ScrollView, View, type StandardProps } from "@tarojs/components";
 
 export type BodyProps = {} & StandardProps;
 
@@ -12,8 +12,8 @@ export default function Body(props: BodyProps) {
       className={props.className}
       style={{
         height: ctx.bodyHeight,
-        overflow: 'hidden',
-        boxSizing: 'border-box',
+        overflow: "hidden",
+        boxSizing: "border-box",
       }}
     >
       {props.children}

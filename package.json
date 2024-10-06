@@ -5,7 +5,12 @@
     "libs/*"
   ],
   "scripts": {
-    "postinstall": "husky"
+    "postinstall": "husky",
+    "prepare": "husky",
+    "format": "prettier --write \"./**/*.{ts,tsx,js,jsx,json,css,scss}\""
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
   },
   "name": "taro-monorepo",
   "version": "1.0.0",
@@ -14,7 +19,9 @@
     "@commitlint/cli": "^19.5.0",
     "@commitlint/config-conventional": "^19.5.0",
     "@tarojs/cli": "^3.6.0",
+    "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "husky": "^9.1.6",
+    "lint-staged": "^15.2.10",
     "prettier": "^3.3.3"
   }
 }

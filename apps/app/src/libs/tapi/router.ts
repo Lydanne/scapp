@@ -1,5 +1,5 @@
-import Taro from '@tarojs/taro';
-import { useEffect, useRef } from 'react';
+import Taro from "@tarojs/taro";
+import { useEffect, useRef } from "react";
 
 export class Router {
   static singleProps: any = undefined;
