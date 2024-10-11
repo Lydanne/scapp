@@ -1,8 +1,21 @@
 use tauri_plugin_log::{Target, TargetKind};
+use std::net::{UdpSocket, SocketAddr};
 
 #[tauri::command]
 async fn test2(value: String) -> String {
   log::info!("Hello from Rust!");
+  let socket = UdpSocket::bind("0.0.0.0:0").expect("Failed to bind socket");
+
+  // 要发送的数据
+  let data = b"Hello, world!";
+
+  // 目标地址和端口
+  let target_address = "192.168.111.20:12305";
+
+  // 发送数据到目标地址
+  socket.send_to(data, target_address).expect("Failed to send data");
+
+  log::info!("Data sent to {}", target_address);
   "Hello from Rust!".to_string() + &value
 }
 

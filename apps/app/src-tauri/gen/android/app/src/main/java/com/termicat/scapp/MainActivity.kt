@@ -1,3 +1,3 @@
-package com.tauri.dev
+package com.termicat.scapp
 
 class MainActivity : TauriActivity()

@@ -2,10 +2,10 @@ import React, { useEffect } from 'react';
 
 import { View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
-import { invoke } from '@tauri-apps/api/core';
 
 import Body from 'src/components/body/body';
 import Navbar from 'src/components/navbar/navbar';
+import { APP } from 'src/libs/tapi/platform';
 
 import Style from './index-me.module.scss';
 
@@ -22,10 +22,21 @@ export default function IndexMe() {
     });
     setTimeout(async () => {
       setClickQiafan(false);
-      const res = await invoke('test2', {
-        value: 'client',
-      });
-      console.log(res);
+      if (APP) {
+        const invoke = window.__TAURI__.core.invoke;
+        const res = await invoke('test2', {
+          value: 'client',
+        });
+        console.log(res);
+      } else {
+        // udp
+        const udp = Taro.createUDPSocket();
+        const port = udp.bind(12305);
+        console.log('port', port);
+        udp.onMessage((res) => {
+          console.log('onMessage', res);
+        });
+      }
     }, 1000);
   };
 

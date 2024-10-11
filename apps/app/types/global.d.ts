@@ -25,3 +25,11 @@ declare namespace NodeJS {
       | "jd";
   }
 }
+
+declare interface Window {
+  __TAURI__: {
+    core: {
+      invoke: (command: string, payload: any) => Promise<any>;
+    };
+  };
+}

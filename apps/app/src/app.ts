@@ -5,8 +5,11 @@ import { attachConsole } from '@tauri-apps/plugin-log';
 
 // 全局样式
 import './app.scss';
+import { APP } from './libs/tapi/platform';
 
-attachConsole();
+if (APP) {
+  attachConsole();
+}
 
 function App(props) {
   // 可以使用所有的 React Hooks

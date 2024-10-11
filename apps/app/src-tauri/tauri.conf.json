@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "identifier": "com.termicat.scapp",
   "build": {
-    "frontendDist": "../dist",
+    "frontendDist": "../dist/h5",
     "devUrl": "http://localhost:10086",
     "beforeDevCommand": "yarn dev:h5",
     "beforeBuildCommand": "yarn build:h5"
@@ -21,7 +21,8 @@
     ],
     "security": {
       "csp": null
-    }
+    },
+    "withGlobalTauri": true
   },
   "bundle": {
     "active": true,
