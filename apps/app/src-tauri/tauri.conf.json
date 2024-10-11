@@ -2,9 +2,9 @@
   "$schema": "../../../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "scapp",
   "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "com.termicat.scapp",
   "build": {
-    "frontendDist": "../build",
+    "frontendDist": "../dist",
     "devUrl": "http://localhost:10086",
     "beforeDevCommand": "yarn dev:h5",
     "beforeBuildCommand": "yarn build:h5"
