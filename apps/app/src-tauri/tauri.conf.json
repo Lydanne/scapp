@@ -13,8 +13,8 @@
     "windows": [
       {
         "title": "scapp",
-        "width": 800,
-        "height": 600,
+        "width": 430,
+        "height": 932,
         "resizable": true,
         "fullscreen": false
       }
