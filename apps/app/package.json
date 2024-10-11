@@ -65,6 +65,7 @@
     "@tarojs/cli": "3.6.35",
     "@tarojs/taro-loader": "3.6.35",
     "@tarojs/webpack5-runner": "3.6.35",
+    "@tauri-apps/cli": "^2.0.2",
     "@types/node": "^18.15.11",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
