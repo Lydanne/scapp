@@ -32,6 +32,10 @@ export default function Scan() {
             className={Style['scan-img']}
             device-position="back"
             flash="off"
+            mode="scanCode"
+            onScanCode={(e) => {
+              console.log('onScanCode', e);
+            }}
           ></Camera>
         )}
       </View>
