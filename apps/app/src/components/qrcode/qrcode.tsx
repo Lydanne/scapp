@@ -11,6 +11,7 @@ import Style from './qrcode.module.scss';
 
 export type QrcodeProps = {
   pcSize?: number; // %
+  data: string;
 } & StandardProps;
 
 export default function Qrcode(props: QrcodeProps) {
@@ -42,11 +43,7 @@ export default function Qrcode(props: QrcodeProps) {
       style={Object.assign({}, props.style, { '--qrcode-size': size + 'px' })}
     >
       {size > 0 ? (
-        <CodeCreator
-          codeText={String(props.children)}
-          size={size}
-          logoSize={100}
-        />
+        <CodeCreator codeText={props.data} size={size} logoSize={100} />
       ) : (
         <Loading></Loading>
       )}
