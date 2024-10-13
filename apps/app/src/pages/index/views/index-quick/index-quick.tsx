@@ -1,13 +1,23 @@
+import { useEffect } from 'react';
+
 import { Image, View } from '@tarojs/components';
 
 import Body from 'src/components/body/body';
 import Mlist from 'src/components/mlist/mlist';
 import Navbar from 'src/components/navbar/navbar';
 import Qrcode from 'src/components/qrcode/qrcode';
+import { decode, encode } from 'src/libs/plink';
+import { getCurrentPlink } from 'src/libs/shared/getCurrentPlink';
 
 import Style from './index-quick.module.scss';
 
 export default function IndexQuick() {
+  useEffect(() => {
+    setTimeout(async () => {
+      const data = encode(await getCurrentPlink());
+      console.log('IndexQuick', data, decode(data));
+    });
+  }, []);
   return (
     <>
       <Navbar style={{ background: '#05C15F', color: '#fff' }}>
