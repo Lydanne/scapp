@@ -5,7 +5,7 @@ import { uuid } from '../shared/uuid';
 import { getLocalIPAddress } from '../tapi/net';
 import { Plink } from './payload';
 
-export async function getCurrentPlink(): Promise {
+export async function getCurrentPlink() {
   const ip = await getLocalIPAddress();
   const inip = `${ip}:12305`;
   const uid = uuid();

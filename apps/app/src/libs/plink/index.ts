@@ -6,7 +6,7 @@ import { BinaryReader } from '@protobuf-ts/runtime';
 import { getCurrentPlink } from './getCurrentPlink';
 import { Plink } from './payload';
 
-export async function getPlinkCode(): Promise {
+export async function getPlinkCode() {
   const data = await getCurrentPlink();
   const base64 = encode(data);
   return base64;
