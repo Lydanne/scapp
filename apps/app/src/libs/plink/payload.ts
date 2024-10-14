@@ -33,7 +33,7 @@ export interface Plink {
   ts: bigint; // 8 Byte offset 70
 }
 // @generated message type with reflection information, may provide speed optimized methods
-class Plink$Type extends MessageType {
+class Plink$Type extends MessageType<Plink> {
   constructor() {
     super('Plink', [
       { no: 1, name: 'version', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
@@ -48,7 +48,7 @@ class Plink$Type extends MessageType {
       },
     ]);
   }
-  create(value?: PartialMessage): Plink {
+  create(value?: PartialMessage<Plink>): Plink {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.version = 0;
     message.uuid = '';
