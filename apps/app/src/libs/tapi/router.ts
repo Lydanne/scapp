@@ -29,7 +29,7 @@ export class Router {
 
 export const router = new Router();
 
-export function useRouter() {
+export function useRouter<P = any>() {
   const props = useRef(Router.singleProps);
   useEffect(() => {
     Router.singleProps = undefined;
@@ -37,6 +37,6 @@ export function useRouter() {
   return {
     to: router.to.bind(router),
     back: router.back.bind(router),
-    props: props.current,
+    props: props.current as P,
   };
 }

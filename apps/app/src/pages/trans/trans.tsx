@@ -7,12 +7,20 @@ import Footer from 'src/components/footer/footer';
 import Mlist from 'src/components/mlist/mlist';
 import Navbar from 'src/components/navbar/navbar';
 import Page from 'src/components/page/page';
+import type { Plink } from 'src/libs/plink';
 import { useRouter } from 'src/libs/tapi/router';
 
 import Style from './trans.module.scss';
 
+type TransProps = {
+  plink: Plink;
+};
+
 export default function Trans() {
-  const { back } = useRouter();
+  const { props, back } = useRouter<TransProps>();
+
+  const onSend = () => {};
+
   return (
     <Page footer footerHeight={60}>
       <Navbar>
@@ -39,9 +47,11 @@ export default function Trans() {
           <Top />
         </View>
         <View className={Style['footer-input']}>
-          <TextArea rows={1} autoSize />
+          <TextArea rows={1} autoSize value={props.plink.inip} />
         </View>
-        <View className={Style['footer-send']}>发送</View>
+        <View className={Style['footer-send']} onClick={onSend}>
+          发送
+        </View>
       </Footer>
     </Page>
   );

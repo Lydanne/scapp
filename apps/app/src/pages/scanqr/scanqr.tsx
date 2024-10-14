@@ -1,8 +1,11 @@
+import { useRef } from 'react';
+
 import { Close, ImageRectangle, Retweet } from '@nutui/icons-react-taro';
 import { View } from '@tarojs/components';
 
 import Footer from 'src/components/footer/footer';
 import Page from 'src/components/page/page';
+import { decode } from 'src/libs/plink';
 import { useRouter } from 'src/libs/tapi/router';
 
 import Scan from './components/scan/scan';
@@ -10,10 +13,20 @@ import Style from './scanqr.module.scss';
 
 export default function Scanqr() {
   const { back, to } = useRouter();
+  const scanData = useRef('');
 
   const onClickTake = () => {
     console.log('onClickTake');
-    to('/pages/trans/trans');
+    setTimeout(() => {
+      if (scanData.current) {
+        console.log('scanData', decode(scanData.current));
+        to('/pages/trans/trans', { plink: decode(scanData.current) });
+      }
+    }, 100);
+  };
+
+  const onScan = (data: string) => {
+    scanData.current = data;
   };
 
   return (
@@ -21,7 +34,7 @@ export default function Scanqr() {
       <View className={Style['close']} onClick={back}>
         <Close />
       </View>
-      <Scan></Scan>
+      <Scan onScan={onScan}></Scan>
       <Footer>
         <View className={Style['btns']}>
           <View className={Style['btns-icon']}>

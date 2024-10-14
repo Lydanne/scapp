@@ -1,3 +1,4 @@
+import { decode, encode } from 'base64-arraybuffer';
 import { useEffect, useState } from 'react';
 
 import { Image, View } from '@tarojs/components';
@@ -6,7 +7,7 @@ import Body from 'src/components/body/body';
 import Mlist from 'src/components/mlist/mlist';
 import Navbar from 'src/components/navbar/navbar';
 import Qrcode from 'src/components/qrcode/qrcode';
-import { decode, encode } from 'src/libs/plink';
+import { Plink } from 'src/libs/plink/payload';
 import { getCurrentPlink } from 'src/libs/shared/getCurrentPlink';
 
 import Style from './index-quick.module.scss';
@@ -15,9 +16,28 @@ export default function IndexQuick() {
   const [qrData, setQrData] = useState('');
   useEffect(() => {
     setTimeout(async () => {
-      const data = encode(await getCurrentPlink());
-      console.log('IndexQuick', data, decode(data));
-      setQrData(data);
+      // let pete: Person = {
+      //   name: 'pete',
+      //   id: 123n, // it's a bigint
+      //   years: 30,
+      //   // data: new Uint8Array([0xDE, 0xAD, 0xBE, 0xEF]);
+      // };
+
+      // let bytes = Person.toBinary(pete);
+      // pete = Person.fromBinary(bytes);
+      // console.log('pete', {
+      //   bytes,
+      //   pete,
+      // });
+      const data = await getCurrentPlink();
+      const base64 = encode(data);
+      console.log(
+        'IndexQuick',
+        data,
+        base64,
+        Plink.fromBinary(new Uint8Array(decode(base64))),
+      );
+      setQrData(base64);
     });
   }, []);
   return (
