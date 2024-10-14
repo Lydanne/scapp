@@ -5,7 +5,7 @@ import { View } from '@tarojs/components';
 
 import Footer from 'src/components/footer/footer';
 import Page from 'src/components/page/page';
-import { decode } from 'src/libs/plink';
+import { parsePlinkCode } from 'src/libs/plink';
 import { useRouter } from 'src/libs/tapi/router';
 
 import Scan from './components/scan/scan';
@@ -19,8 +19,9 @@ export default function Scanqr() {
     console.log('onClickTake');
     setTimeout(() => {
       if (scanData.current) {
-        console.log('scanData', decode(scanData.current));
-        to('/pages/trans/trans', { plink: decode(scanData.current) });
+        const plink = parsePlinkCode(scanData.current);
+        console.log('scanData', plink);
+        to('/pages/trans/trans', { plink });
       }
     }, 100);
   };

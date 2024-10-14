@@ -1,14 +1,24 @@
-export type Plink = {
-  version?: number; // 2 Byte
-  uuid: string; // 36 Byte offset 2
-  inip: string; // 32 Byte offset 38
-  ts: number; // 8 Byte offset 70
-};
-export function encode(plink: Plink): string {
-  return JSON.stringify(['Plink', 1, plink.uuid, plink.inip, plink.ts]);
+import { decode, encode } from 'base64-arraybuffer';
+
+import { TextDecoder } from '@polkadot/x-textdecoder';
+import { BinaryReader } from '@protobuf-ts/runtime';
+
+import { getCurrentPlink } from './getCurrentPlink';
+import { Plink } from './payload';
+
+export async function getPlinkCode(): Promise {
+  const data = await getCurrentPlink();
+  const base64 = encode(data);
+  return base64;
 }
 
-export function decode(buffer: string): Plink {
-  const [_, version, uuid, inip, ts] = JSON.parse(buffer);
-  return { version, uuid, inip, ts };
+export function parsePlinkCode(base64: string): Plink {
+  const plink = Plink.fromBinary(new Uint8Array(decode(base64)), {
+    readUnknownField: false,
+    readerFactory: (bytes) => {
+      return new BinaryReader(bytes, new TextDecoder('utf-8'));
+    },
+  });
+
+  return plink;
 }
