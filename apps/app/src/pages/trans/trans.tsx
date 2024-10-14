@@ -7,7 +7,7 @@ import Footer from 'src/components/footer/footer';
 import Mlist from 'src/components/mlist/mlist';
 import Navbar from 'src/components/navbar/navbar';
 import Page from 'src/components/page/page';
-import type { Plink } from 'src/libs/plink';
+import type { Plink } from 'src/libs/plink/payload';
 import { useRouter } from 'src/libs/tapi/router';
 
 import Style from './trans.module.scss';
