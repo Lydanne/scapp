@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from 'react';
+
 import { Close, Top } from '@nutui/icons-react-taro';
 import { TextArea } from '@nutui/nutui-react-taro';
 import { View } from '@tarojs/components';
@@ -8,9 +10,12 @@ import Mlist from 'src/components/mlist/mlist';
 import Navbar from 'src/components/navbar/navbar';
 import Page from 'src/components/page/page';
 import type { Plink } from 'src/libs/plink/payload';
+import { UdpChannel } from 'src/libs/plink/udp';
 import { useRouter } from 'src/libs/tapi/router';
 
 import Style from './trans.module.scss';
+
+const udpChannel = new UdpChannel();
 
 type TransProps = {
   plink: Plink;
@@ -18,6 +23,18 @@ type TransProps = {
 
 export default function Trans() {
   const { props, back } = useRouter<TransProps>();
+  const status = useRef('waiting');
+
+  useEffect(() => {
+    if (status.current === 'waiting') {
+      status.current = 'ready';
+      setTimeout(async () => {
+        const plink = props.plink;
+        const [ip, port] = plink.inip.split(':');
+        udpChannel.send('hello', ip, parseInt(port));
+      });
+    }
+  }, []);
 
   const onSend = () => {};
 

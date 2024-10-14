@@ -24,10 +24,10 @@ export default function Page(props: PageProps) {
     const rect = tapi.getMenuButtonBoundingClientRect();
     const windowInfo = tapi.getWindowInfo();
     const deviceInfo = tapi.getDeviceInfo();
-    console.log(
-      { windowInfo, rect, deviceInfo },
-      tapi.canIUse('getMenuButtonBoundingClientRect'),
-    );
+    // console.log(
+    //   { windowInfo, rect, deviceInfo },
+    //   tapi.canIUse('getMenuButtonBoundingClientRect'),
+    // );
 
     const ios = !!(deviceInfo.platform.toLowerCase().search('ios') + 1);
     const leftWidth = 24;

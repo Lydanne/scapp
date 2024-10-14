@@ -5,9 +5,9 @@ import { uuid } from '../shared/uuid';
 import { getLocalIPAddress } from '../tapi/net';
 import { Plink } from './payload';
 
-export async function getCurrentPlink() {
+export async function getCurrentPlink(port: number) {
   const ip = await getLocalIPAddress();
-  const inip = `${ip}:12305`;
+  const inip = `${ip}:${port}`;
   const uid = uuid();
   const ts = BigInt(Date.now());
   return Plink.toBinary(
