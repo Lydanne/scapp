@@ -32,6 +32,99 @@ export interface Plink {
    */
   ts: bigint; // 8 Byte offset 70
 }
+/**
+ * @generated from protobuf message Channel
+ */
+export interface Channel {
+  /**
+   * @generated from protobuf field: uint32 version = 1;
+   */
+  version: number; // 2 Byte
+  /**
+   * @generated from protobuf oneof: action
+   */
+  action:
+    | {
+        oneofKind: 'connect';
+        /**
+         * @generated from protobuf field: ConnectAction connect = 2;
+         */
+        connect: ConnectAction;
+      }
+    | {
+        oneofKind: 'disconnect';
+        /**
+         * @generated from protobuf field: DisconnectAction disconnect = 3;
+         */
+        disconnect: DisconnectAction;
+      }
+    | {
+        oneofKind: 'data';
+        /**
+         * @generated from protobuf field: DataAction data = 4;
+         */
+        data: DataAction;
+      }
+    | {
+        oneofKind: undefined;
+      };
+}
+/**
+ * @generated from protobuf message ConnectAction
+ */
+export interface ConnectAction {
+  /**
+   * @generated from protobuf field: uint32 seq = 1;
+   */
+  seq: number;
+  /**
+   * @generated from protobuf field: uint32 ack = 2;
+   */
+  ack: number;
+}
+/**
+ * @generated from protobuf message DisconnectAction
+ */
+export interface DisconnectAction {
+  /**
+   * @generated from protobuf field: uint32 seq = 1;
+   */
+  seq: number;
+  /**
+   * @generated from protobuf field: uint32 ack = 2;
+   */
+  ack: number;
+}
+/**
+ * @generated from protobuf message DataAction
+ */
+export interface DataAction {
+  /**
+   * @generated from protobuf field: DataMethod method = 1;
+   */
+  method: DataMethod;
+  /**
+   * @generated from protobuf field: uint32 index = 2;
+   */
+  index: number;
+  /**
+   * @generated from protobuf field: bytes data = 3;
+   */
+  data: Uint8Array;
+}
+/**
+ * @generated from protobuf enum DataMethod
+ */
+export enum DataMethod {
+  /**
+   * @generated from protobuf enum value: REQUEST = 0;
+   */
+  REQUEST = 0,
+  /**
+   * @generated from protobuf enum value: RESPONSE = 1;
+   */
+  RESPONSE = 1,
+}
 // @generated message type with reflection information, may provide speed optimized methods
 class Plink$Type extends MessageType<Plink> {
   constructor() {
@@ -130,3 +223,388 @@ class Plink$Type extends MessageType<Plink> {
  * @generated MessageType for protobuf message Plink
  */
 export const Plink = new Plink$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class Channel$Type extends MessageType<Channel> {
+  constructor() {
+    super('Channel', [
+      { no: 1, name: 'version', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
+      {
+        no: 2,
+        name: 'connect',
+        kind: 'message',
+        oneof: 'action',
+        T: () => ConnectAction,
+      },
+      {
+        no: 3,
+        name: 'disconnect',
+        kind: 'message',
+        oneof: 'action',
+        T: () => DisconnectAction,
+      },
+      {
+        no: 4,
+        name: 'data',
+        kind: 'message',
+        oneof: 'action',
+        T: () => DataAction,
+      },
+    ]);
+  }
+  create(value?: PartialMessage<Channel>): Channel {
+    const message = globalThis.Object.create(this.messagePrototype!);
+    message.version = 0;
+    message.action = { oneofKind: undefined };
+    if (value !== undefined)
+      reflectionMergePartial<Channel>(this, message, value);
+    return message;
+  }
+  internalBinaryRead(
+    reader: IBinaryReader,
+    length: number,
+    options: BinaryReadOptions,
+    target?: Channel,
+  ): Channel {
+    let message = target ?? this.create(),
+      end = reader.pos + length;
+    while (reader.pos < end) {
+      let [fieldNo, wireType] = reader.tag();
+      switch (fieldNo) {
+        case /* uint32 version */ 1:
+          message.version = reader.uint32();
+          break;
+        case /* ConnectAction connect */ 2:
+          message.action = {
+            oneofKind: 'connect',
+            connect: ConnectAction.internalBinaryRead(
+              reader,
+              reader.uint32(),
+              options,
+              (message.action as any).connect,
+            ),
+          };
+          break;
+        case /* DisconnectAction disconnect */ 3:
+          message.action = {
+            oneofKind: 'disconnect',
+            disconnect: DisconnectAction.internalBinaryRead(
+              reader,
+              reader.uint32(),
+              options,
+              (message.action as any).disconnect,
+            ),
+          };
+          break;
+        case /* DataAction data */ 4:
+          message.action = {
+            oneofKind: 'data',
+            data: DataAction.internalBinaryRead(
+              reader,
+              reader.uint32(),
+              options,
+              (message.action as any).data,
+            ),
+          };
+          break;
+        default:
+          let u = options.readUnknownField;
+          if (u === 'throw')
+            throw new globalThis.Error(
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
+            );
+          let d = reader.skip(wireType);
+          if (u !== false)
+            (u === true ? UnknownFieldHandler.onRead : u)(
+              this.typeName,
+              message,
+              fieldNo,
+              wireType,
+              d,
+            );
+      }
+    }
+    return message;
+  }
+  internalBinaryWrite(
+    message: Channel,
+    writer: IBinaryWriter,
+    options: BinaryWriteOptions,
+  ): IBinaryWriter {
+    /* uint32 version = 1; */
+    if (message.version !== 0)
+      writer.tag(1, WireType.Varint).uint32(message.version);
+    /* ConnectAction connect = 2; */
+    if (message.action.oneofKind === 'connect')
+      ConnectAction.internalBinaryWrite(
+        message.action.connect,
+        writer.tag(2, WireType.LengthDelimited).fork(),
+        options,
+      ).join();
+    /* DisconnectAction disconnect = 3; */
+    if (message.action.oneofKind === 'disconnect')
+      DisconnectAction.internalBinaryWrite(
+        message.action.disconnect,
+        writer.tag(3, WireType.LengthDelimited).fork(),
+        options,
+      ).join();
+    /* DataAction data = 4; */
+    if (message.action.oneofKind === 'data')
+      DataAction.internalBinaryWrite(
+        message.action.data,
+        writer.tag(4, WireType.LengthDelimited).fork(),
+        options,
+      ).join();
+    let u = options.writeUnknownFields;
+    if (u !== false)
+      (u == true ? UnknownFieldHandler.onWrite : u)(
+        this.typeName,
+        message,
+        writer,
+      );
+    return writer;
+  }
+}
+/**
+ * @generated MessageType for protobuf message Channel
+ */
+export const Channel = new Channel$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ConnectAction$Type extends MessageType<ConnectAction> {
+  constructor() {
+    super('ConnectAction', [
+      { no: 1, name: 'seq', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
+      { no: 2, name: 'ack', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
+    ]);
+  }
+  create(value?: PartialMessage<ConnectAction>): ConnectAction {
+    const message = globalThis.Object.create(this.messagePrototype!);
+    message.seq = 0;
+    message.ack = 0;
+    if (value !== undefined)
+      reflectionMergePartial<ConnectAction>(this, message, value);
+    return message;
+  }
+  internalBinaryRead(
+    reader: IBinaryReader,
+    length: number,
+    options: BinaryReadOptions,
+    target?: ConnectAction,
+  ): ConnectAction {
+    let message = target ?? this.create(),
+      end = reader.pos + length;
+    while (reader.pos < end) {
+      let [fieldNo, wireType] = reader.tag();
+      switch (fieldNo) {
+        case /* uint32 seq */ 1:
+          message.seq = reader.uint32();
+          break;
+        case /* uint32 ack */ 2:
+          message.ack = reader.uint32();
+          break;
+        default:
+          let u = options.readUnknownField;
+          if (u === 'throw')
+            throw new globalThis.Error(
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
+            );
+          let d = reader.skip(wireType);
+          if (u !== false)
+            (u === true ? UnknownFieldHandler.onRead : u)(
+              this.typeName,
+              message,
+              fieldNo,
+              wireType,
+              d,
+            );
+      }
+    }
+    return message;
+  }
+  internalBinaryWrite(
+    message: ConnectAction,
+    writer: IBinaryWriter,
+    options: BinaryWriteOptions,
+  ): IBinaryWriter {
+    /* uint32 seq = 1; */
+    if (message.seq !== 0) writer.tag(1, WireType.Varint).uint32(message.seq);
+    /* uint32 ack = 2; */
+    if (message.ack !== 0) writer.tag(2, WireType.Varint).uint32(message.ack);
+    let u = options.writeUnknownFields;
+    if (u !== false)
+      (u == true ? UnknownFieldHandler.onWrite : u)(
+        this.typeName,
+        message,
+        writer,
+      );
+    return writer;
+  }
+}
+/**
+ * @generated MessageType for protobuf message ConnectAction
+ */
+export const ConnectAction = new ConnectAction$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class DisconnectAction$Type extends MessageType<DisconnectAction> {
+  constructor() {
+    super('DisconnectAction', [
+      { no: 1, name: 'seq', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
+      { no: 2, name: 'ack', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
+    ]);
+  }
+  create(value?: PartialMessage<DisconnectAction>): DisconnectAction {
+    const message = globalThis.Object.create(this.messagePrototype!);
+    message.seq = 0;
+    message.ack = 0;
+    if (value !== undefined)
+      reflectionMergePartial<DisconnectAction>(this, message, value);
+    return message;
+  }
+  internalBinaryRead(
+    reader: IBinaryReader,
+    length: number,
+    options: BinaryReadOptions,
+    target?: DisconnectAction,
+  ): DisconnectAction {
+    let message = target ?? this.create(),
+      end = reader.pos + length;
+    while (reader.pos < end) {
+      let [fieldNo, wireType] = reader.tag();
+      switch (fieldNo) {
+        case /* uint32 seq */ 1:
+          message.seq = reader.uint32();
+          break;
+        case /* uint32 ack */ 2:
+          message.ack = reader.uint32();
+          break;
+        default:
+          let u = options.readUnknownField;
+          if (u === 'throw')
+            throw new globalThis.Error(
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
+            );
+          let d = reader.skip(wireType);
+          if (u !== false)
+            (u === true ? UnknownFieldHandler.onRead : u)(
+              this.typeName,
+              message,
+              fieldNo,
+              wireType,
+              d,
+            );
+      }
+    }
+    return message;
+  }
+  internalBinaryWrite(
+    message: DisconnectAction,
+    writer: IBinaryWriter,
+    options: BinaryWriteOptions,
+  ): IBinaryWriter {
+    /* uint32 seq = 1; */
+    if (message.seq !== 0) writer.tag(1, WireType.Varint).uint32(message.seq);
+    /* uint32 ack = 2; */
+    if (message.ack !== 0) writer.tag(2, WireType.Varint).uint32(message.ack);
+    let u = options.writeUnknownFields;
+    if (u !== false)
+      (u == true ? UnknownFieldHandler.onWrite : u)(
+        this.typeName,
+        message,
+        writer,
+      );
+    return writer;
+  }
+}
+/**
+ * @generated MessageType for protobuf message DisconnectAction
+ */
+export const DisconnectAction = new DisconnectAction$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class DataAction$Type extends MessageType<DataAction> {
+  constructor() {
+    super('DataAction', [
+      {
+        no: 1,
+        name: 'method',
+        kind: 'enum',
+        T: () => ['DataMethod', DataMethod],
+      },
+      { no: 2, name: 'index', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
+      { no: 3, name: 'data', kind: 'scalar', T: 12 /*ScalarType.BYTES*/ },
+    ]);
+  }
+  create(value?: PartialMessage<DataAction>): DataAction {
+    const message = globalThis.Object.create(this.messagePrototype!);
+    message.method = 0;
+    message.index = 0;
+    message.data = new Uint8Array(0);
+    if (value !== undefined)
+      reflectionMergePartial<DataAction>(this, message, value);
+    return message;
+  }
+  internalBinaryRead(
+    reader: IBinaryReader,
+    length: number,
+    options: BinaryReadOptions,
+    target?: DataAction,
+  ): DataAction {
+    let message = target ?? this.create(),
+      end = reader.pos + length;
+    while (reader.pos < end) {
+      let [fieldNo, wireType] = reader.tag();
+      switch (fieldNo) {
+        case /* DataMethod method */ 1:
+          message.method = reader.int32();
+          break;
+        case /* uint32 index */ 2:
+          message.index = reader.uint32();
+          break;
+        case /* bytes data */ 3:
+          message.data = reader.bytes();
+          break;
+        default:
+          let u = options.readUnknownField;
+          if (u === 'throw')
+            throw new globalThis.Error(
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
+            );
+          let d = reader.skip(wireType);
+          if (u !== false)
+            (u === true ? UnknownFieldHandler.onRead : u)(
+              this.typeName,
+              message,
+              fieldNo,
+              wireType,
+              d,
+            );
+      }
+    }
+    return message;
+  }
+  internalBinaryWrite(
+    message: DataAction,
+    writer: IBinaryWriter,
+    options: BinaryWriteOptions,
+  ): IBinaryWriter {
+    /* DataMethod method = 1; */
+    if (message.method !== 0)
+      writer.tag(1, WireType.Varint).int32(message.method);
+    /* uint32 index = 2; */
+    if (message.index !== 0)
+      writer.tag(2, WireType.Varint).uint32(message.index);
+    /* bytes data = 3; */
+    if (message.data.length)
+      writer.tag(3, WireType.LengthDelimited).bytes(message.data);
+    let u = options.writeUnknownFields;
+    if (u !== false)
+      (u == true ? UnknownFieldHandler.onWrite : u)(
+        this.typeName,
+        message,
+        writer,
+      );
+    return writer;
+  }
+}
+/**
+ * @generated MessageType for protobuf message DataAction
+ */
+export const DataAction = new DataAction$Type();

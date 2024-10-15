@@ -6,3 +6,35 @@ message Plink {
     string inip = 3; // 32 Byte offset 38
     uint64 ts = 4; // 8 Byte offset 70
 }
+
+message Channel{
+    uint32 version = 1; // 2 Byte
+    oneof action {
+        ConnectAction connect = 2;
+        DisconnectAction disconnect = 3;
+        DataAction data = 4;
+    }
+}
+
+message ConnectAction{
+    uint32 seq = 1;
+    uint32 ack = 2;
+}
+
+message DisconnectAction{
+    uint32 seq = 1;
+    uint32 ack = 2;
+}
+
+message DataAction{
+    DataMethod method = 1;
+    uint32 index = 2;
+    bytes data = 3;
+}
+
+enum DataMethod {
+    REQUEST = 0;
+    RESPONSE = 1;
+}
+
+
