@@ -11,12 +11,10 @@ import Navbar from 'src/components/navbar/navbar';
 import Page from 'src/components/page/page';
 import { Channel, type Plink } from 'src/libs/plink/payload';
 import { toBinary } from 'src/libs/plink/shared';
-import { UdpChannel } from 'src/libs/plink/udp';
+import udpChannel, { type SocketIP } from 'src/libs/plink/udpChannel';
 import { useRouter } from 'src/libs/tapi/router';
 
 import Style from './trans.module.scss';
-
-const udpChannel = new UdpChannel();
 
 type TransProps = {
   plink: Plink;
@@ -31,22 +29,7 @@ export default function Trans() {
       status.current = 'ready';
       setTimeout(async () => {
         const plink = props.plink;
-        const [ip, port] = plink.inip.split(':');
-        if (port) {
-          const buf = toBinary(Channel, {
-            version: 1,
-            action: {
-              oneofKind: 'connect',
-              connect: {
-                seq: 1,
-                ack: 0,
-              },
-            },
-          });
-          console.log('send', buf);
-
-          udpChannel.send(buf, ip, parseInt(port));
-        }
+        udpChannel.connect(plink.inip as SocketIP);
       });
     }
   }, []);

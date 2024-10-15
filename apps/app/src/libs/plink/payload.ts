@@ -39,7 +39,15 @@ export interface Channel {
   /**
    * @generated from protobuf field: uint32 version = 1;
    */
-  version: number; // 2 Byte
+  version: number;
+  /**
+   * @generated from protobuf field: uint32 id = 2;
+   */
+  id: number;
+  /**
+   * @generated from protobuf field: uint64 ts = 3;
+   */
+  ts: bigint;
   /**
    * @generated from protobuf oneof: action
    */
@@ -47,21 +55,21 @@ export interface Channel {
     | {
         oneofKind: 'connect';
         /**
-         * @generated from protobuf field: ConnectAction connect = 2;
+         * @generated from protobuf field: ConnectAction connect = 4;
          */
         connect: ConnectAction;
       }
     | {
         oneofKind: 'disconnect';
         /**
-         * @generated from protobuf field: DisconnectAction disconnect = 3;
+         * @generated from protobuf field: DisconnectAction disconnect = 5;
          */
         disconnect: DisconnectAction;
       }
     | {
         oneofKind: 'data';
         /**
-         * @generated from protobuf field: DataAction data = 4;
+         * @generated from protobuf field: DataAction data = 6;
          */
         data: DataAction;
       }
@@ -228,22 +236,30 @@ class Channel$Type extends MessageType<Channel> {
   constructor() {
     super('Channel', [
       { no: 1, name: 'version', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
+      { no: 2, name: 'id', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
       {
-        no: 2,
+        no: 3,
+        name: 'ts',
+        kind: 'scalar',
+        T: 4 /*ScalarType.UINT64*/,
+        L: 0 /*LongType.BIGINT*/,
+      },
+      {
+        no: 4,
         name: 'connect',
         kind: 'message',
         oneof: 'action',
         T: () => ConnectAction,
       },
       {
-        no: 3,
+        no: 5,
         name: 'disconnect',
         kind: 'message',
         oneof: 'action',
         T: () => DisconnectAction,
       },
       {
-        no: 4,
+        no: 6,
         name: 'data',
         kind: 'message',
         oneof: 'action',
@@ -254,6 +270,8 @@ class Channel$Type extends MessageType<Channel> {
   create(value?: PartialMessage<Channel>): Channel {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.version = 0;
+    message.id = 0;
+    message.ts = 0n;
     message.action = { oneofKind: undefined };
     if (value !== undefined)
       reflectionMergePartial<Channel>(this, message, value);
@@ -273,7 +291,13 @@ class Channel$Type extends MessageType<Channel> {
         case /* uint32 version */ 1:
           message.version = reader.uint32();
           break;
-        case /* ConnectAction connect */ 2:
+        case /* uint32 id */ 2:
+          message.id = reader.uint32();
+          break;
+        case /* uint64 ts */ 3:
+          message.ts = reader.uint64().toBigInt();
+          break;
+        case /* ConnectAction connect */ 4:
           message.action = {
             oneofKind: 'connect',
             connect: ConnectAction.internalBinaryRead(
@@ -284,7 +308,7 @@ class Channel$Type extends MessageType<Channel> {
             ),
           };
           break;
-        case /* DisconnectAction disconnect */ 3:
+        case /* DisconnectAction disconnect */ 5:
           message.action = {
             oneofKind: 'disconnect',
             disconnect: DisconnectAction.internalBinaryRead(
@@ -295,7 +319,7 @@ class Channel$Type extends MessageType<Channel> {
             ),
           };
           break;
-        case /* DataAction data */ 4:
+        case /* DataAction data */ 6:
           message.action = {
             oneofKind: 'data',
             data: DataAction.internalBinaryRead(
@@ -333,25 +357,29 @@ class Channel$Type extends MessageType<Channel> {
     /* uint32 version = 1; */
     if (message.version !== 0)
       writer.tag(1, WireType.Varint).uint32(message.version);
-    /* ConnectAction connect = 2; */
+    /* uint32 id = 2; */
+    if (message.id !== 0) writer.tag(2, WireType.Varint).uint32(message.id);
+    /* uint64 ts = 3; */
+    if (message.ts !== 0n) writer.tag(3, WireType.Varint).uint64(message.ts);
+    /* ConnectAction connect = 4; */
     if (message.action.oneofKind === 'connect')
       ConnectAction.internalBinaryWrite(
         message.action.connect,
-        writer.tag(2, WireType.LengthDelimited).fork(),
+        writer.tag(4, WireType.LengthDelimited).fork(),
         options,
       ).join();
-    /* DisconnectAction disconnect = 3; */
+    /* DisconnectAction disconnect = 5; */
     if (message.action.oneofKind === 'disconnect')
       DisconnectAction.internalBinaryWrite(
         message.action.disconnect,
-        writer.tag(3, WireType.LengthDelimited).fork(),
+        writer.tag(5, WireType.LengthDelimited).fork(),
         options,
       ).join();
-    /* DataAction data = 4; */
+    /* DataAction data = 6; */
     if (message.action.oneofKind === 'data')
       DataAction.internalBinaryWrite(
         message.action.data,
-        writer.tag(4, WireType.LengthDelimited).fork(),
+        writer.tag(6, WireType.LengthDelimited).fork(),
         options,
       ).join();
     let u = options.writeUnknownFields;

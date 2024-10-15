@@ -8,11 +8,13 @@ message Plink {
 }
 
 message Channel{
-    uint32 version = 1; // 2 Byte
+    uint32 version = 1; 
+    uint32 id = 2;
+    uint64 ts = 3;
     oneof action {
-        ConnectAction connect = 2;
-        DisconnectAction disconnect = 3;
-        DataAction data = 4;
+        ConnectAction connect = 4;
+        DisconnectAction disconnect = 5;
+        DataAction data = 6;
     }
 }
 

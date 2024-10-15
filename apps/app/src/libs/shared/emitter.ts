@@ -1,45 +1,83 @@
-import { type AnyFunction, type AnyObject, FunctionArgs } from './type-tools';
+import { ParamsType } from './type-tools';
 
-export const createEvent = <Payload>(event: string) =>
-  event as unknown as Payload;
+export class Emitter<CB extends (...args: any[]) => void> {
+  private events = new Set<CB>();
+  private lastEmitArgs: ParamsType<CB> | undefined;
+  private timer: any;
+  constructor(private debounce?: number | undefined) {}
 
-export class Emitter {
-  private eventMap = new Map<any, Set<AnyFunction>>();
-
-  on<E = AnyObject>(event: string | E, eventCb: E) {
-    let events = this.eventMap.get(event);
-    if (!events) {
-      events = new Set();
-      this.eventMap.set(event, events);
-    }
-    events.add(eventCb as unknown as AnyFunction);
-    return this;
+  size() {
+    return this.events.size;
   }
 
-  off<E = AnyObject>(event: string | E, eventCb: E) {
-    const events = this.eventMap.get(event);
-    if (events) {
-      events.delete(eventCb as unknown as AnyFunction);
-    }
-    return this;
+  emitSync(...args: ParamsType<CB>) {
+    const p: void[] = [];
+    this.events.forEach((cb) => {
+      const lastCall = (cb as any).lastCall ?? 0;
+      const interval = (cb as any).interval;
+      if (Date.now() - lastCall < interval) {
+        return;
+      }
+      (cb as any).lastCall = Date.now();
+      p.push(cb(...args));
+    });
+    return p;
   }
 
-  emit<E = AnyObject, T = unknown>(
-    event: string | E,
-    ...args: FunctionArgs<E> | T[]
-  ) {
-    const events = this.eventMap.get(event);
-    if (events) {
-      events.forEach((eventCb) => eventCb(...args));
+  emitLifeCycle(...args: ParamsType<CB>) {
+    this.lastEmitArgs = args;
+    return Promise.resolve().then(() => {
+      try {
+        this.emitSync(...args);
+      } catch (error) {
+        return Promise.reject(error);
+      }
+    });
+  }
+
+  emit(...args: ParamsType<CB>) {
+    this.lastEmitArgs = undefined;
+    return new Promise<void>((resolve) => {
+      if (this.timer) {
+        clearTimeout(this.timer);
+      }
+      this.timer = setTimeout(() => {
+        try {
+          this.emitSync(...args);
+          resolve();
+        } catch (error) {
+          return Promise.reject(error);
+        }
+      }, this.debounce);
+    });
+  }
+
+  on(cb: CB, interval = 0) {
+    (cb as any).interval = interval;
+    if (this.lastEmitArgs) {
+      cb(...this.lastEmitArgs);
     }
-    return this;
+    this.events.add(cb);
+    return () => {
+      this.off(cb);
+    };
+  }
+
+  wait() {
+    return new Promise<ParamsType<CB>>((resolve) => {
+      const cb = (...args: ParamsType<CB>) => {
+        resolve(args);
+        clear();
+      };
+      const clear = this.on(cb as CB);
+    });
+  }
+
+  off(cb: CB) {
+    this.events.delete(cb);
   }
 
   destroy() {
-    this.eventMap.clear();
-  }
-
-  getEventNames() {
-    return Array.from(this.eventMap.keys());
+    this.events.clear();
   }
 }
