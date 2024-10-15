@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 
 import { Close, Top } from '@nutui/icons-react-taro';
 import { TextArea } from '@nutui/nutui-react-taro';
-import { TextEncoder } from '@polkadot/x-textencoder';
-import { BinaryWriter } from '@protobuf-ts/runtime';
 import { View } from '@tarojs/components';
 
 import Body from 'src/components/body/body';
@@ -12,6 +10,7 @@ import Mlist from 'src/components/mlist/mlist';
 import Navbar from 'src/components/navbar/navbar';
 import Page from 'src/components/page/page';
 import { Channel, type Plink } from 'src/libs/plink/payload';
+import { toBinary } from 'src/libs/plink/shared';
 import { UdpChannel } from 'src/libs/plink/udp';
 import { useRouter } from 'src/libs/tapi/router';
 
@@ -34,27 +33,19 @@ export default function Trans() {
         const plink = props.plink;
         const [ip, port] = plink.inip.split(':');
         if (port) {
-          const buf = Channel.toBinary(
-            {
-              version: 1,
-              action: {
-                oneofKind: 'connect',
-                connect: {
-                  seq: 1,
-                  ack: 0,
-                },
+          const buf = toBinary(Channel, {
+            version: 1,
+            action: {
+              oneofKind: 'connect',
+              connect: {
+                seq: 1,
+                ack: 0,
               },
             },
-            {
-              writeUnknownFields: false,
-              writerFactory: () => {
-                return new BinaryWriter(new TextEncoder());
-              },
-            },
-          );
+          });
           console.log('send', buf);
 
-          udpChannel.send(buf.buffer, ip, parseInt(port));
+          udpChannel.send(buf, ip, parseInt(port));
         }
       });
     }

@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
 
-import { TextDecoder } from '@polkadot/x-textdecoder';
-import { BinaryReader } from '@protobuf-ts/runtime';
 import { View } from '@tarojs/components';
 
 import Body from 'src/components/body/body';
@@ -10,6 +8,7 @@ import Navbar from 'src/components/navbar/navbar';
 import Qrcode from 'src/components/qrcode/qrcode';
 import { getPlinkCode } from 'src/libs/plink';
 import { Channel } from 'src/libs/plink/payload';
+import { fromBinary } from 'src/libs/plink/shared';
 import { UdpChannel } from 'src/libs/plink/udp';
 import { useRouter } from 'src/libs/tapi/router';
 
@@ -24,15 +23,7 @@ export default function IndexQuick() {
     setTimeout(async () => {
       const port = udpChannel.listen((msg: any) => {
         console.log('msg', msg);
-        console.log(
-          'msg',
-          Channel.fromBinary(new Uint8Array(msg.message), {
-            readUnknownField: false,
-            readerFactory: (bytes) => {
-              return new BinaryReader(bytes, new TextDecoder('utf-8'));
-            },
-          }),
-        );
+        console.log('msg', fromBinary(Channel, msg.message));
         to('/pages/trans/trans', { plink: { inip: 'accept' } });
       });
       setQrData(await getPlinkCode(port));
