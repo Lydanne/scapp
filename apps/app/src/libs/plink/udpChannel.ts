@@ -16,7 +16,7 @@ export enum ChannelStatus {
   disconnected = 'disconnected',
 }
 
-export type Connect = {
+export type Connection = {
   id: number;
   status: ChannelStatus;
   socketIP: SocketIP;
@@ -26,12 +26,12 @@ export type Connect = {
 export class UdpChannel {
   static listened = 0;
 
-  connectionClient = new Map<number, Connect>();
+  connectionClient = new Map<number, Connection>();
 
   listenEmitter = new Emitter<(port: number) => any>();
-  connectionEmitter = new Emitter<(connection: Connect) => any>();
-  eventEmitter = new Emitter<(connection: Connect) => any>();
-  rawEmitter = new Emitter<() => Connect>();
+  connectionEmitter = new Emitter<(connection: Connection) => any>();
+  eventEmitter = new Emitter<(connection: Connection) => any>();
+  rawEmitter = new Emitter<() => Connection>();
 
   constructor() {
     this.connectionEmitter.on((data) => {
@@ -58,7 +58,7 @@ export class UdpChannel {
           const id = data.id;
           if (this.connectionClient.has(id)) {
             // 验证连接
-            const client = this.connectionClient.get(id) as Connect;
+            const client = this.connectionClient.get(id) as Connection;
             if (client.seq + 1 === data.action.connect.ack) {
               if (client.status !== ChannelStatus.connecting) {
                 return;
@@ -68,7 +68,7 @@ export class UdpChannel {
                 status: ChannelStatus.connected,
               });
               this.connectionEmitter.emitLifeCycle(
-                this.connectionClient.get(id) as Connect,
+                this.connectionClient.get(id) as Connection,
               );
               if (data.action.connect.seq != 0) {
                 udp.send({
