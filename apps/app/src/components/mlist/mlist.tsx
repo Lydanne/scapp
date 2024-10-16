@@ -1,83 +1,16 @@
 import { type StandardProps, View } from '@tarojs/components';
 
-import Mitem from './mitem';
+import Mitem, { type MitemProps } from './mitem';
 import Style from './mlist.module.scss';
 
-export default function Mlist(props: StandardProps) {
+export type MlistProps = {
+  list: MitemProps[];
+} & StandardProps;
+
+export default function Mlist(props: MlistProps) {
   return (
     <View className={Style['list']}>
-      <Mitem
-        name="红米 k60s"
-        createdAt="2024-10-11"
-        msg={[
-          {
-            type: 'file',
-            content: {
-              name: '红米 k60s',
-              size: '1.2M',
-            },
-          },
-          {
-            type: 'file',
-            content: {
-              name: '红米 k60s',
-              size: '1.2M',
-            },
-          },
-        ]}
-      ></Mitem>
-      <Mitem
-        name="红米 k60s"
-        createdAt="2024-10-11"
-        msg={[
-          {
-            type: 'file',
-            content: {
-              name: '红米 k60s',
-              size: '1.2M',
-            },
-          },
-        ]}
-      ></Mitem>
-      <Mitem
-        name="红米 k60s"
-        createdAt="2024-10-11"
-        msg={[
-          {
-            type: 'file',
-            content: {
-              name: '红米 k60s',
-              size: '1.2M',
-            },
-          },
-        ]}
-      ></Mitem>
-      <Mitem
-        name="红米 k60s"
-        createdAt="2024-10-11"
-        msg={[
-          {
-            type: 'file',
-            content: {
-              name: '红米 k60s',
-              size: '1.2M',
-            },
-          },
-        ]}
-      ></Mitem>
-      <Mitem
-        name="红米 k60s"
-        createdAt="2024-10-11"
-        msg={[
-          {
-            type: 'file',
-            content: {
-              name: '红米 k60s',
-              size: '1.2M',
-            },
-          },
-        ]}
-      ></Mitem>
+      {props.list?.map((item, index) => <Mitem key={index} {...item}></Mitem>)}
     </View>
   );
 }

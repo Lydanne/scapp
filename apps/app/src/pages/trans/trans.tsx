@@ -6,6 +6,7 @@ import { View } from '@tarojs/components';
 
 import Body from 'src/components/body/body';
 import Footer from 'src/components/footer/footer';
+import type { MitemProps } from 'src/components/mlist/mitem';
 import Mlist from 'src/components/mlist/mlist';
 import Navbar from 'src/components/navbar/navbar';
 import Page from 'src/components/page/page';
@@ -23,18 +24,50 @@ type TransProps = {
 export default function Trans() {
   const [inputMessage, setInputMessage] = useState('');
   const { props, back } = useRouter<TransProps>();
+  const [msgList, setMsgList] = useState<MitemProps[]>([]);
 
   useEffect(() => {
     setTimeout(async () => {
       const [connection] = await udpChannel.connectionEmitter.wait();
       connection.receiver.on((data) => {
         console.log('data', data);
+        setMsgList((list) => {
+          const item: MitemProps = {
+            name: data.index.toString(),
+            createdAt: new Date().toISOString(),
+            msg: [
+              data.data.oneofKind === 'text'
+                ? {
+                    type: 'text',
+                    content: data.data.text,
+                  }
+                : {
+                    type: 'text',
+                    content: '未知消息',
+                  },
+            ],
+          };
+          return [...list, item];
+        });
       });
     });
   }, []);
 
   const onSend = async () => {
     console.log('inputMessage', inputMessage);
+    setMsgList((list) => {
+      const item: MitemProps = {
+        name: '我',
+        createdAt: new Date().toISOString(),
+        msg: [
+          {
+            type: 'text',
+            content: inputMessage,
+          },
+        ],
+      };
+      return [...list, item];
+    });
 
     const [connection] = await udpChannel.connectionEmitter.wait();
     connection.sender.emit({
@@ -45,6 +78,8 @@ export default function Trans() {
         text: inputMessage,
       },
     });
+
+    setInputMessage('');
   };
 
   return (
@@ -66,7 +101,7 @@ export default function Trans() {
         </View>
       </Navbar>
       <Body>
-        <Mlist></Mlist>
+        <Mlist list={msgList}></Mlist>
       </Body>
       <Footer className={Style['footer']} fixedBottom>
         <View className={Style['footer-upload']}>

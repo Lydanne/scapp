@@ -37,7 +37,7 @@ export default function IndexQuick() {
             )}
           </View>
         </View>
-        <Mlist></Mlist>
+        <Mlist list={[]}></Mlist>
         <View style={{ height: 100 }}></View>
       </Body>
     </>
