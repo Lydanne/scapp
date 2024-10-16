@@ -17,11 +17,6 @@ export default function IndexQuick() {
   const { to } = useRouter();
   useEffect(() => {
     setTimeout(async () => {
-      // udpChannel.listen((msg: any) => {
-      //   // console.log('msg', msg);
-      //   // console.log('msg', fromBinary(Channel, msg.message));
-      //   // to('/pages/trans/trans', { plink: { socketIP: 'accept' } });
-      // });
       const [port] = await udpChannel.listenEmitter.wait();
       setQrData(await getPlinkCode(port));
     });
