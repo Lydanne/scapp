@@ -7,9 +7,6 @@ import { fromBinary, toBinary } from './shared';
 
 const udp = Taro.createUDPSocket();
 
-export type ListenEmitter = (port: number) => any;
-export type EventEmitter = (channel: Channel) => any;
-
 export type SocketIP = `${string}:${number}`;
 
 export enum ChannelStatus {
@@ -19,17 +16,28 @@ export enum ChannelStatus {
   disconnected = 'disconnected',
 }
 
+export type Connect = {
+  id: number;
+  status: ChannelStatus;
+  socketIP: SocketIP;
+  seq: number;
+};
+
 export class UdpChannel {
   static listened = 0;
 
-  connectionClient = new Map<number, any>();
+  connectionClient = new Map<number, Connect>();
 
-  listenEmitter = new Emitter<ListenEmitter>();
-  connectionEmitter = new Emitter<EventEmitter>();
-  eventEmitter = new Emitter<EventEmitter>();
-  rawEmitter = new Emitter<any>();
+  listenEmitter = new Emitter<(port: number) => any>();
+  connectionEmitter = new Emitter<(connection: Connect) => any>();
+  eventEmitter = new Emitter<(connection: Connect) => any>();
+  rawEmitter = new Emitter<() => Connect>();
 
-  constructor() {}
+  constructor() {
+    this.connectionEmitter.on((data) => {
+      console.log('[UdpChannel]', 'connectionEmitter', data);
+    });
+  }
   listen() {
     if (UdpChannel.listened) {
       return this;
@@ -49,14 +57,37 @@ export class UdpChannel {
         if (data.action?.oneofKind === 'connect') {
           const id = data.id;
           if (this.connectionClient.has(id)) {
-            const client = this.connectionClient.get(id);
-
+            // 验证连接
+            const client = this.connectionClient.get(id) as Connect;
             if (client.seq + 1 === data.action.connect.ack) {
+              if (client.status !== ChannelStatus.connecting) {
+                return;
+              }
               this.connectionClient.set(id, {
                 ...client,
                 status: ChannelStatus.connected,
               });
-              this.connectionEmitter.emitLifeCycle(data);
+              this.connectionEmitter.emitLifeCycle(
+                this.connectionClient.get(id) as Connect,
+              );
+              if (data.action.connect.seq != 0) {
+                udp.send({
+                  address: res.remoteInfo.address,
+                  port: res.remoteInfo.port,
+                  message: toBinary(Channel, {
+                    version: 1,
+                    id: id,
+                    ts: BigInt(Date.now()),
+                    action: {
+                      oneofKind: 'connect',
+                      connect: {
+                        seq: 0,
+                        ack: data.action.connect.seq + 1,
+                      },
+                    },
+                  }),
+                });
+              }
             } else {
               console.log('[UdpChannel]', 'onMessage', 'seq error');
               udp.send({
@@ -77,11 +108,13 @@ export class UdpChannel {
               });
             }
           } else {
+            // 请求连接
             const seq = rand(1, 100);
             this.connectionClient.set(id, {
+              id,
               status: ChannelStatus.connecting,
               seq,
-              clientIP: `${res.remoteInfo.address}:${res.remoteInfo.port}`,
+              socketIP: `${res.remoteInfo.address}:${res.remoteInfo.port}`,
             });
             udp.send({
               address: res.remoteInfo.address,
@@ -133,8 +166,9 @@ export class UdpChannel {
     });
 
     this.connectionClient.set(id, {
+      id,
       status: ChannelStatus.connecting,
-      clientIP: socketIP,
+      socketIP: socketIP,
       seq,
     });
 
