@@ -24,9 +24,9 @@ export interface Plink {
    */
   uuid: string; // 36 Byte offset 2
   /**
-   * @generated from protobuf field: string inip = 3;
+   * @generated from protobuf field: string socketIP = 3;
    */
-  inip: string; // 32 Byte offset 38
+  socketIP: string; // 32 Byte offset 38
   /**
    * @generated from protobuf field: uint64 ts = 4;
    */
@@ -139,7 +139,7 @@ class Plink$Type extends MessageType<Plink> {
     super('Plink', [
       { no: 1, name: 'version', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
       { no: 2, name: 'uuid', kind: 'scalar', T: 9 /*ScalarType.STRING*/ },
-      { no: 3, name: 'inip', kind: 'scalar', T: 9 /*ScalarType.STRING*/ },
+      { no: 3, name: 'socketIP', kind: 'scalar', T: 9 /*ScalarType.STRING*/ },
       {
         no: 4,
         name: 'ts',
@@ -153,7 +153,7 @@ class Plink$Type extends MessageType<Plink> {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.version = 0;
     message.uuid = '';
-    message.inip = '';
+    message.socketIP = '';
     message.ts = 0n;
     if (value !== undefined)
       reflectionMergePartial<Plink>(this, message, value);
@@ -176,8 +176,8 @@ class Plink$Type extends MessageType<Plink> {
         case /* string uuid */ 2:
           message.uuid = reader.string();
           break;
-        case /* string inip */ 3:
-          message.inip = reader.string();
+        case /* string socketIP */ 3:
+          message.socketIP = reader.string();
           break;
         case /* uint64 ts */ 4:
           message.ts = reader.uint64().toBigInt();
@@ -212,9 +212,9 @@ class Plink$Type extends MessageType<Plink> {
     /* string uuid = 2; */
     if (message.uuid !== '')
       writer.tag(2, WireType.LengthDelimited).string(message.uuid);
-    /* string inip = 3; */
-    if (message.inip !== '')
-      writer.tag(3, WireType.LengthDelimited).string(message.inip);
+    /* string socketIP = 3; */
+    if (message.socketIP !== '')
+      writer.tag(3, WireType.LengthDelimited).string(message.socketIP);
     /* uint64 ts = 4; */
     if (message.ts !== 0n) writer.tag(4, WireType.Varint).uint64(message.ts);
     let u = options.writeUnknownFields;

@@ -7,14 +7,14 @@ import { Plink } from './payload';
 
 export async function getCurrentPlink(port: number) {
   const ip = await getLocalIPAddress();
-  const inip = `${ip}:${port}`;
+  const socketIP = `${ip}:${port}`;
   const uid = uuid();
   const ts = BigInt(Date.now());
   return Plink.toBinary(
     {
       version: 1,
       uuid: uid,
-      inip,
+      socketIP,
       ts,
     },
     {

@@ -20,13 +20,13 @@ export default function IndexQuick() {
       // udpChannel.listen((msg: any) => {
       //   // console.log('msg', msg);
       //   // console.log('msg', fromBinary(Channel, msg.message));
-      //   // to('/pages/trans/trans', { plink: { inip: 'accept' } });
+      //   // to('/pages/trans/trans', { plink: { socketIP: 'accept' } });
       // });
       const [port] = await udpChannel.listenEmitter.wait();
       setQrData(await getPlinkCode(port));
     });
     return udpChannel.connectionEmitter.on((connection) => {
-      to('/pages/trans/trans', { plink: { inip: connection.socketIP } });
+      to('/pages/trans/trans', { plink: { socketIP: connection.socketIP } });
     });
   }, []);
   return (

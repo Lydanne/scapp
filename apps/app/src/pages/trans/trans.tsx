@@ -29,7 +29,6 @@ export default function Trans() {
       status.current = 'ready';
       setTimeout(async () => {
         const plink = props.plink;
-        udpChannel.connect(plink.inip as SocketIP);
       });
     }
   }, []);
@@ -62,7 +61,7 @@ export default function Trans() {
           <Top />
         </View>
         <View className={Style['footer-input']}>
-          <TextArea rows={1} autoSize value={props.plink.inip} />
+          <TextArea rows={1} autoSize value={props.plink.socketIP} />
         </View>
         <View className={Style['footer-send']} onClick={onSend}>
           发送
