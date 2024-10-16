@@ -2,7 +2,7 @@ import Taro from '@tarojs/taro';
 
 import { Emitter } from '../shared/emitter';
 import { uuid } from '../shared/uuid';
-import { Channel } from './payload';
+import { Channel, type DataAction } from './payload';
 import { fromBinary, toBinary } from './shared';
 
 const udp = Taro.createUDPSocket();
@@ -16,12 +16,29 @@ export enum ChannelStatus {
   disconnected = 'disconnected',
 }
 
-export type Connection = {
+export type ConnectionProps = {
   id: number;
   status: ChannelStatus;
   socketIP: SocketIP;
   seq: number;
 };
+
+class Connection {
+  id: number;
+  status: ChannelStatus;
+  socketIP: SocketIP;
+  seq: number;
+
+  sender = new Emitter<(data: DataAction) => any>();
+  receiver = new Emitter<(data: DataAction) => any>();
+
+  constructor(data: ConnectionProps) {
+    this.id = data.id;
+    this.status = data.status;
+    this.socketIP = data.socketIP;
+    this.seq = data.seq;
+  }
+}
 
 export class UdpChannel {
   static listened = 0;
@@ -30,7 +47,6 @@ export class UdpChannel {
 
   listenEmitter = new Emitter<(port: number) => any>();
   connectionEmitter = new Emitter<(connection: Connection) => any>();
-  eventEmitter = new Emitter<(connection: Connection) => any>();
   rawEmitter = new Emitter<() => Connection>();
 
   constructor() {
@@ -63,13 +79,30 @@ export class UdpChannel {
               if (client.status !== ChannelStatus.connecting) {
                 return;
               }
-              this.connectionClient.set(id, {
+              const connection = new Connection({
                 ...client,
                 status: ChannelStatus.connected,
               });
-              this.connectionEmitter.emitLifeCycle(
-                this.connectionClient.get(id) as Connection,
-              );
+              connection.sender.on((data) => {
+                if (data.data.oneofKind === 'text') {
+                  data.data.text = encodeURIComponent(data.data.text);
+                }
+                udp.send({
+                  address: res.remoteInfo.address,
+                  port: res.remoteInfo.port,
+                  message: toBinary(Channel, {
+                    version: 1,
+                    id: id,
+                    ts: BigInt(Date.now()),
+                    action: {
+                      oneofKind: 'data',
+                      data: data,
+                    },
+                  }),
+                });
+              });
+              this.connectionClient.set(id, connection);
+              this.connectionEmitter.emitLifeCycle(connection);
               if (data.action.connect.seq != 0) {
                 udp.send({
                   address: res.remoteInfo.address,
@@ -110,12 +143,15 @@ export class UdpChannel {
           } else {
             // 请求连接
             const seq = rand(1, 100);
-            this.connectionClient.set(id, {
+            this.connectionClient.set(
               id,
-              status: ChannelStatus.connecting,
-              seq,
-              socketIP: `${res.remoteInfo.address}:${res.remoteInfo.port}`,
-            });
+              new Connection({
+                id,
+                status: ChannelStatus.connecting,
+                seq,
+                socketIP: `${res.remoteInfo.address}:${res.remoteInfo.port}`,
+              }),
+            );
             udp.send({
               address: res.remoteInfo.address,
               port: res.remoteInfo.port,
@@ -132,6 +168,17 @@ export class UdpChannel {
                 },
               }),
             });
+          }
+        } else if (data.action?.oneofKind === 'data') {
+          const id = data.id;
+          if (this.connectionClient.has(id)) {
+            const client = this.connectionClient.get(id) as Connection;
+            if (data.action.data.data.oneofKind === 'text') {
+              data.action.data.data.text = decodeURIComponent(
+                data.action.data.data.text,
+              );
+            }
+            client.receiver.emit(data.action.data);
           }
         }
       });
@@ -165,22 +212,17 @@ export class UdpChannel {
       }),
     });
 
-    this.connectionClient.set(id, {
+    this.connectionClient.set(
       id,
-      status: ChannelStatus.connecting,
-      socketIP: socketIP,
-      seq,
-    });
+      new Connection({
+        id,
+        status: ChannelStatus.connecting,
+        socketIP: socketIP,
+        seq,
+      }),
+    );
 
     return this;
-  }
-
-  send(data: any, ip: string, port: number) {
-    udp.send({
-      address: ip,
-      port: port,
-      message: data,
-    });
   }
 }
 

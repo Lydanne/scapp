@@ -108,30 +108,34 @@ export interface DisconnectAction {
  */
 export interface DataAction {
   /**
-   * @generated from protobuf field: DataMethod method = 1;
-   */
-  method: DataMethod;
-  /**
-   * @generated from protobuf field: uint32 index = 2;
+   * @generated from protobuf field: uint32 index = 1;
    */
   index: number;
   /**
-   * @generated from protobuf field: bytes data = 3;
+   * @generated from protobuf field: uint32 length = 2;
    */
-  data: Uint8Array;
-}
-/**
- * @generated from protobuf enum DataMethod
- */
-export enum DataMethod {
+  length: number;
   /**
-   * @generated from protobuf enum value: REQUEST = 0;
+   * @generated from protobuf oneof: data
    */
-  REQUEST = 0,
-  /**
-   * @generated from protobuf enum value: RESPONSE = 1;
-   */
-  RESPONSE = 1,
+  data:
+    | {
+        oneofKind: 'text';
+        /**
+         * @generated from protobuf field: string text = 3;
+         */
+        text: string;
+      }
+    | {
+        oneofKind: 'binary';
+        /**
+         * @generated from protobuf field: bytes binary = 4;
+         */
+        binary: Uint8Array;
+      }
+    | {
+        oneofKind: undefined;
+      };
 }
 // @generated message type with reflection information, may provide speed optimized methods
 class Plink$Type extends MessageType<Plink> {
@@ -550,21 +554,29 @@ export const DisconnectAction = new DisconnectAction$Type();
 class DataAction$Type extends MessageType<DataAction> {
   constructor() {
     super('DataAction', [
+      { no: 1, name: 'index', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
+      { no: 2, name: 'length', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
       {
-        no: 1,
-        name: 'method',
-        kind: 'enum',
-        T: () => ['DataMethod', DataMethod],
+        no: 3,
+        name: 'text',
+        kind: 'scalar',
+        oneof: 'data',
+        T: 9 /*ScalarType.STRING*/,
       },
-      { no: 2, name: 'index', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
-      { no: 3, name: 'data', kind: 'scalar', T: 12 /*ScalarType.BYTES*/ },
+      {
+        no: 4,
+        name: 'binary',
+        kind: 'scalar',
+        oneof: 'data',
+        T: 12 /*ScalarType.BYTES*/,
+      },
     ]);
   }
   create(value?: PartialMessage<DataAction>): DataAction {
     const message = globalThis.Object.create(this.messagePrototype!);
-    message.method = 0;
     message.index = 0;
-    message.data = new Uint8Array(0);
+    message.length = 0;
+    message.data = { oneofKind: undefined };
     if (value !== undefined)
       reflectionMergePartial<DataAction>(this, message, value);
     return message;
@@ -580,14 +592,23 @@ class DataAction$Type extends MessageType<DataAction> {
     while (reader.pos < end) {
       let [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
-        case /* DataMethod method */ 1:
-          message.method = reader.int32();
-          break;
-        case /* uint32 index */ 2:
+        case /* uint32 index */ 1:
           message.index = reader.uint32();
           break;
-        case /* bytes data */ 3:
-          message.data = reader.bytes();
+        case /* uint32 length */ 2:
+          message.length = reader.uint32();
+          break;
+        case /* string text */ 3:
+          message.data = {
+            oneofKind: 'text',
+            text: reader.string(),
+          };
+          break;
+        case /* bytes binary */ 4:
+          message.data = {
+            oneofKind: 'binary',
+            binary: reader.bytes(),
+          };
           break;
         default:
           let u = options.readUnknownField;
@@ -613,15 +634,18 @@ class DataAction$Type extends MessageType<DataAction> {
     writer: IBinaryWriter,
     options: BinaryWriteOptions,
   ): IBinaryWriter {
-    /* DataMethod method = 1; */
-    if (message.method !== 0)
-      writer.tag(1, WireType.Varint).int32(message.method);
-    /* uint32 index = 2; */
+    /* uint32 index = 1; */
     if (message.index !== 0)
-      writer.tag(2, WireType.Varint).uint32(message.index);
-    /* bytes data = 3; */
-    if (message.data.length)
-      writer.tag(3, WireType.LengthDelimited).bytes(message.data);
+      writer.tag(1, WireType.Varint).uint32(message.index);
+    /* uint32 length = 2; */
+    if (message.length !== 0)
+      writer.tag(2, WireType.Varint).uint32(message.length);
+    /* string text = 3; */
+    if (message.data.oneofKind === 'text')
+      writer.tag(3, WireType.LengthDelimited).string(message.data.text);
+    /* bytes binary = 4; */
+    if (message.data.oneofKind === 'binary')
+      writer.tag(4, WireType.LengthDelimited).bytes(message.data.binary);
     let u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(

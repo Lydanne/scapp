@@ -21,19 +21,31 @@ type TransProps = {
 };
 
 export default function Trans() {
+  const [inputMessage, setInputMessage] = useState('');
   const { props, back } = useRouter<TransProps>();
-  const status = useRef('waiting');
 
   useEffect(() => {
-    if (status.current === 'waiting') {
-      status.current = 'ready';
-      setTimeout(async () => {
-        const plink = props.plink;
+    setTimeout(async () => {
+      const [connection] = await udpChannel.connectionEmitter.wait();
+      connection.receiver.on((data) => {
+        console.log('data', data);
       });
-    }
+    });
   }, []);
 
-  const onSend = () => {};
+  const onSend = async () => {
+    console.log('inputMessage', inputMessage);
+
+    const [connection] = await udpChannel.connectionEmitter.wait();
+    connection.sender.emit({
+      index: 0,
+      length: 1,
+      data: {
+        oneofKind: 'text',
+        text: inputMessage,
+      },
+    });
+  };
 
   return (
     <Page footer footerHeight={60}>
@@ -61,7 +73,12 @@ export default function Trans() {
           <Top />
         </View>
         <View className={Style['footer-input']}>
-          <TextArea rows={1} autoSize value={props.plink.socketIP} />
+          <TextArea
+            rows={1}
+            autoSize
+            value={inputMessage}
+            onChange={setInputMessage}
+          />
         </View>
         <View className={Style['footer-send']} onClick={onSend}>
           发送

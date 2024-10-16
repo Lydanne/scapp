@@ -29,14 +29,17 @@ message DisconnectAction{
 }
 
 message DataAction{
-    DataMethod method = 1;
-    uint32 index = 2;
-    bytes data = 3;
+    uint32 index = 1;
+    uint32 length = 2;
+    oneof data {
+        string text = 3;
+        bytes binary = 4;
+    }
 }
 
-enum DataMethod {
-    REQUEST = 0;
-    RESPONSE = 1;
-}
+// enum DataMethod {
+//     REQUEST = 0;
+//     RESPONSE = 1;
+// }
 
 
