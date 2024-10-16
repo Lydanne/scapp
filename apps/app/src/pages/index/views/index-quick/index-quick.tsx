@@ -25,6 +25,9 @@ export default function IndexQuick() {
       const [port] = await udpChannel.listenEmitter.wait();
       setQrData(await getPlinkCode(port));
     });
+    return udpChannel.connectionEmitter.on((connection) => {
+      to('/pages/trans/trans', { plink: { inip: connection.socketIP } });
+    });
   }, []);
   return (
     <>
