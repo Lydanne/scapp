@@ -29,17 +29,17 @@ export default function Trans() {
   useEffect(() => {
     setTimeout(async () => {
       const [connection] = await udpChannel.connectionEmitter.wait();
-      connection.receiver.on((data) => {
+      connection.on((data) => {
         console.log('data', data);
         setMsgList((list) => {
           const item: MitemProps = {
-            name: data.index.toString(),
+            name: '他',
             createdAt: new Date().toISOString(),
             msg: [
-              data.data.oneofKind === 'text'
+              data.oneofKind === 'text'
                 ? {
                     type: 'text',
-                    content: data.data.text,
+                    content: data.text,
                   }
                 : {
                     type: 'text',
@@ -70,14 +70,7 @@ export default function Trans() {
     });
 
     const [connection] = await udpChannel.connectionEmitter.wait();
-    connection.sender.emit({
-      index: 0,
-      length: 1,
-      data: {
-        oneofKind: 'text',
-        text: inputMessage,
-      },
-    });
+    connection.send('text', inputMessage);
 
     setInputMessage('');
   };

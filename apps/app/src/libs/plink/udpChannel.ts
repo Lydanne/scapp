@@ -38,6 +38,42 @@ class Connection {
     this.socketIP = data.socketIP;
     this.seq = data.seq;
   }
+
+  send(type: DataAction['data']['oneofKind'], data: any) {
+    switch (type) {
+      case 'text': {
+        this.sender.emit({
+          index: 0,
+          length: 0,
+          data: {
+            oneofKind: type,
+            text: encodeURIComponent(data),
+          },
+        });
+        break;
+      }
+      case 'binary': {
+        this.sender.emit({
+          index: 0,
+          length: 0,
+          data: {
+            oneofKind: type,
+            ...data,
+          },
+        });
+        break;
+      }
+    }
+  }
+
+  on(cb: (data: DataAction['data']) => any) {
+    this.receiver.on((data) => {
+      if (data.data.oneofKind === 'text') {
+        data.data.text = decodeURIComponent(data.data.text);
+      }
+      cb(data.data);
+    });
+  }
 }
 
 export class UdpChannel {
