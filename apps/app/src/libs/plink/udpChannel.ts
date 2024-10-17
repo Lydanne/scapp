@@ -6,6 +6,8 @@ import { uuid } from '../shared/uuid';
 import { Channel, type DataAction } from './payload';
 import { fromBinary, toBinary } from './shared';
 
+const BLOCK_SIZE = 2048;
+
 const udp = Taro.createUDPSocket();
 
 export type SocketIP = `${string}:${number}`;
@@ -45,7 +47,7 @@ class Connection {
     switch (type) {
       case 'text': {
         const text = Base64.encode(data);
-        const length = Math.ceil(text.length / 2048);
+        const length = Math.ceil(text.length / BLOCK_SIZE);
         for (let index = 0; index < length; index++) {
           this.sender.emitSync({
             id,
@@ -53,20 +55,49 @@ class Connection {
             length,
             data: {
               oneofKind: type,
-              text: text.slice(index * 2048, (index + 1) * 2048),
+              text: text.slice(index * BLOCK_SIZE, (index + 1) * BLOCK_SIZE),
             },
           });
         }
         break;
       }
       case 'file': {
-        this.sender.emit({
-          id,
-          index: 0,
-          length: 0,
-          data: {
-            oneofKind: type,
-            ...data,
+        const path = data.path;
+        const name = data.name;
+        const size = data.size; // B
+
+        const length = Math.ceil(size / BLOCK_SIZE);
+
+        const fsm = Taro.getFileSystemManager();
+        fsm.open({
+          filePath: path,
+          success: async ({ fd }) => {
+            const buffer = new ArrayBuffer(size);
+            for (let index = 0; index < length; index++) {
+              const offset = index * BLOCK_SIZE;
+              const length = Math.min(size - offset, BLOCK_SIZE);
+              fsm.read({
+                fd,
+                arrayBuffer: buffer,
+                position: offset,
+                length,
+                success: (res) => {
+                  this.sender.emit({
+                    id,
+                    index,
+                    length,
+                    data: {
+                      oneofKind: type,
+                      file: {
+                        name,
+                        type: 'application/octet-stream',
+                        data: new Uint8Array(buffer),
+                      },
+                    },
+                  });
+                },
+              });
+            }
           },
         });
         break;
@@ -75,42 +106,46 @@ class Connection {
   }
 
   on(cb: (data: DataAction['data']) => any) {
-    const buffersMap = new Map<string, string>();
+    const buffersMap = new Map<string, any>();
     this.receiver.on(async (data) => {
+      buffersMap.set(data.id + ':length', data.length.toString());
       if (data.data.oneofKind === 'text') {
-        buffersMap.set(data.id + ':length', data.length.toString());
         buffersMap.set(data.id + ':' + data.index, data.data.text);
-        if (data.index + 1 === data.length) {
-          setTimeout(async () => {
-            if (data.data.oneofKind === 'text') {
-              const length = buffersMap.get(data.id + ':length');
-              if (length) {
-                for (let c = 0; c < 100; c++) {
-                  let isEnd = false;
-                  for (let i = 0; i < parseInt(length); i++) {
-                    if (!buffersMap.has(data.id + ':' + i)) {
-                      isEnd = true;
-                      break;
-                    }
-                  }
-                  if (!isEnd) {
-                    break;
-                  }
-                  await new Promise((resolve) => setTimeout(resolve, 1000));
-                }
-                const buffers: string[] = [];
-                for (let i = 0; i < parseInt(length); i++) {
-                  buffers.push(buffersMap.get(data.id + ':' + i) || '');
-                  buffersMap.delete(data.id + ':' + i);
-                }
-                buffersMap.delete(data.id + ':length');
-                const buffer = buffers.join('');
-                data.data.text = Base64.decode(buffer);
-                cb(data.data);
+      } else if (data.data.oneofKind === 'file') {
+        const file = data.data.file;
+        buffersMap.set(data.id + ':' + data.index, file.data);
+        buffersMap.set(data.id + ':name', file.name);
+        buffersMap.set(data.id + ':type', file.type);
+      }
+      if (data.index + 1 === data.length) {
+        setTimeout(async () => {
+          const length = buffersMap.get(data.id + ':length') || 0;
+          for (let c = 0; c < 100; c++) {
+            let isEnd = false;
+            for (let i = 0; i < parseInt(length); i++) {
+              if (!buffersMap.has(data.id + ':' + i)) {
+                isEnd = true;
+                break;
               }
             }
-          }, 100);
-        }
+            if (!isEnd) {
+              break;
+            }
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          }
+          if (data.data.oneofKind === 'text') {
+            const buffers: string[] = [];
+            for (let i = 0; i < parseInt(length); i++) {
+              buffers.push(buffersMap.get(data.id + ':' + i) || '');
+              buffersMap.delete(data.id + ':' + i);
+            }
+            buffersMap.delete(data.id + ':length');
+            const buffer = buffers.join('');
+            data.data.text = Base64.decode(buffer);
+            cb(data.data);
+          } else if (data.data.oneofKind === 'file') {
+          }
+        }, 100);
       }
     });
   }
