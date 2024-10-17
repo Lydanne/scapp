@@ -108,11 +108,15 @@ export interface DisconnectAction {
  */
 export interface DataAction {
   /**
-   * @generated from protobuf field: uint32 index = 1;
+   * @generated from protobuf field: uint32 id = 1;
+   */
+  id: number;
+  /**
+   * @generated from protobuf field: uint32 index = 2;
    */
   index: number;
   /**
-   * @generated from protobuf field: uint32 length = 2;
+   * @generated from protobuf field: uint32 length = 3;
    */
   length: number;
   /**
@@ -122,20 +126,37 @@ export interface DataAction {
     | {
         oneofKind: 'text';
         /**
-         * @generated from protobuf field: string text = 3;
+         * @generated from protobuf field: string text = 4;
          */
         text: string;
       }
     | {
-        oneofKind: 'binary';
+        oneofKind: 'file';
         /**
-         * @generated from protobuf field: bytes binary = 4;
+         * @generated from protobuf field: File file = 5;
          */
-        binary: Uint8Array;
+        file: File;
       }
     | {
         oneofKind: undefined;
       };
+}
+/**
+ * @generated from protobuf message File
+ */
+export interface File {
+  /**
+   * @generated from protobuf field: string name = 1;
+   */
+  name: string;
+  /**
+   * @generated from protobuf field: string type = 2;
+   */
+  type: string;
+  /**
+   * @generated from protobuf field: bytes data = 3;
+   */
+  data: Uint8Array;
 }
 // @generated message type with reflection information, may provide speed optimized methods
 class Plink$Type extends MessageType<Plink> {
@@ -554,26 +575,22 @@ export const DisconnectAction = new DisconnectAction$Type();
 class DataAction$Type extends MessageType<DataAction> {
   constructor() {
     super('DataAction', [
-      { no: 1, name: 'index', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
-      { no: 2, name: 'length', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
+      { no: 1, name: 'id', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
+      { no: 2, name: 'index', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
+      { no: 3, name: 'length', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
       {
-        no: 3,
+        no: 4,
         name: 'text',
         kind: 'scalar',
         oneof: 'data',
         T: 9 /*ScalarType.STRING*/,
       },
-      {
-        no: 4,
-        name: 'binary',
-        kind: 'scalar',
-        oneof: 'data',
-        T: 12 /*ScalarType.BYTES*/,
-      },
+      { no: 5, name: 'file', kind: 'message', oneof: 'data', T: () => File },
     ]);
   }
   create(value?: PartialMessage<DataAction>): DataAction {
     const message = globalThis.Object.create(this.messagePrototype!);
+    message.id = 0;
     message.index = 0;
     message.length = 0;
     message.data = { oneofKind: undefined };
@@ -592,22 +609,30 @@ class DataAction$Type extends MessageType<DataAction> {
     while (reader.pos < end) {
       let [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
-        case /* uint32 index */ 1:
+        case /* uint32 id */ 1:
+          message.id = reader.uint32();
+          break;
+        case /* uint32 index */ 2:
           message.index = reader.uint32();
           break;
-        case /* uint32 length */ 2:
+        case /* uint32 length */ 3:
           message.length = reader.uint32();
           break;
-        case /* string text */ 3:
+        case /* string text */ 4:
           message.data = {
             oneofKind: 'text',
             text: reader.string(),
           };
           break;
-        case /* bytes binary */ 4:
+        case /* File file */ 5:
           message.data = {
-            oneofKind: 'binary',
-            binary: reader.bytes(),
+            oneofKind: 'file',
+            file: File.internalBinaryRead(
+              reader,
+              reader.uint32(),
+              options,
+              (message.data as any).file,
+            ),
           };
           break;
         default:
@@ -634,18 +659,24 @@ class DataAction$Type extends MessageType<DataAction> {
     writer: IBinaryWriter,
     options: BinaryWriteOptions,
   ): IBinaryWriter {
-    /* uint32 index = 1; */
+    /* uint32 id = 1; */
+    if (message.id !== 0) writer.tag(1, WireType.Varint).uint32(message.id);
+    /* uint32 index = 2; */
     if (message.index !== 0)
-      writer.tag(1, WireType.Varint).uint32(message.index);
-    /* uint32 length = 2; */
+      writer.tag(2, WireType.Varint).uint32(message.index);
+    /* uint32 length = 3; */
     if (message.length !== 0)
-      writer.tag(2, WireType.Varint).uint32(message.length);
-    /* string text = 3; */
+      writer.tag(3, WireType.Varint).uint32(message.length);
+    /* string text = 4; */
     if (message.data.oneofKind === 'text')
-      writer.tag(3, WireType.LengthDelimited).string(message.data.text);
-    /* bytes binary = 4; */
-    if (message.data.oneofKind === 'binary')
-      writer.tag(4, WireType.LengthDelimited).bytes(message.data.binary);
+      writer.tag(4, WireType.LengthDelimited).string(message.data.text);
+    /* File file = 5; */
+    if (message.data.oneofKind === 'file')
+      File.internalBinaryWrite(
+        message.data.file,
+        writer.tag(5, WireType.LengthDelimited).fork(),
+        options,
+      ).join();
     let u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
@@ -660,3 +691,87 @@ class DataAction$Type extends MessageType<DataAction> {
  * @generated MessageType for protobuf message DataAction
  */
 export const DataAction = new DataAction$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class File$Type extends MessageType<File> {
+  constructor() {
+    super('File', [
+      { no: 1, name: 'name', kind: 'scalar', T: 9 /*ScalarType.STRING*/ },
+      { no: 2, name: 'type', kind: 'scalar', T: 9 /*ScalarType.STRING*/ },
+      { no: 3, name: 'data', kind: 'scalar', T: 12 /*ScalarType.BYTES*/ },
+    ]);
+  }
+  create(value?: PartialMessage<File>): File {
+    const message = globalThis.Object.create(this.messagePrototype!);
+    message.name = '';
+    message.type = '';
+    message.data = new Uint8Array(0);
+    if (value !== undefined) reflectionMergePartial<File>(this, message, value);
+    return message;
+  }
+  internalBinaryRead(
+    reader: IBinaryReader,
+    length: number,
+    options: BinaryReadOptions,
+    target?: File,
+  ): File {
+    let message = target ?? this.create(),
+      end = reader.pos + length;
+    while (reader.pos < end) {
+      let [fieldNo, wireType] = reader.tag();
+      switch (fieldNo) {
+        case /* string name */ 1:
+          message.name = reader.string();
+          break;
+        case /* string type */ 2:
+          message.type = reader.string();
+          break;
+        case /* bytes data */ 3:
+          message.data = reader.bytes();
+          break;
+        default:
+          let u = options.readUnknownField;
+          if (u === 'throw')
+            throw new globalThis.Error(
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
+            );
+          let d = reader.skip(wireType);
+          if (u !== false)
+            (u === true ? UnknownFieldHandler.onRead : u)(
+              this.typeName,
+              message,
+              fieldNo,
+              wireType,
+              d,
+            );
+      }
+    }
+    return message;
+  }
+  internalBinaryWrite(
+    message: File,
+    writer: IBinaryWriter,
+    options: BinaryWriteOptions,
+  ): IBinaryWriter {
+    /* string name = 1; */
+    if (message.name !== '')
+      writer.tag(1, WireType.LengthDelimited).string(message.name);
+    /* string type = 2; */
+    if (message.type !== '')
+      writer.tag(2, WireType.LengthDelimited).string(message.type);
+    /* bytes data = 3; */
+    if (message.data.length)
+      writer.tag(3, WireType.LengthDelimited).bytes(message.data);
+    let u = options.writeUnknownFields;
+    if (u !== false)
+      (u == true ? UnknownFieldHandler.onWrite : u)(
+        this.typeName,
+        message,
+        writer,
+      );
+    return writer;
+  }
+}
+/**
+ * @generated MessageType for protobuf message File
+ */
+export const File = new File$Type();

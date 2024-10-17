@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Close, Top } from '@nutui/icons-react-taro';
 import { TextArea } from '@nutui/nutui-react-taro';
 import { View } from '@tarojs/components';
+import Taro from '@tarojs/taro';
 
 import Body from 'src/components/body/body';
 import Footer from 'src/components/footer/footer';
@@ -30,7 +31,9 @@ export default function Trans() {
     setTimeout(async () => {
       const [connection] = await udpChannel.connectionEmitter.wait();
       connection.on((data) => {
-        console.log('data', data);
+        if (data.oneofKind === 'text') {
+          console.log('data', [data.text, data?.text?.length]);
+        }
         setMsgList((list) => {
           const item: MitemProps = {
             name: '他',
@@ -54,7 +57,7 @@ export default function Trans() {
   }, []);
 
   const onSend = async () => {
-    console.log('inputMessage', inputMessage);
+    console.log('inputMessage', [inputMessage, inputMessage.length]);
     setMsgList((list) => {
       const item: MitemProps = {
         name: '我',
@@ -73,6 +76,17 @@ export default function Trans() {
     connection.send('text', inputMessage);
 
     setInputMessage('');
+  };
+
+  const onSelectFile = async () => {
+    // 微信小程序中读取文件并发送
+    const res = await Taro.chooseMessageFile({
+      count: 1,
+      type: 'file',
+    });
+    console.log('res', res);
+    const [connection] = await udpChannel.connectionEmitter.wait();
+    connection.send('file', res.tempFiles[0]);
   };
 
   return (
@@ -97,13 +111,14 @@ export default function Trans() {
         <Mlist list={msgList}></Mlist>
       </Body>
       <Footer className={Style['footer']} fixedBottom>
-        <View className={Style['footer-upload']}>
+        <View className={Style['footer-upload']} onClick={onSelectFile}>
           <Top />
         </View>
         <View className={Style['footer-input']}>
           <TextArea
             rows={1}
             autoSize
+            maxLength={-1}
             value={inputMessage}
             onChange={setInputMessage}
           />

@@ -40,20 +40,27 @@ class Connection {
   }
 
   send(type: DataAction['data']['oneofKind'], data: any) {
+    const id = Date.now() % 1000000000;
     switch (type) {
       case 'text': {
-        this.sender.emit({
-          index: 0,
-          length: 0,
-          data: {
-            oneofKind: type,
-            text: encodeURIComponent(data),
-          },
-        });
+        const text = encodeURIComponent(data);
+        const length = Math.ceil(text.length / 2048);
+        for (let index = 0; index < length; index++) {
+          this.sender.emitSync({
+            id,
+            index,
+            length,
+            data: {
+              oneofKind: type,
+              text: text.slice(index * 2048, (index + 1) * 2048),
+            },
+          });
+        }
         break;
       }
-      case 'binary': {
+      case 'file': {
         this.sender.emit({
+          id,
           index: 0,
           length: 0,
           data: {
@@ -67,11 +74,43 @@ class Connection {
   }
 
   on(cb: (data: DataAction['data']) => any) {
-    this.receiver.on((data) => {
+    const buffersMap = new Map<string, string>();
+    this.receiver.on(async (data) => {
       if (data.data.oneofKind === 'text') {
-        data.data.text = decodeURIComponent(data.data.text);
+        buffersMap.set(data.id + ':length', data.length.toString());
+        buffersMap.set(data.id + ':' + data.index, data.data.text);
+        if (data.index + 1 === data.length) {
+          setTimeout(async () => {
+            if (data.data.oneofKind === 'text') {
+              const length = buffersMap.get(data.id + ':length');
+              if (length) {
+                for (let c = 0; c < 100; c++) {
+                  let isEnd = false;
+                  for (let i = 0; i < parseInt(length); i++) {
+                    if (!buffersMap.has(data.id + ':' + i)) {
+                      isEnd = true;
+                      break;
+                    }
+                  }
+                  if (!isEnd) {
+                    break;
+                  }
+                  await new Promise((resolve) => setTimeout(resolve, 1000));
+                }
+                const buffers: string[] = [];
+                for (let i = 0; i < parseInt(length); i++) {
+                  buffers.push(buffersMap.get(data.id + ':' + i) || '');
+                  buffersMap.delete(data.id + ':' + i);
+                }
+                buffersMap.delete(data.id + ':length');
+                const buffer = buffers.join('');
+                data.data.text = decodeURIComponent(buffer);
+                cb(data.data);
+              }
+            }
+          }, 100);
+        }
       }
-      cb(data.data);
     });
   }
 }
@@ -120,9 +159,6 @@ export class UdpChannel {
                 status: ChannelStatus.connected,
               });
               connection.sender.on((data) => {
-                if (data.data.oneofKind === 'text') {
-                  data.data.text = encodeURIComponent(data.data.text);
-                }
                 udp.send({
                   address: res.remoteInfo.address,
                   port: res.remoteInfo.port,
@@ -209,12 +245,7 @@ export class UdpChannel {
           const id = data.id;
           if (this.connectionClient.has(id)) {
             const client = this.connectionClient.get(id) as Connection;
-            if (data.action.data.data.oneofKind === 'text') {
-              data.action.data.data.text = decodeURIComponent(
-                data.action.data.data.text,
-              );
-            }
-            client.receiver.emit(data.action.data);
+            client.receiver.emitSync(data.action.data);
           }
         }
       });

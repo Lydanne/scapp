@@ -29,12 +29,19 @@ message DisconnectAction{
 }
 
 message DataAction{
-    uint32 index = 1;
-    uint32 length = 2;
+    uint32 id = 1;
+    uint32 index = 2;
+    uint32 length = 3;
     oneof data {
-        string text = 3;
-        bytes binary = 4;
+        string text = 4;
+        File file = 5;
     }
+}
+
+message File{
+    string name = 1;
+    string type = 2;
+    bytes data = 3;
 }
 
 // enum DataMethod {
