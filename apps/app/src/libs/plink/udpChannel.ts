@@ -63,7 +63,7 @@ class Connection {
       }
       case 'file': {
         const path = data.path;
-        const name = data.name;
+        const name = '1.mp3'; //data.name;
         const size = data.size; // B
 
         const length = Math.ceil(size / BLOCK_SIZE);
@@ -72,32 +72,37 @@ class Connection {
         fsm.open({
           filePath: path,
           success: async ({ fd }) => {
-            const buffer = new ArrayBuffer(size);
+            const ts = Date.now();
             for (let index = 0; index < length; index++) {
               const offset = index * BLOCK_SIZE;
-              const length = Math.min(size - offset, BLOCK_SIZE);
-              fsm.read({
-                fd,
-                arrayBuffer: buffer,
-                position: offset,
+              const offsetLen = Math.min(size - offset, BLOCK_SIZE);
+              const buffer = new ArrayBuffer(offsetLen);
+
+              await new Promise((resolve) => {
+                fsm.read({
+                  fd,
+                  arrayBuffer: buffer,
+                  position: offset,
+                  length: offsetLen,
+                  success: resolve,
+                });
+              });
+              // console.log(offset, offsetLen, buffer);
+              this.sender.emit({
+                id,
+                index,
                 length,
-                success: (res) => {
-                  this.sender.emit({
-                    id,
-                    index,
-                    length,
-                    data: {
-                      oneofKind: type,
-                      file: {
-                        name,
-                        type: 'application/octet-stream',
-                        data: new Uint8Array(buffer),
-                      },
-                    },
-                  });
+                data: {
+                  oneofKind: type,
+                  file: {
+                    name,
+                    type: 'application/octet-stream',
+                    data: new Uint8Array(buffer),
+                  },
                 },
               });
             }
+            console.log('send file done', [id, length], Date.now() - ts);
           },
         });
         break;
