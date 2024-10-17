@@ -1,5 +1,6 @@
 import Taro from '@tarojs/taro';
 
+import { Base64 } from '../shared/base64';
 import { Emitter } from '../shared/emitter';
 import { uuid } from '../shared/uuid';
 import { Channel, type DataAction } from './payload';
@@ -43,7 +44,7 @@ class Connection {
     const id = Date.now() % 1000000000;
     switch (type) {
       case 'text': {
-        const text = encodeURIComponent(data);
+        const text = Base64.encode(data);
         const length = Math.ceil(text.length / 2048);
         for (let index = 0; index < length; index++) {
           this.sender.emitSync({
@@ -104,7 +105,7 @@ class Connection {
                 }
                 buffersMap.delete(data.id + ':length');
                 const buffer = buffers.join('');
-                data.data.text = decodeURIComponent(buffer);
+                data.data.text = Base64.decode(buffer);
                 cb(data.data);
               }
             }
@@ -144,7 +145,7 @@ export class UdpChannel {
 
       udp.onMessage((res) => {
         const data = fromBinary<Channel>(Channel, res.message);
-        console.log('[UdpChannel]', 'onMessage', res, data);
+        console.log('[UdpChannel]', 'onMessage', data);
         if (data.action?.oneofKind === 'connect') {
           const id = data.id;
           if (this.connectionClient.has(id)) {
