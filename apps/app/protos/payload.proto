@@ -15,6 +15,7 @@ message Channel{
         ConnectAction connect = 4;
         DisconnectAction disconnect = 5;
         DataAction data = 6;
+        SyncAction sync = 7;
     }
 }
 
@@ -31,10 +32,9 @@ message DisconnectAction{
 message DataAction{
     uint32 id = 1;
     uint32 index = 2;
-    uint32 length = 3;
     oneof data {
-        string text = 4;
-        File file = 5;
+        string text = 3;
+        File file = 4;
     }
 }
 
@@ -43,6 +43,41 @@ message File{
     string type = 2;
     bytes data = 3;
 }
+
+message SyncAction{
+    uint32 id = 1;
+    oneof signal {
+        SynReadySignal synReady = 2;
+        AckReadySignal ackReady = 3;
+        SynStageSignal synStage = 4;
+        AckStageSignal ackStage = 5;
+
+    }
+}
+
+message SynReadySignal{
+    uint32 length = 1;
+    uint32 size = 2;
+    string sign = 3;
+}
+
+message AckReadySignal{
+    uint32 length = 1;
+    uint32 size = 2;
+    string sign = 3;
+}
+
+message SynStageSignal{
+    uint32 sendCount = 1;
+    uint32 sendSize = 2;
+}
+
+message AckStageSignal{
+    uint32 recCount = 1;
+    uint32 recSize = 2;
+    repeated uint32 lostIndexes= 3;
+}
+
 
 // enum DataMethod {
 //     REQUEST = 0;

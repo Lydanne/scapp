@@ -73,6 +73,11 @@ export class Emitter<CB extends (...args: any[]) => void> {
     });
   }
 
+  async first(): Promise<ParamsType<CB>[0]> {
+    const [first] = await this.wait();
+    return first;
+  }
+
   off(cb: CB) {
     this.events.delete(cb);
   }

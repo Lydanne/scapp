@@ -3,7 +3,12 @@ import Taro from '@tarojs/taro';
 import { Base64 } from '../shared/base64';
 import { Emitter } from '../shared/emitter';
 import { uuid } from '../shared/uuid';
-import { Channel, type DataAction } from './payload';
+import {
+  type AckReadySignal,
+  Channel,
+  type DataAction,
+  type SyncAction,
+} from './payload';
 import { fromBinary, toBinary } from './shared';
 
 const BLOCK_SIZE = 2048;
@@ -35,6 +40,9 @@ class Connection {
   sender = new Emitter<(data: DataAction) => any>();
   receiver = new Emitter<(data: DataAction) => any>();
 
+  signalSender = new Emitter<(data: SyncAction) => any>();
+  signalReceiver = new Emitter<(data: SyncAction) => any>();
+
   constructor(data: ConnectionProps) {
     this.id = data.id;
     this.status = data.status;
@@ -42,17 +50,33 @@ class Connection {
     this.seq = data.seq;
   }
 
-  send(type: DataAction['data']['oneofKind'], data: any) {
+  async send(type: DataAction['data']['oneofKind'], data: any) {
     const id = Date.now() % 1000000000;
     switch (type) {
       case 'text': {
         const text = Base64.encode(data);
         const length = Math.ceil(text.length / BLOCK_SIZE);
+
+        this.signalSender.emit({
+          id,
+          signal: {
+            oneofKind: 'synReady',
+            synReady: {
+              size: text.length,
+              length,
+              sign: '',
+            },
+          },
+        });
+        const ackReady = await this.signalReceiver.first();
+        if (ackReady.signal.oneofKind !== 'ackReady') {
+          throw new Error('ackReady error');
+        }
+
         for (let index = 0; index < length; index++) {
           this.sender.emitSync({
             id,
             index,
-            length,
             data: {
               oneofKind: type,
               text: text.slice(index * BLOCK_SIZE, (index + 1) * BLOCK_SIZE),
@@ -63,7 +87,7 @@ class Connection {
       }
       case 'file': {
         const path = data.path;
-        const name = '1.mp3'; //data.name;
+        const name = encodeURIComponent(data.name);
         const size = data.size; // B
 
         const length = Math.ceil(size / BLOCK_SIZE);
@@ -73,6 +97,32 @@ class Connection {
           filePath: path,
           success: async ({ fd }) => {
             const ts = Date.now();
+            const sign = await new Promise<string>((resolve, reject) => {
+              fsm.getFileInfo({
+                filePath: path,
+                digestAlgorithm: 'md5',
+                success: ({ digest }) => {
+                  resolve(digest as string);
+                },
+                fail: reject,
+              });
+            });
+            this.signalSender.emit({
+              id,
+              signal: {
+                oneofKind: 'synReady',
+                synReady: {
+                  size,
+                  length,
+                  sign,
+                },
+              },
+            });
+            const ackReady = await this.signalReceiver.first();
+            if (ackReady.signal.oneofKind !== 'ackReady') {
+              throw new Error('ackReady error');
+            }
+
             for (let index = 0; index < length; index++) {
               const offset = index * BLOCK_SIZE;
               const offsetLen = Math.min(size - offset, BLOCK_SIZE);
@@ -91,7 +141,6 @@ class Connection {
               this.sender.emit({
                 id,
                 index,
-                length,
                 data: {
                   oneofKind: type,
                   file: {
@@ -111,24 +160,49 @@ class Connection {
   }
 
   on(cb: (data: DataAction['data']) => any) {
-    const buffersMap = new Map<string, any>();
-    this.receiver.on(async (data) => {
-      buffersMap.set(data.id + ':length', data.length.toString());
-      if (data.data.oneofKind === 'text') {
-        buffersMap.set(data.id + ':' + data.index, data.data.text);
-      } else if (data.data.oneofKind === 'file') {
-        const file = data.data.file;
-        buffersMap.set(data.id + ':' + data.index, file.data);
-        buffersMap.set(data.id + ':name', file.name);
-        buffersMap.set(data.id + ':type', file.type);
+    const pipeMap = new Map<
+      number,
+      {
+        buffer: any[];
+        info: AckReadySignal;
       }
-      if (data.index + 1 === data.length) {
+    >();
+    this.signalReceiver.on(async (data) => {
+      if (data.signal.oneofKind === 'synReady') {
+        pipeMap.set(data.id, {
+          buffer: new Array(data.signal.synReady.length),
+          info: data.signal.synReady,
+        });
+        this.signalSender.emitSync({
+          id: data.id,
+          signal: {
+            oneofKind: 'ackReady',
+            ackReady: {
+              length: data.signal.synReady.length,
+              sign: data.signal.synReady.sign,
+              size: data.signal.synReady.size,
+            },
+          },
+        });
+      }
+    });
+    this.receiver.on(async (data) => {
+      const pipe = pipeMap.get(data.id);
+      if (!pipe) {
+        console.warn('pipe not found', data.id);
+        return;
+      }
+      if (data.data.oneofKind === 'text') {
+        pipe.buffer[data.index] = data.data.text;
+      } else if (data.data.oneofKind === 'file') {
+      }
+      if (data.index + 1 === pipe.info.length) {
         setTimeout(async () => {
-          const length = buffersMap.get(data.id + ':length') || 0;
+          const length = pipe.info.length;
           for (let c = 0; c < 100; c++) {
             let isEnd = false;
-            for (let i = 0; i < parseInt(length); i++) {
-              if (!buffersMap.has(data.id + ':' + i)) {
+            for (let i = 0; i < length; i++) {
+              if (!pipe.buffer[i]) {
                 isEnd = true;
                 break;
               }
@@ -140,13 +214,12 @@ class Connection {
           }
           if (data.data.oneofKind === 'text') {
             const buffers: string[] = [];
-            for (let i = 0; i < parseInt(length); i++) {
-              buffers.push(buffersMap.get(data.id + ':' + i) || '');
-              buffersMap.delete(data.id + ':' + i);
+            for (let i = 0; i < length; i++) {
+              buffers.push(pipe.buffer[i]);
             }
-            buffersMap.delete(data.id + ':length');
             const buffer = buffers.join('');
             data.data.text = Base64.decode(buffer);
+            pipeMap.delete(data.id);
             cb(data.data);
           } else if (data.data.oneofKind === 'file') {
           }
@@ -199,21 +272,6 @@ export class UdpChannel {
                 ...client,
                 status: ChannelStatus.connected,
               });
-              connection.sender.on((data) => {
-                udp.send({
-                  address: res.remoteInfo.address,
-                  port: res.remoteInfo.port,
-                  message: toBinary(Channel, {
-                    version: 1,
-                    id: id,
-                    ts: BigInt(Date.now()),
-                    action: {
-                      oneofKind: 'data',
-                      data: data,
-                    },
-                  }),
-                });
-              });
               this.connectionClient.set(id, connection);
               this.connectionEmitter.emitLifeCycle(connection);
               if (data.action.connect.seq != 0) {
@@ -234,6 +292,37 @@ export class UdpChannel {
                   }),
                 });
               }
+
+              connection.sender.on((data) => {
+                udp.send({
+                  address: res.remoteInfo.address,
+                  port: res.remoteInfo.port,
+                  message: toBinary(Channel, {
+                    version: 1,
+                    id: id,
+                    ts: BigInt(Date.now()),
+                    action: {
+                      oneofKind: 'data',
+                      data: data,
+                    },
+                  }),
+                });
+              });
+              connection.signalSender.on((data) => {
+                udp.send({
+                  address: res.remoteInfo.address,
+                  port: res.remoteInfo.port,
+                  message: toBinary(Channel, {
+                    version: 1,
+                    id: id,
+                    ts: BigInt(Date.now()),
+                    action: {
+                      oneofKind: 'sync',
+                      sync: data,
+                    },
+                  }),
+                });
+              });
             } else {
               console.log('[UdpChannel]', 'onMessage', 'seq error');
               udp.send({
@@ -287,6 +376,12 @@ export class UdpChannel {
           if (this.connectionClient.has(id)) {
             const client = this.connectionClient.get(id) as Connection;
             client.receiver.emitSync(data.action.data);
+          }
+        } else if (data.action.oneofKind === 'sync') {
+          const id = data.id;
+          if (this.connectionClient.has(id)) {
+            const client = this.connectionClient.get(id) as Connection;
+            client.signalReceiver.emitSync(data.action.sync);
           }
         }
       });
