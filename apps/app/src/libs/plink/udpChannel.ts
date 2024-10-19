@@ -93,67 +93,71 @@ class Connection {
         const length = Math.ceil(size / BLOCK_SIZE);
 
         const fsm = Taro.getFileSystemManager();
-        fsm.open({
-          filePath: path,
-          success: async ({ fd }) => {
-            const ts = Date.now();
-            const sign = await new Promise<string>((resolve, reject) => {
-              fsm.getFileInfo({
-                filePath: path,
-                digestAlgorithm: 'md5',
-                success: ({ digest }) => {
-                  resolve(digest as string);
-                },
-                fail: reject,
-              });
-            });
-            this.signalSender.emit({
-              id,
-              signal: {
-                oneofKind: 'synReady',
-                synReady: {
-                  size,
-                  length,
-                  sign,
-                },
-              },
-            });
-            const ackReady = await this.signalReceiver.first();
-            if (ackReady.signal.oneofKind !== 'ackReady') {
-              throw new Error('ackReady error');
-            }
-
-            for (let index = 0; index < length; index++) {
-              const offset = index * BLOCK_SIZE;
-              const offsetLen = Math.min(size - offset, BLOCK_SIZE);
-              const buffer = new ArrayBuffer(offsetLen);
-
-              await new Promise((resolve) => {
-                fsm.read({
-                  fd,
-                  arrayBuffer: buffer,
-                  position: offset,
-                  length: offsetLen,
-                  success: resolve,
-                });
-              });
-              // console.log(offset, offsetLen, buffer);
-              this.sender.emit({
-                id,
-                index,
-                data: {
-                  oneofKind: type,
-                  file: {
-                    name,
-                    type: 'application/octet-stream',
-                    data: new Uint8Array(buffer),
-                  },
-                },
-              });
-            }
-            console.log('send file done', [id, length], Date.now() - ts);
+        const fd: string = await new Promise((resolve, reject) => {
+          fsm.open({
+            filePath: path,
+            success: async ({ fd }) => {
+              resolve(fd);
+            },
+            fail: reject,
+          });
+        });
+        const ts = Date.now();
+        const sign = await new Promise<string>((resolve, reject) => {
+          fsm.getFileInfo({
+            filePath: path,
+            digestAlgorithm: 'md5',
+            success: ({ digest }) => {
+              resolve(digest as string);
+            },
+            fail: reject,
+          });
+        });
+        this.signalSender.emit({
+          id,
+          signal: {
+            oneofKind: 'synReady',
+            synReady: {
+              size,
+              length,
+              sign,
+            },
           },
         });
+        const ackReady = await this.signalReceiver.first();
+        if (ackReady.signal.oneofKind !== 'ackReady') {
+          throw new Error('ackReady error');
+        }
+
+        for (let index = 0; index < length; index++) {
+          const offset = index * BLOCK_SIZE;
+          const offsetLen = Math.min(size - offset, BLOCK_SIZE);
+          const buffer = new ArrayBuffer(offsetLen);
+
+          await new Promise((resolve) => {
+            fsm.read({
+              fd,
+              arrayBuffer: buffer,
+              position: offset,
+              length: offsetLen,
+              success: resolve,
+            });
+          });
+          // console.log(offset, offsetLen, buffer);
+          this.sender.emit({
+            id,
+            index,
+            data: {
+              oneofKind: type,
+              file: {
+                name,
+                type: 'application/octet-stream',
+                data: new Uint8Array(buffer),
+              },
+            },
+          });
+        }
+        console.log('send file done', [id, length], Date.now() - ts);
         break;
       }
     }
