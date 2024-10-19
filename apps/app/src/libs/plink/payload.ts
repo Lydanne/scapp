@@ -136,30 +136,13 @@ export interface DataAction {
     | {
         oneofKind: 'file';
         /**
-         * @generated from protobuf field: File file = 4;
+         * @generated from protobuf field: bytes file = 4;
          */
-        file: File;
+        file: Uint8Array;
       }
     | {
         oneofKind: undefined;
       };
-}
-/**
- * @generated from protobuf message File
- */
-export interface File {
-  /**
-   * @generated from protobuf field: string name = 1;
-   */
-  name: string;
-  /**
-   * @generated from protobuf field: string type = 2;
-   */
-  type: string;
-  /**
-   * @generated from protobuf field: bytes data = 3;
-   */
-  data: Uint8Array;
 }
 /**
  * @generated from protobuf message SyncAction
@@ -188,18 +171,11 @@ export interface SyncAction {
         ackReady: AckReadySignal;
       }
     | {
-        oneofKind: 'synStage';
+        oneofKind: 'ackDataFinish';
         /**
-         * @generated from protobuf field: SynStageSignal synStage = 4;
+         * @generated from protobuf field: AckDtaFinish ackDataFinish = 4;
          */
-        synStage: SynStageSignal;
-      }
-    | {
-        oneofKind: 'ackStage';
-        /**
-         * @generated from protobuf field: AckStageSignal ackStage = 5;
-         */
-        ackStage: AckStageSignal;
+        ackDataFinish: AckDtaFinish;
       }
     | {
         oneofKind: undefined;
@@ -221,6 +197,14 @@ export interface SynReadySignal {
    * @generated from protobuf field: string sign = 3;
    */
   sign: string;
+  /**
+   * @generated from protobuf field: string name = 4;
+   */
+  name: string;
+  /**
+   * @generated from protobuf field: string type = 5;
+   */
+  type: string;
 }
 /**
  * @generated from protobuf message AckReadySignal
@@ -240,34 +224,30 @@ export interface AckReadySignal {
   sign: string;
 }
 /**
- * @generated from protobuf message SynStageSignal
+ * @generated from protobuf message AckDtaFinish
  */
-export interface SynStageSignal {
+export interface AckDtaFinish {
   /**
-   * @generated from protobuf field: uint32 sendCount = 1;
+   * @generated from protobuf field: uint32 index = 1;
    */
-  sendCount: number;
+  index: number;
   /**
-   * @generated from protobuf field: uint32 sendSize = 2;
+   * @generated from protobuf field: FinishStatus status = 2;
    */
-  sendSize: number;
+  status: FinishStatus;
 }
 /**
- * @generated from protobuf message AckStageSignal
+ * @generated from protobuf enum FinishStatus
  */
-export interface AckStageSignal {
+export enum FinishStatus {
   /**
-   * @generated from protobuf field: uint32 recCount = 1;
+   * @generated from protobuf enum value: Ok = 0;
    */
-  recCount: number;
+  Ok = 0,
   /**
-   * @generated from protobuf field: uint32 recSize = 2;
+   * @generated from protobuf enum value: Err = 1;
    */
-  recSize: number;
-  /**
-   * @generated from protobuf field: repeated uint32 lostIndexes = 3;
-   */
-  lostIndexes: number[];
+  Err = 1,
 }
 // @generated message type with reflection information, may provide speed optimized methods
 class Plink$Type extends MessageType<Plink> {
@@ -720,7 +700,13 @@ class DataAction$Type extends MessageType<DataAction> {
         oneof: 'data',
         T: 9 /*ScalarType.STRING*/,
       },
-      { no: 4, name: 'file', kind: 'message', oneof: 'data', T: () => File },
+      {
+        no: 4,
+        name: 'file',
+        kind: 'scalar',
+        oneof: 'data',
+        T: 12 /*ScalarType.BYTES*/,
+      },
     ]);
   }
   create(value?: PartialMessage<DataAction>): DataAction {
@@ -755,15 +741,10 @@ class DataAction$Type extends MessageType<DataAction> {
             text: reader.string(),
           };
           break;
-        case /* File file */ 4:
+        case /* bytes file */ 4:
           message.data = {
             oneofKind: 'file',
-            file: File.internalBinaryRead(
-              reader,
-              reader.uint32(),
-              options,
-              (message.data as any).file,
-            ),
+            file: reader.bytes(),
           };
           break;
         default:
@@ -798,13 +779,9 @@ class DataAction$Type extends MessageType<DataAction> {
     /* string text = 3; */
     if (message.data.oneofKind === 'text')
       writer.tag(3, WireType.LengthDelimited).string(message.data.text);
-    /* File file = 4; */
+    /* bytes file = 4; */
     if (message.data.oneofKind === 'file')
-      File.internalBinaryWrite(
-        message.data.file,
-        writer.tag(4, WireType.LengthDelimited).fork(),
-        options,
-      ).join();
+      writer.tag(4, WireType.LengthDelimited).bytes(message.data.file);
     let u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
@@ -819,90 +796,6 @@ class DataAction$Type extends MessageType<DataAction> {
  * @generated MessageType for protobuf message DataAction
  */
 export const DataAction = new DataAction$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class File$Type extends MessageType<File> {
-  constructor() {
-    super('File', [
-      { no: 1, name: 'name', kind: 'scalar', T: 9 /*ScalarType.STRING*/ },
-      { no: 2, name: 'type', kind: 'scalar', T: 9 /*ScalarType.STRING*/ },
-      { no: 3, name: 'data', kind: 'scalar', T: 12 /*ScalarType.BYTES*/ },
-    ]);
-  }
-  create(value?: PartialMessage<File>): File {
-    const message = globalThis.Object.create(this.messagePrototype!);
-    message.name = '';
-    message.type = '';
-    message.data = new Uint8Array(0);
-    if (value !== undefined) reflectionMergePartial<File>(this, message, value);
-    return message;
-  }
-  internalBinaryRead(
-    reader: IBinaryReader,
-    length: number,
-    options: BinaryReadOptions,
-    target?: File,
-  ): File {
-    let message = target ?? this.create(),
-      end = reader.pos + length;
-    while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
-      switch (fieldNo) {
-        case /* string name */ 1:
-          message.name = reader.string();
-          break;
-        case /* string type */ 2:
-          message.type = reader.string();
-          break;
-        case /* bytes data */ 3:
-          message.data = reader.bytes();
-          break;
-        default:
-          let u = options.readUnknownField;
-          if (u === 'throw')
-            throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
-            );
-          let d = reader.skip(wireType);
-          if (u !== false)
-            (u === true ? UnknownFieldHandler.onRead : u)(
-              this.typeName,
-              message,
-              fieldNo,
-              wireType,
-              d,
-            );
-      }
-    }
-    return message;
-  }
-  internalBinaryWrite(
-    message: File,
-    writer: IBinaryWriter,
-    options: BinaryWriteOptions,
-  ): IBinaryWriter {
-    /* string name = 1; */
-    if (message.name !== '')
-      writer.tag(1, WireType.LengthDelimited).string(message.name);
-    /* string type = 2; */
-    if (message.type !== '')
-      writer.tag(2, WireType.LengthDelimited).string(message.type);
-    /* bytes data = 3; */
-    if (message.data.length)
-      writer.tag(3, WireType.LengthDelimited).bytes(message.data);
-    let u = options.writeUnknownFields;
-    if (u !== false)
-      (u == true ? UnknownFieldHandler.onWrite : u)(
-        this.typeName,
-        message,
-        writer,
-      );
-    return writer;
-  }
-}
-/**
- * @generated MessageType for protobuf message File
- */
-export const File = new File$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class SyncAction$Type extends MessageType<SyncAction> {
   constructor() {
@@ -924,17 +817,10 @@ class SyncAction$Type extends MessageType<SyncAction> {
       },
       {
         no: 4,
-        name: 'synStage',
+        name: 'ackDataFinish',
         kind: 'message',
         oneof: 'signal',
-        T: () => SynStageSignal,
-      },
-      {
-        no: 5,
-        name: 'ackStage',
-        kind: 'message',
-        oneof: 'signal',
-        T: () => AckStageSignal,
+        T: () => AckDtaFinish,
       },
     ]);
   }
@@ -982,25 +868,14 @@ class SyncAction$Type extends MessageType<SyncAction> {
             ),
           };
           break;
-        case /* SynStageSignal synStage */ 4:
+        case /* AckDtaFinish ackDataFinish */ 4:
           message.signal = {
-            oneofKind: 'synStage',
-            synStage: SynStageSignal.internalBinaryRead(
+            oneofKind: 'ackDataFinish',
+            ackDataFinish: AckDtaFinish.internalBinaryRead(
               reader,
               reader.uint32(),
               options,
-              (message.signal as any).synStage,
-            ),
-          };
-          break;
-        case /* AckStageSignal ackStage */ 5:
-          message.signal = {
-            oneofKind: 'ackStage',
-            ackStage: AckStageSignal.internalBinaryRead(
-              reader,
-              reader.uint32(),
-              options,
-              (message.signal as any).ackStage,
+              (message.signal as any).ackDataFinish,
             ),
           };
           break;
@@ -1044,18 +919,11 @@ class SyncAction$Type extends MessageType<SyncAction> {
         writer.tag(3, WireType.LengthDelimited).fork(),
         options,
       ).join();
-    /* SynStageSignal synStage = 4; */
-    if (message.signal.oneofKind === 'synStage')
-      SynStageSignal.internalBinaryWrite(
-        message.signal.synStage,
+    /* AckDtaFinish ackDataFinish = 4; */
+    if (message.signal.oneofKind === 'ackDataFinish')
+      AckDtaFinish.internalBinaryWrite(
+        message.signal.ackDataFinish,
         writer.tag(4, WireType.LengthDelimited).fork(),
-        options,
-      ).join();
-    /* AckStageSignal ackStage = 5; */
-    if (message.signal.oneofKind === 'ackStage')
-      AckStageSignal.internalBinaryWrite(
-        message.signal.ackStage,
-        writer.tag(5, WireType.LengthDelimited).fork(),
         options,
       ).join();
     let u = options.writeUnknownFields;
@@ -1079,6 +947,8 @@ class SynReadySignal$Type extends MessageType<SynReadySignal> {
       { no: 1, name: 'length', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
       { no: 2, name: 'size', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
       { no: 3, name: 'sign', kind: 'scalar', T: 9 /*ScalarType.STRING*/ },
+      { no: 4, name: 'name', kind: 'scalar', T: 9 /*ScalarType.STRING*/ },
+      { no: 5, name: 'type', kind: 'scalar', T: 9 /*ScalarType.STRING*/ },
     ]);
   }
   create(value?: PartialMessage<SynReadySignal>): SynReadySignal {
@@ -1086,6 +956,8 @@ class SynReadySignal$Type extends MessageType<SynReadySignal> {
     message.length = 0;
     message.size = 0;
     message.sign = '';
+    message.name = '';
+    message.type = '';
     if (value !== undefined)
       reflectionMergePartial<SynReadySignal>(this, message, value);
     return message;
@@ -1109,6 +981,12 @@ class SynReadySignal$Type extends MessageType<SynReadySignal> {
           break;
         case /* string sign */ 3:
           message.sign = reader.string();
+          break;
+        case /* string name */ 4:
+          message.name = reader.string();
+          break;
+        case /* string type */ 5:
+          message.type = reader.string();
           break;
         default:
           let u = options.readUnknownField;
@@ -1142,6 +1020,12 @@ class SynReadySignal$Type extends MessageType<SynReadySignal> {
     /* string sign = 3; */
     if (message.sign !== '')
       writer.tag(3, WireType.LengthDelimited).string(message.sign);
+    /* string name = 4; */
+    if (message.name !== '')
+      writer.tag(4, WireType.LengthDelimited).string(message.name);
+    /* string type = 5; */
+    if (message.type !== '')
+      writer.tag(5, WireType.LengthDelimited).string(message.type);
     let u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
@@ -1241,128 +1125,42 @@ class AckReadySignal$Type extends MessageType<AckReadySignal> {
  */
 export const AckReadySignal = new AckReadySignal$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class SynStageSignal$Type extends MessageType<SynStageSignal> {
+class AckDtaFinish$Type extends MessageType<AckDtaFinish> {
   constructor() {
-    super('SynStageSignal', [
-      { no: 1, name: 'sendCount', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
-      { no: 2, name: 'sendSize', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
-    ]);
-  }
-  create(value?: PartialMessage<SynStageSignal>): SynStageSignal {
-    const message = globalThis.Object.create(this.messagePrototype!);
-    message.sendCount = 0;
-    message.sendSize = 0;
-    if (value !== undefined)
-      reflectionMergePartial<SynStageSignal>(this, message, value);
-    return message;
-  }
-  internalBinaryRead(
-    reader: IBinaryReader,
-    length: number,
-    options: BinaryReadOptions,
-    target?: SynStageSignal,
-  ): SynStageSignal {
-    let message = target ?? this.create(),
-      end = reader.pos + length;
-    while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
-      switch (fieldNo) {
-        case /* uint32 sendCount */ 1:
-          message.sendCount = reader.uint32();
-          break;
-        case /* uint32 sendSize */ 2:
-          message.sendSize = reader.uint32();
-          break;
-        default:
-          let u = options.readUnknownField;
-          if (u === 'throw')
-            throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
-            );
-          let d = reader.skip(wireType);
-          if (u !== false)
-            (u === true ? UnknownFieldHandler.onRead : u)(
-              this.typeName,
-              message,
-              fieldNo,
-              wireType,
-              d,
-            );
-      }
-    }
-    return message;
-  }
-  internalBinaryWrite(
-    message: SynStageSignal,
-    writer: IBinaryWriter,
-    options: BinaryWriteOptions,
-  ): IBinaryWriter {
-    /* uint32 sendCount = 1; */
-    if (message.sendCount !== 0)
-      writer.tag(1, WireType.Varint).uint32(message.sendCount);
-    /* uint32 sendSize = 2; */
-    if (message.sendSize !== 0)
-      writer.tag(2, WireType.Varint).uint32(message.sendSize);
-    let u = options.writeUnknownFields;
-    if (u !== false)
-      (u == true ? UnknownFieldHandler.onWrite : u)(
-        this.typeName,
-        message,
-        writer,
-      );
-    return writer;
-  }
-}
-/**
- * @generated MessageType for protobuf message SynStageSignal
- */
-export const SynStageSignal = new SynStageSignal$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class AckStageSignal$Type extends MessageType<AckStageSignal> {
-  constructor() {
-    super('AckStageSignal', [
-      { no: 1, name: 'recCount', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
-      { no: 2, name: 'recSize', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
+    super('AckDtaFinish', [
+      { no: 1, name: 'index', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
       {
-        no: 3,
-        name: 'lostIndexes',
-        kind: 'scalar',
-        repeat: 1 /*RepeatType.PACKED*/,
-        T: 13 /*ScalarType.UINT32*/,
+        no: 2,
+        name: 'status',
+        kind: 'enum',
+        T: () => ['FinishStatus', FinishStatus],
       },
     ]);
   }
-  create(value?: PartialMessage<AckStageSignal>): AckStageSignal {
+  create(value?: PartialMessage<AckDtaFinish>): AckDtaFinish {
     const message = globalThis.Object.create(this.messagePrototype!);
-    message.recCount = 0;
-    message.recSize = 0;
-    message.lostIndexes = [];
+    message.index = 0;
+    message.status = 0;
     if (value !== undefined)
-      reflectionMergePartial<AckStageSignal>(this, message, value);
+      reflectionMergePartial<AckDtaFinish>(this, message, value);
     return message;
   }
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: AckStageSignal,
-  ): AckStageSignal {
+    target?: AckDtaFinish,
+  ): AckDtaFinish {
     let message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
       let [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
-        case /* uint32 recCount */ 1:
-          message.recCount = reader.uint32();
+        case /* uint32 index */ 1:
+          message.index = reader.uint32();
           break;
-        case /* uint32 recSize */ 2:
-          message.recSize = reader.uint32();
-          break;
-        case /* repeated uint32 lostIndexes */ 3:
-          if (wireType === WireType.LengthDelimited)
-            for (let e = reader.int32() + reader.pos; reader.pos < e; )
-              message.lostIndexes.push(reader.uint32());
-          else message.lostIndexes.push(reader.uint32());
+        case /* FinishStatus status */ 2:
+          message.status = reader.int32();
           break;
         default:
           let u = options.readUnknownField;
@@ -1384,23 +1182,16 @@ class AckStageSignal$Type extends MessageType<AckStageSignal> {
     return message;
   }
   internalBinaryWrite(
-    message: AckStageSignal,
+    message: AckDtaFinish,
     writer: IBinaryWriter,
     options: BinaryWriteOptions,
   ): IBinaryWriter {
-    /* uint32 recCount = 1; */
-    if (message.recCount !== 0)
-      writer.tag(1, WireType.Varint).uint32(message.recCount);
-    /* uint32 recSize = 2; */
-    if (message.recSize !== 0)
-      writer.tag(2, WireType.Varint).uint32(message.recSize);
-    /* repeated uint32 lostIndexes = 3; */
-    if (message.lostIndexes.length) {
-      writer.tag(3, WireType.LengthDelimited).fork();
-      for (let i = 0; i < message.lostIndexes.length; i++)
-        writer.uint32(message.lostIndexes[i]);
-      writer.join();
-    }
+    /* uint32 index = 1; */
+    if (message.index !== 0)
+      writer.tag(1, WireType.Varint).uint32(message.index);
+    /* FinishStatus status = 2; */
+    if (message.status !== 0)
+      writer.tag(2, WireType.Varint).int32(message.status);
     let u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
@@ -1412,6 +1203,6 @@ class AckStageSignal$Type extends MessageType<AckStageSignal> {
   }
 }
 /**
- * @generated MessageType for protobuf message AckStageSignal
+ * @generated MessageType for protobuf message AckDtaFinish
  */
-export const AckStageSignal = new AckStageSignal$Type();
+export const AckDtaFinish = new AckDtaFinish$Type();

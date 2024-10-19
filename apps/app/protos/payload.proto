@@ -34,14 +34,8 @@ message DataAction{
     uint32 index = 2;
     oneof data {
         string text = 3;
-        File file = 4;
+        bytes file = 4;
     }
-}
-
-message File{
-    string name = 1;
-    string type = 2;
-    bytes data = 3;
 }
 
 message SyncAction{
@@ -49,8 +43,7 @@ message SyncAction{
     oneof signal {
         SynReadySignal synReady = 2;
         AckReadySignal ackReady = 3;
-        SynStageSignal synStage = 4;
-        AckStageSignal ackStage = 5;
+        AckDtaFinish ackDataFinish = 4;
 
     }
 }
@@ -59,6 +52,8 @@ message SynReadySignal{
     uint32 length = 1;
     uint32 size = 2;
     string sign = 3;
+    string name = 4;
+    string type = 5;
 }
 
 message AckReadySignal{
@@ -67,21 +62,15 @@ message AckReadySignal{
     string sign = 3;
 }
 
-message SynStageSignal{
-    uint32 sendCount = 1;
-    uint32 sendSize = 2;
-}
-
-message AckStageSignal{
-    uint32 recCount = 1;
-    uint32 recSize = 2;
-    repeated uint32 lostIndexes= 3;
+message AckDtaFinish{
+    uint32 index = 1;
+    FinishStatus status = 2;
 }
 
 
-// enum DataMethod {
-//     REQUEST = 0;
-//     RESPONSE = 1;
-// }
+enum FinishStatus {
+    Ok = 0;
+    Err = 1;
+}
 
 

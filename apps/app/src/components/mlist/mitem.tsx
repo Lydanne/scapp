@@ -1,4 +1,5 @@
 import { View } from '@tarojs/components';
+import Taro from '@tarojs/taro';
 
 import Style from './mitem.module.scss';
 
@@ -12,6 +13,15 @@ export type MitemProps = {
 };
 
 export default function Mitem(props: MitemProps) {
+  const onOpenFile = (item: any, index: number) => {
+    console.log('onOpenFile', [item, index]);
+    Taro.shareFileMessage({
+      fileName: item.content.name,
+      filePath: item.content.path,
+      success() {},
+      fail: console.error,
+    });
+  };
   return (
     <View className={Style['item']}>
       <View className={Style['item-author']}></View>
@@ -28,7 +38,10 @@ export default function Mitem(props: MitemProps) {
                 <View className={Style['image']}></View>
               )}
               {item.type === 'file' && (
-                <View className={Style['file']}>
+                <View
+                  className={Style['file']}
+                  onClick={() => onOpenFile(item, index)}
+                >
                   <View className={Style['file-info']}>
                     <View className={Style['file-name']}>
                       {item.content.name}

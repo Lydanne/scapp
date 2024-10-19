@@ -45,8 +45,12 @@ export default function Trans() {
                     content: data.text,
                   }
                 : {
-                    type: 'text',
-                    content: '未知消息',
+                    type: 'file',
+                    content: {
+                      name: data.name,
+                      size: data.size,
+                      path: data.path,
+                    },
                   },
             ],
           };

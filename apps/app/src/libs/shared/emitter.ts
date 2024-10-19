@@ -38,17 +38,28 @@ export class Emitter<CB extends (...args: any[]) => void> {
   emit(...args: ParamsType<CB>) {
     this.lastEmitArgs = undefined;
     return new Promise<void>((resolve) => {
-      if (this.timer) {
-        clearTimeout(this.timer);
-      }
-      this.timer = setTimeout(() => {
-        try {
-          this.emitSync(...args);
-          resolve();
-        } catch (error) {
-          return Promise.reject(error);
+      if (this.debounce === undefined) {
+        setTimeout(() => {
+          try {
+            this.emitSync(...args);
+            resolve();
+          } catch (error) {
+            return Promise.reject;
+          }
+        });
+      } else {
+        if (this.timer) {
+          clearTimeout(this.timer);
         }
-      }, this.debounce);
+        this.timer = setTimeout(() => {
+          try {
+            this.emitSync(...args);
+            resolve();
+          } catch (error) {
+            return Promise.reject(error);
+          }
+        }, this.debounce);
+      }
     });
   }
 
@@ -67,6 +78,21 @@ export class Emitter<CB extends (...args: any[]) => void> {
     return new Promise<ParamsType<CB>>((resolve) => {
       const cb = (...args: ParamsType<CB>) => {
         resolve(args);
+        clear();
+      };
+      const clear = this.on(cb as CB);
+    });
+  }
+
+  waitTimeout(timeout: number) {
+    return new Promise<ParamsType<CB>>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error('timeout'));
+        clear();
+      }, timeout);
+      const cb = (...args: ParamsType<CB>) => {
+        resolve(args);
+        clearTimeout(timer);
         clear();
       };
       const clear = this.on(cb as CB);

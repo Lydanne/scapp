@@ -7,6 +7,8 @@ import {
   type AckReadySignal,
   Channel,
   type DataAction,
+  FinishStatus,
+  type SynReadySignal,
   type SyncAction,
 } from './payload';
 import { fromBinary, toBinary } from './shared';
@@ -57,7 +59,7 @@ class Connection {
         const text = Base64.encode(data);
         const length = Math.ceil(text.length / BLOCK_SIZE);
 
-        this.signalSender.emit({
+        this.signalSender.emitSync({
           id,
           signal: {
             oneofKind: 'synReady',
@@ -65,6 +67,8 @@ class Connection {
               size: text.length,
               length,
               sign: '',
+              name: '',
+              type: 'text',
             },
           },
         });
@@ -113,7 +117,7 @@ class Connection {
             fail: reject,
           });
         });
-        this.signalSender.emit({
+        this.signalSender.emitSync({
           id,
           signal: {
             oneofKind: 'synReady',
@@ -121,6 +125,8 @@ class Connection {
               size,
               length,
               sign,
+              name,
+              type: 'file',
             },
           },
         });
@@ -129,7 +135,8 @@ class Connection {
           throw new Error('ackReady error');
         }
 
-        for (let index = 0; index < length; index++) {
+        let index = 0;
+        while (1) {
           const offset = index * BLOCK_SIZE;
           const offsetLen = Math.min(size - offset, BLOCK_SIZE);
           const buffer = new ArrayBuffer(offsetLen);
@@ -144,31 +151,48 @@ class Connection {
             });
           });
           // console.log(offset, offsetLen, buffer);
-          this.sender.emit({
+          this.sender.emitSync({
             id,
             index,
             data: {
               oneofKind: type,
-              file: {
-                name,
-                type: 'application/octet-stream',
-                data: new Uint8Array(buffer),
-              },
+              file: new Uint8Array(buffer),
             },
           });
+          try {
+            const [ackDataStatus] = await this.signalReceiver.waitTimeout(1000);
+            if (
+              ackDataStatus.id === id &&
+              ackDataStatus.signal.oneofKind === 'ackDataFinish' &&
+              ackDataStatus.signal.ackDataFinish.index === index &&
+              ackDataStatus.signal.ackDataFinish.status === FinishStatus.Ok
+            ) {
+              index++;
+            } else {
+              console.log('send file resend', ackDataStatus);
+            }
+          } catch (error) {
+            console.log('send file error', error);
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          }
+
+          if (index === length) {
+            break;
+          }
         }
+
         console.log('send file done', [id, length], Date.now() - ts);
         break;
       }
     }
   }
 
-  on(cb: (data: DataAction['data']) => any) {
+  on(cb: (data: any) => any) {
     const pipeMap = new Map<
       number,
       {
         buffer: any[];
-        info: AckReadySignal;
+        info: SynReadySignal;
       }
     >();
     this.signalReceiver.on(async (data) => {
@@ -199,6 +223,17 @@ class Connection {
       if (data.data.oneofKind === 'text') {
         pipe.buffer[data.index] = data.data.text;
       } else if (data.data.oneofKind === 'file') {
+        pipe.buffer[data.index] = data.data.file;
+        this.signalSender.emitSync({
+          id: data.id,
+          signal: {
+            oneofKind: 'ackDataFinish',
+            ackDataFinish: {
+              index: data.index,
+              status: FinishStatus.Ok,
+            },
+          },
+        });
       }
       if (data.index + 1 === pipe.info.length) {
         setTimeout(async () => {
@@ -223,10 +258,56 @@ class Connection {
             }
             const buffer = buffers.join('');
             data.data.text = Base64.decode(buffer);
-            pipeMap.delete(data.id);
             cb(data.data);
           } else if (data.data.oneofKind === 'file') {
+            const filename = decodeURIComponent(pipe.info.name);
+            const filePath = `${Taro.env.USER_DATA_PATH}/${filename}`;
+            const fsm = Taro.getFileSystemManager();
+            await new Promise((resolve) => {
+              fsm.removeSavedFile({
+                filePath,
+                success: resolve,
+                fail: resolve,
+              });
+            });
+            const fd: string = await new Promise((resolve, reject) => {
+              fsm.open({
+                filePath: filePath,
+                flag: 'w+',
+                success: async ({ fd }) => {
+                  resolve(fd);
+                },
+                fail: reject,
+              });
+            });
+
+            for (let index = 0; index < pipe.info.length; index++) {
+              const buffer = pipe.buffer[index];
+              const offset = index * BLOCK_SIZE;
+              const offsetLen = Math.min(pipe.info.size - offset, BLOCK_SIZE);
+              const arrayBuffer = new ArrayBuffer(offsetLen);
+              const uint8Array = new Uint8Array(arrayBuffer);
+              for (let i = 0; i < offsetLen; i++) {
+                uint8Array[i] = buffer[i];
+              }
+              fsm.write({
+                fd,
+                data: arrayBuffer,
+                position: offset,
+                success(res) {
+                  console.log(res.bytesWritten);
+                },
+              });
+            }
+            console.log('receive file done', data.id, data, filePath);
+            cb({
+              oneofKind: data.data.oneofKind,
+              name: filename,
+              path: filePath,
+              size: pipe.info.size,
+            });
           }
+          pipeMap.delete(data.id);
         }, 100);
       }
     });
