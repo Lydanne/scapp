@@ -2,7 +2,7 @@ import Taro from '@tarojs/taro';
 
 import { Base64 } from '../shared/base64';
 import { Emitter } from '../shared/emitter';
-import { uuid } from '../shared/uuid';
+import { UdpSocket } from '../tapi/socket';
 import {
   type AckReadySignal,
   Channel,
@@ -15,7 +15,7 @@ import { fromBinary, toBinary } from './shared';
 
 const BLOCK_SIZE = 2048;
 
-const udp = Taro.createUDPSocket();
+const socket = new UdpSocket();
 
 export type SocketIP = `${string}:${number}`;
 
@@ -332,18 +332,15 @@ export class UdpChannel {
     if (UdpChannel.listened) {
       return this;
     }
-    setTimeout(() => {
-      const port = udp.bind(undefined as unknown as number);
+
+    socket.listen((port) => {
       UdpChannel.listened = port;
       console.log('[UdpChannel]', 'listen', port);
       this.listenEmitter.emitLifeCycle(port);
-      // udp.onListening(() => {
-      //   console.log('[UdpChannel]', 'onListening');
-      // });
 
-      udp.onMessage((res) => {
+      socket.receiver.on((res) => {
         const data = fromBinary<Channel>(Channel, res.message);
-        console.log('[UdpChannel]', 'onMessage', data);
+        console.log('[UdpChannel]', 'receiver', data);
         if (data.action?.oneofKind === 'connect') {
           const id = data.id;
           if (this.connectionClient.has(id)) {
@@ -360,7 +357,7 @@ export class UdpChannel {
               this.connectionClient.set(id, connection);
               this.connectionEmitter.emitLifeCycle(connection);
               if (data.action.connect.seq != 0) {
-                udp.send({
+                socket.sender.emit({
                   address: res.remoteInfo.address,
                   port: res.remoteInfo.port,
                   message: toBinary(Channel, {
@@ -379,7 +376,7 @@ export class UdpChannel {
               }
 
               connection.sender.on((data) => {
-                udp.send({
+                socket.sender.emit({
                   address: res.remoteInfo.address,
                   port: res.remoteInfo.port,
                   message: toBinary(Channel, {
@@ -394,7 +391,7 @@ export class UdpChannel {
                 });
               });
               connection.signalSender.on((data) => {
-                udp.send({
+                socket.sender.emit({
                   address: res.remoteInfo.address,
                   port: res.remoteInfo.port,
                   message: toBinary(Channel, {
@@ -410,7 +407,7 @@ export class UdpChannel {
               });
             } else {
               console.log('[UdpChannel]', 'onMessage', 'seq error');
-              udp.send({
+              socket.sender.emit({
                 address: res.remoteInfo.address,
                 port: res.remoteInfo.port,
                 message: toBinary(Channel, {
@@ -439,7 +436,7 @@ export class UdpChannel {
                 socketIP: `${res.remoteInfo.address}:${res.remoteInfo.port}`,
               }),
             );
-            udp.send({
+            socket.sender.emit({
               address: res.remoteInfo.address,
               port: res.remoteInfo.port,
               message: toBinary(Channel, {
@@ -471,10 +468,10 @@ export class UdpChannel {
         }
       });
 
-      udp.onError((err) => {
+      socket.errorEmitter.on((err) => {
         console.log('[UdpChannel]', 'onError', err);
       });
-    }, 1000);
+    });
 
     return this;
   }
@@ -483,7 +480,7 @@ export class UdpChannel {
     const [ip, port] = socketIP.split(':');
     const id = rand(1, 10000);
     const seq = rand(1, 100);
-    udp.send({
+    socket.sender.emit({
       address: ip,
       port: parseInt(port),
       message: toBinary(Channel, {
