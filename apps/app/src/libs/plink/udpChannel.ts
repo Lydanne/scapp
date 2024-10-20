@@ -1,10 +1,8 @@
-import Taro from '@tarojs/taro';
-
 import { Base64 } from '../shared/base64';
 import { Emitter } from '../shared/emitter';
+import { FS } from '../tapi/fs';
 import { UdpSocket } from '../tapi/socket';
 import {
-  type AckReadySignal,
   Channel,
   type DataAction,
   FinishStatus,
@@ -96,27 +94,9 @@ class Connection {
 
         const length = Math.ceil(size / BLOCK_SIZE);
 
-        const fsm = Taro.getFileSystemManager();
-        const fd: string = await new Promise((resolve, reject) => {
-          fsm.open({
-            filePath: path,
-            success: async ({ fd }) => {
-              resolve(fd);
-            },
-            fail: reject,
-          });
-        });
         const ts = Date.now();
-        const sign = await new Promise<string>((resolve, reject) => {
-          fsm.getFileInfo({
-            filePath: path,
-            digestAlgorithm: 'md5',
-            success: ({ digest }) => {
-              resolve(digest as string);
-            },
-            fail: reject,
-          });
-        });
+        const sign = await FS.sign(path, 'md5');
+        const fd = await FS.open(path, 'r');
         this.signalSender.emitSync({
           id,
           signal: {
@@ -139,17 +119,7 @@ class Connection {
         while (1) {
           const offset = index * BLOCK_SIZE;
           const offsetLen = Math.min(size - offset, BLOCK_SIZE);
-          const buffer = new ArrayBuffer(offsetLen);
-
-          await new Promise((resolve) => {
-            fsm.read({
-              fd,
-              arrayBuffer: buffer,
-              position: offset,
-              length: offsetLen,
-              success: resolve,
-            });
-          });
+          const buffer = await fd.read(offset, offsetLen);
           // console.log(offset, offsetLen, buffer);
           this.sender.emitSync({
             id,
@@ -261,25 +231,8 @@ class Connection {
             cb(data.data);
           } else if (data.data.oneofKind === 'file') {
             const filename = decodeURIComponent(pipe.info.name);
-            const filePath = `${Taro.env.USER_DATA_PATH}/${filename}`;
-            const fsm = Taro.getFileSystemManager();
-            await new Promise((resolve) => {
-              fsm.removeSavedFile({
-                filePath,
-                success: resolve,
-                fail: resolve,
-              });
-            });
-            const fd: string = await new Promise((resolve, reject) => {
-              fsm.open({
-                filePath: filePath,
-                flag: 'w+',
-                success: async ({ fd }) => {
-                  resolve(fd);
-                },
-                fail: reject,
-              });
-            });
+            await FS.remove(filename);
+            const fd = await FS.open(filename, 'w+');
 
             for (let index = 0; index < pipe.info.length; index++) {
               const buffer = pipe.buffer[index];
@@ -290,20 +243,13 @@ class Connection {
               for (let i = 0; i < offsetLen; i++) {
                 uint8Array[i] = buffer[i];
               }
-              fsm.write({
-                fd,
-                data: arrayBuffer,
-                position: offset,
-                success(res) {
-                  console.log(res.bytesWritten);
-                },
-              });
+              fd.write(offset, buffer);
             }
-            console.log('receive file done', data.id, data, filePath);
+            console.log('receive file done', data.id, data, filename);
             cb({
               oneofKind: data.data.oneofKind,
               name: filename,
-              path: filePath,
+              path: fd.filePath,
               size: pipe.info.size,
             });
           }
