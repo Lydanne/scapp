@@ -12,6 +12,8 @@ export class StringBuffer {
 
   static decode(buf: Uint8Array): string {
     const uint16Array = new Uint16Array(buf.buffer);
-    return String.fromCharCode.apply(null, uint16Array);
+    return Array.from(uint16Array)
+      .map((charCode) => String.fromCharCode(charCode))
+      .join('');
   }
 }
