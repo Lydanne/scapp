@@ -2,15 +2,16 @@
 
 export class StringBuffer {
   static encode(str: string): Uint8Array {
-    const buf = new ArrayBuffer(str.length);
-    const bufView = new Uint8Array(buf);
+    const buf = new ArrayBuffer(str.length * 2); // 每个字符使用2字节
+    const bufView = new Uint16Array(buf);
     for (let i = 0, strLen = str.length; i < strLen; i++) {
       bufView[i] = str.charCodeAt(i);
     }
-    return bufView;
+    return new Uint8Array(buf);
   }
 
   static decode(buf: Uint8Array): string {
-    return String.fromCharCode.apply(null, buf);
+    const uint16Array = new Uint16Array(buf.buffer);
+    return String.fromCharCode.apply(null, uint16Array);
   }
 }
