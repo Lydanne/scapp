@@ -143,7 +143,7 @@ class Connection {
       number,
       {
         buffers: Uint8Array[];
-        info: SynReadySignal;
+        head: SynReadySignal;
         received: number;
       }
     >();
@@ -152,7 +152,7 @@ class Connection {
       if (data.signal.oneofKind === 'synReady') {
         pipeMap.set(data.id, {
           buffers: new Array(data.signal.synReady.length),
-          info: data.signal.synReady,
+          head: data.signal.synReady,
           received: 0,
         });
         this.signalSender.emitSync({
@@ -176,10 +176,10 @@ class Connection {
         return;
       }
 
-      pipe.buffers[data.index] = data.body;
       if (!pipe.buffers[data.index]) {
         pipe.received += 1;
       }
+      pipe.buffers[data.index] = data.body;
 
       this.signalSender.emitSync({
         id: data.id,
@@ -192,25 +192,25 @@ class Connection {
         },
       });
 
-      if (pipe.received === pipe.info.length) {
+      if (pipe.received === pipe.head.length) {
         try {
           const buffer = mergeArrayBuffer(pipe.buffers);
-          if (pipe.info.type === 'text') {
+          if (pipe.head.type === 'text') {
             const base64Text = StringBuffer.decode(new Uint8Array(buffer));
             const body = Base64.decode(base64Text);
             cb({
-              info: pipe.info,
+              head: pipe.head,
               body,
             });
-          } else if (pipe.info.type === 'file') {
-            const filename = decodeURIComponent(pipe.info.name);
+          } else if (pipe.head.type === 'file') {
+            const filename = decodeURIComponent(pipe.head.name);
             await FS.remove(filename);
             const fd = await FS.open(filename, 'w+');
 
-            for (let index = 0; index < pipe.info.length; index++) {
+            for (let index = 0; index < pipe.head.length; index++) {
               const chunk = pipe.buffers[index];
               const offset = index * BLOCK_SIZE;
-              const offsetLen = Math.min(pipe.info.size - offset, BLOCK_SIZE);
+              const offsetLen = Math.min(pipe.head.size - offset, BLOCK_SIZE);
               const arrayBuffer = new ArrayBuffer(offsetLen);
               const uint8Array = new Uint8Array(arrayBuffer);
               uint8Array.set(chunk.slice(0, offsetLen));
@@ -219,7 +219,7 @@ class Connection {
 
             console.log('receive file done', data.id, filename);
             cb({
-              info: pipe.info,
+              head: pipe.head,
               body: fd.filePath,
             });
           }
