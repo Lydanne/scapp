@@ -2,7 +2,7 @@ import { Base64 } from '../shared/base64';
 import { bufferMd5 } from '../shared/bufferMd5';
 import { Emitter } from '../shared/emitter';
 import { StringBuffer } from '../shared/stringbuffer';
-import { FS } from '../tapi/fs';
+import { FS, type FSOpen } from '../tapi/fs';
 import { UdpSocket } from '../tapi/socket';
 import {
   Channel,
@@ -53,20 +53,24 @@ class Connection {
   }
 
   async send(type: 'file' | 'text', data: any) {
+    console.log('send', [type, data]);
+
     const id = Date.now() % 1000000000;
     const name = encodeURIComponent(data.name);
     let size: number;
     let sign: string;
-    let fd: any;
+    let fd: FSOpen | undefined;
     let getDataChunk: (offset: number, length: number) => Promise<ArrayBuffer>;
     const ts = Date.now();
 
     if (type === 'file') {
       const path = data.path;
       size = data.size;
+      console.log('send file', [path, size]);
+
       sign = await FS.sign(path, 'md5');
       fd = await FS.open(path, 'r');
-      getDataChunk = async (offset, length) => await fd.read(offset, length);
+      getDataChunk = async (offset, length) => await fd!.read(offset, length);
     } else {
       const text = data.text;
       const base64Text = Base64.encode(text);
@@ -219,7 +223,10 @@ class Connection {
 
             console.log('receive file done', data.id, filename);
             cb({
-              head: pipe.head,
+              head: {
+                ...pipe.head,
+                name: filename,
+              },
               body: fd.filePath,
             });
           }

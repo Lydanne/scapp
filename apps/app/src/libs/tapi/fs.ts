@@ -47,6 +47,9 @@ export class FS {
     });
   }
   static stdPathStyle(path: string) {
+    if (path.startsWith('http') || path.startsWith('wxfile')) {
+      return path;
+    }
     if (!path.startsWith('/') || !path.startsWith('./')) {
       path = `/${path}`;
     }
@@ -96,5 +99,15 @@ export class FSOpen {
       }),
     );
     return bytesWritten;
+  }
+
+  async close() {
+    await new Promise((resolve) => {
+      fsm.close({
+        fd: this.fd,
+        success: resolve,
+        fail: resolve,
+      });
+    });
   }
 }
