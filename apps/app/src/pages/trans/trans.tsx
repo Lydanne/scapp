@@ -31,25 +31,23 @@ export default function Trans() {
     setTimeout(async () => {
       const [connection] = await udpChannel.connectionEmitter.wait();
       connection.on((data) => {
-        if (data.oneofKind === 'text') {
-          console.log('data', [data.text, data?.text?.length]);
-        }
+        console.log('connection data', data);
         setMsgList((list) => {
           const item: MitemProps = {
             name: '他',
             createdAt: new Date().toISOString(),
             msg: [
-              data.oneofKind === 'text'
+              data.head.type === 'text'
                 ? {
                     type: 'text',
-                    content: data.text,
+                    content: data.body,
                   }
                 : {
                     type: 'file',
                     content: {
-                      name: data.name,
-                      size: data.size,
-                      path: data.path,
+                      name: data.head.name,
+                      size: data.head.size,
+                      path: data.body,
                     },
                   },
             ],
@@ -77,7 +75,7 @@ export default function Trans() {
     });
 
     const [connection] = await udpChannel.connectionEmitter.wait();
-    connection.send('text', inputMessage);
+    connection.send('text', { text: inputMessage });
 
     setInputMessage('');
   };
