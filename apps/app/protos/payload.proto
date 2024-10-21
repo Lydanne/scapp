@@ -32,11 +32,9 @@ message DisconnectAction{
 message DataAction{
     uint32 id = 1;
     uint32 index = 2;
-    oneof data {
-        string text = 3;
-        bytes file = 4;
-    }
+    bytes body = 3;
 }
+
 
 message SyncAction{
     uint32 id = 1;

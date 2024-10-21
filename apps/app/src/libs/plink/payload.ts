@@ -123,26 +123,12 @@ export interface DataAction {
    */
   index: number;
   /**
-   * @generated from protobuf oneof: data
+   * @generated from protobuf field: bytes body = 3;
    */
-  data:
-    | {
-        oneofKind: 'text';
-        /**
-         * @generated from protobuf field: string text = 3;
-         */
-        text: string;
-      }
-    | {
-        oneofKind: 'file';
-        /**
-         * @generated from protobuf field: bytes file = 4;
-         */
-        file: Uint8Array;
-      }
-    | {
-        oneofKind: undefined;
-      };
+  body: Uint8Array; // oneof data {
+  //     string text = 3;
+  //     bytes file = 4;
+  // }
 }
 /**
  * @generated from protobuf message SyncAction
@@ -693,27 +679,14 @@ class DataAction$Type extends MessageType<DataAction> {
     super('DataAction', [
       { no: 1, name: 'id', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
       { no: 2, name: 'index', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
-      {
-        no: 3,
-        name: 'text',
-        kind: 'scalar',
-        oneof: 'data',
-        T: 9 /*ScalarType.STRING*/,
-      },
-      {
-        no: 4,
-        name: 'file',
-        kind: 'scalar',
-        oneof: 'data',
-        T: 12 /*ScalarType.BYTES*/,
-      },
+      { no: 3, name: 'body', kind: 'scalar', T: 12 /*ScalarType.BYTES*/ },
     ]);
   }
   create(value?: PartialMessage<DataAction>): DataAction {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.id = 0;
     message.index = 0;
-    message.data = { oneofKind: undefined };
+    message.body = new Uint8Array(0);
     if (value !== undefined)
       reflectionMergePartial<DataAction>(this, message, value);
     return message;
@@ -735,17 +708,8 @@ class DataAction$Type extends MessageType<DataAction> {
         case /* uint32 index */ 2:
           message.index = reader.uint32();
           break;
-        case /* string text */ 3:
-          message.data = {
-            oneofKind: 'text',
-            text: reader.string(),
-          };
-          break;
-        case /* bytes file */ 4:
-          message.data = {
-            oneofKind: 'file',
-            file: reader.bytes(),
-          };
+        case /* bytes body */ 3:
+          message.body = reader.bytes();
           break;
         default:
           let u = options.readUnknownField;
@@ -776,12 +740,9 @@ class DataAction$Type extends MessageType<DataAction> {
     /* uint32 index = 2; */
     if (message.index !== 0)
       writer.tag(2, WireType.Varint).uint32(message.index);
-    /* string text = 3; */
-    if (message.data.oneofKind === 'text')
-      writer.tag(3, WireType.LengthDelimited).string(message.data.text);
-    /* bytes file = 4; */
-    if (message.data.oneofKind === 'file')
-      writer.tag(4, WireType.LengthDelimited).bytes(message.data.file);
+    /* bytes body = 3; */
+    if (message.body.length)
+      writer.tag(3, WireType.LengthDelimited).bytes(message.body);
     let u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(

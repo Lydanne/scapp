@@ -1,5 +1,7 @@
 import { Base64 } from '../shared/base64';
+import { bufferMd5 } from '../shared/bufferMd5';
 import { Emitter } from '../shared/emitter';
+import { StringBuffer } from '../shared/stringbuffer';
 import { FS } from '../tapi/fs';
 import { UdpSocket } from '../tapi/socket';
 import {
@@ -50,126 +52,108 @@ class Connection {
     this.seq = data.seq;
   }
 
-  async send(type: DataAction['data']['oneofKind'], data: any) {
+  async send(type: 'file' | 'text', data: any) {
     const id = Date.now() % 1000000000;
-    switch (type) {
-      case 'text': {
-        const text = Base64.encode(data);
-        const length = Math.ceil(text.length / BLOCK_SIZE);
+    const name = encodeURIComponent(data.name);
+    let size: number;
+    let sign: string;
+    let fd: any;
+    let getDataChunk: (offset: number, length: number) => Promise<ArrayBuffer>;
+    const ts = Date.now();
 
-        this.signalSender.emitSync({
-          id,
-          signal: {
-            oneofKind: 'synReady',
-            synReady: {
-              size: text.length,
-              length,
-              sign: '',
-              name: '',
-              type: 'text',
-            },
-          },
-        });
-        const ackReady = await this.signalReceiver.first();
-        if (ackReady.signal.oneofKind !== 'ackReady') {
-          throw new Error('ackReady error');
-        }
+    if (type === 'file') {
+      const path = data.path;
+      size = data.size;
+      sign = await FS.sign(path, 'md5');
+      fd = await FS.open(path, 'r');
+      getDataChunk = async (offset, length) => await fd.read(offset, length);
+    } else {
+      const text = data.text;
+      const base64Text = Base64.encode(text);
+      const buffer = StringBuffer.encode(base64Text);
+      size = buffer.byteLength;
+      sign = bufferMd5(buffer);
+      getDataChunk = async (offset, length) => {
+        const chunk = buffer.slice(offset, offset + length);
+        return chunk;
+      };
+    }
 
-        for (let index = 0; index < length; index++) {
-          this.sender.emitSync({
-            id,
-            index,
-            data: {
-              oneofKind: type,
-              text: text.slice(index * BLOCK_SIZE, (index + 1) * BLOCK_SIZE),
-            },
-          });
+    const length = Math.ceil(size / BLOCK_SIZE);
+
+    this.signalSender.emitSync({
+      id,
+      signal: {
+        oneofKind: 'synReady',
+        synReady: {
+          size,
+          length,
+          sign,
+          name,
+          type,
+        },
+      },
+    });
+    const [ackReady] = await this.signalReceiver.wait();
+    if (ackReady.signal.oneofKind !== 'ackReady') {
+      throw new Error('ackReady error');
+    }
+
+    let index = 0;
+    while (1) {
+      const offset = index * BLOCK_SIZE;
+      const offsetLen = Math.min(size - offset, BLOCK_SIZE);
+      const buffer = await getDataChunk(offset, offsetLen);
+      this.sender.emitSync({
+        id,
+        index,
+        body: new Uint8Array(buffer),
+      });
+      try {
+        const [ackDataStatus] = await this.signalReceiver.waitTimeout(1000);
+        if (
+          ackDataStatus.id === id &&
+          ackDataStatus.signal.oneofKind === 'ackDataFinish' &&
+          ackDataStatus.signal.ackDataFinish.index === index &&
+          ackDataStatus.signal.ackDataFinish.status === FinishStatus.Ok
+        ) {
+          index++;
+        } else {
+          console.log('发送重试', ackDataStatus);
         }
-        break;
+      } catch (error) {
+        console.log('发送错误', error);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
-      case 'file': {
-        const path = data.path;
-        const name = encodeURIComponent(data.name);
-        const size = data.size; // B
 
-        const length = Math.ceil(size / BLOCK_SIZE);
-
-        const ts = Date.now();
-        const sign = await FS.sign(path, 'md5');
-        const fd = await FS.open(path, 'r');
-        this.signalSender.emitSync({
-          id,
-          signal: {
-            oneofKind: 'synReady',
-            synReady: {
-              size,
-              length,
-              sign,
-              name,
-              type: 'file',
-            },
-          },
-        });
-        const ackReady = await this.signalReceiver.first();
-        if (ackReady.signal.oneofKind !== 'ackReady') {
-          throw new Error('ackReady error');
-        }
-
-        let index = 0;
-        while (1) {
-          const offset = index * BLOCK_SIZE;
-          const offsetLen = Math.min(size - offset, BLOCK_SIZE);
-          const buffer = await fd.read(offset, offsetLen);
-          // console.log(offset, offsetLen, buffer);
-          this.sender.emitSync({
-            id,
-            index,
-            data: {
-              oneofKind: type,
-              file: new Uint8Array(buffer),
-            },
-          });
-          try {
-            const [ackDataStatus] = await this.signalReceiver.waitTimeout(1000);
-            if (
-              ackDataStatus.id === id &&
-              ackDataStatus.signal.oneofKind === 'ackDataFinish' &&
-              ackDataStatus.signal.ackDataFinish.index === index &&
-              ackDataStatus.signal.ackDataFinish.status === FinishStatus.Ok
-            ) {
-              index++;
-            } else {
-              console.log('send file resend', ackDataStatus);
-            }
-          } catch (error) {
-            console.log('send file error', error);
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-          }
-
-          if (index === length) {
-            break;
-          }
-        }
-
-        console.log('send file done', [id, length], Date.now() - ts);
+      if (index === length) {
         break;
       }
     }
+
+    if (type === 'file' && fd) {
+      await fd.close();
+    }
+
+    console.log('发送完成', [id, length], Date.now() - ts);
   }
 
   on(cb: (data: any) => any) {
     const pipeMap = new Map<
       number,
       {
-        buffer: any[];
+        buffers: Uint8Array[];
         info: SynReadySignal;
+        received: number;
       }
     >();
+
     this.signalReceiver.on(async (data) => {
       if (data.signal.oneofKind === 'synReady') {
         pipeMap.set(data.id, {
-          buffer: new Array(data.signal.synReady.length),
+          buffers: new Array(data.signal.synReady.length),
           info: data.signal.synReady,
+          received: 0,
         });
         this.signalSender.emitSync({
           id: data.id,
@@ -184,77 +168,65 @@ class Connection {
         });
       }
     });
+
     this.receiver.on(async (data) => {
       const pipe = pipeMap.get(data.id);
       if (!pipe) {
         console.warn('pipe not found', data.id);
         return;
       }
-      if (data.data.oneofKind === 'text') {
-        pipe.buffer[data.index] = data.data.text;
-      } else if (data.data.oneofKind === 'file') {
-        pipe.buffer[data.index] = data.data.file;
-        this.signalSender.emitSync({
-          id: data.id,
-          signal: {
-            oneofKind: 'ackDataFinish',
-            ackDataFinish: {
-              index: data.index,
-              status: FinishStatus.Ok,
-            },
-          },
-        });
+
+      pipe.buffers[data.index] = data.body;
+      if (!pipe.buffers[data.index]) {
+        pipe.received += 1;
       }
-      if (data.index + 1 === pipe.info.length) {
-        setTimeout(async () => {
-          const length = pipe.info.length;
-          for (let c = 0; c < 100; c++) {
-            let isEnd = false;
-            for (let i = 0; i < length; i++) {
-              if (!pipe.buffer[i]) {
-                isEnd = true;
-                break;
-              }
-            }
-            if (!isEnd) {
-              break;
-            }
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-          }
-          if (data.data.oneofKind === 'text') {
-            const buffers: string[] = [];
-            for (let i = 0; i < length; i++) {
-              buffers.push(pipe.buffer[i]);
-            }
-            const buffer = buffers.join('');
-            data.data.text = Base64.decode(buffer);
-            cb(data.data);
-          } else if (data.data.oneofKind === 'file') {
+
+      this.signalSender.emitSync({
+        id: data.id,
+        signal: {
+          oneofKind: 'ackDataFinish',
+          ackDataFinish: {
+            index: data.index,
+            status: FinishStatus.Ok,
+          },
+        },
+      });
+
+      if (pipe.received === pipe.info.length) {
+        try {
+          const buffer = mergeArrayBuffer(pipe.buffers);
+          if (pipe.info.type === 'text') {
+            const base64Text = StringBuffer.decode(new Uint8Array(buffer));
+            const body = Base64.decode(base64Text);
+            cb({
+              info: pipe.info,
+              body,
+            });
+          } else if (pipe.info.type === 'file') {
             const filename = decodeURIComponent(pipe.info.name);
             await FS.remove(filename);
             const fd = await FS.open(filename, 'w+');
 
             for (let index = 0; index < pipe.info.length; index++) {
-              const buffer = pipe.buffer[index];
+              const chunk = pipe.buffers[index];
               const offset = index * BLOCK_SIZE;
               const offsetLen = Math.min(pipe.info.size - offset, BLOCK_SIZE);
               const arrayBuffer = new ArrayBuffer(offsetLen);
               const uint8Array = new Uint8Array(arrayBuffer);
-              for (let i = 0; i < offsetLen; i++) {
-                uint8Array[i] = buffer[i];
-              }
-              fd.write(offset, buffer);
+              uint8Array.set(chunk.slice(0, offsetLen));
+              await fd.write(offset, arrayBuffer);
             }
-            console.log('receive file done', data.id, data, filename);
+
+            console.log('receive file done', data.id, filename);
             cb({
-              oneofKind: data.data.oneofKind,
-              name: filename,
-              path: fd.filePath,
-              size: pipe.info.size,
+              info: pipe.info,
+              body: fd.filePath,
             });
           }
           pipeMap.delete(data.id);
-        }, 100);
+        } catch (error) {
+          console.error('Error processing received data:', error);
+        }
       }
     });
   }
@@ -459,6 +431,21 @@ export class UdpChannel {
 
 function rand(begin, end) {
   return Math.floor(Math.random() * (end - begin)) + begin;
+}
+
+function mergeArrayBuffer(buffers: ArrayBufferLike[]): ArrayBuffer {
+  if (buffers.length === 0) {
+    return new ArrayBuffer(0);
+  }
+
+  const length = buffers.reduce((prev, curr) => prev + curr.byteLength, 0);
+  const result = new Uint8Array(length);
+  let offset = 0;
+  for (const buffer of buffers) {
+    result.set(new Uint8Array(buffer), offset);
+    offset += buffer.byteLength;
+  }
+  return result.buffer;
 }
 
 export default new UdpChannel().listen();
