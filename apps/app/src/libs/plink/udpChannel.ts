@@ -33,6 +33,23 @@ export type ConnectionProps = {
   seq: number;
 };
 
+export type TypeKey = 'file' | 'text';
+
+export type OnData = {
+  id: number; // 消息 id
+  index: number; // 块序号
+  type: TypeKey;
+  progress: number; // 0-100, 0 表示准备好，100 表示完成
+  head: SynReadySignal;
+  body: string;
+};
+
+export type SendData = {
+  type: TypeKey;
+  head: Partial<SynReadySignal>;
+  body: string;
+};
+
 class Connection {
   id: number;
   status: ChannelStatus;
@@ -52,11 +69,12 @@ class Connection {
     this.seq = data.seq;
   }
 
-  async send(type: 'file' | 'text', data: any) {
-    console.log('send', [type, data]);
+  async send(data: SendData) {
+    console.log('send', data);
+    const { type, head, body } = data;
 
     const id = Date.now() % 1000000000;
-    const name = encodeURIComponent(data.name);
+    const name = encodeURIComponent(head.name ?? '');
     let size: number;
     let sign: string;
     let fd: FSOpen | undefined;
@@ -64,15 +82,15 @@ class Connection {
     const ts = Date.now();
 
     if (type === 'file') {
-      const path = data.path;
-      size = data.size;
+      const path = head.name ?? '';
+      size = head.size ?? 0;
       console.log('send file', [path, size]);
 
       sign = await FS.sign(path, 'md5');
       fd = await FS.open(path, 'r');
       getDataChunk = async (offset, length) => await fd!.read(offset, length);
     } else {
-      const text = data.text;
+      const text = body;
       const base64Text = Base64.encode(text);
       const buffer = StringBuffer.encode(base64Text);
       size = buffer.byteLength;
@@ -142,13 +160,14 @@ class Connection {
     console.log('发送完成', [id, length], Date.now() - ts);
   }
 
-  on(cb: (data: any) => any) {
+  on(cb: (data: OnData) => any) {
     const pipeMap = new Map<
       number,
       {
         buffers: Uint8Array[];
         head: SynReadySignal;
         received: number;
+        progress: number;
       }
     >();
 
@@ -158,6 +177,7 @@ class Connection {
           buffers: new Array(data.signal.synReady.length),
           head: data.signal.synReady,
           received: 0,
+          progress: 0,
         });
         this.signalSender.emitSync({
           id: data.id,
@@ -170,6 +190,14 @@ class Connection {
             },
           },
         });
+        cb({
+          id: data.id,
+          index: 0,
+          type: data.signal.synReady.type as TypeKey,
+          progress: 0,
+          head: data.signal.synReady,
+          body: '',
+        });
       }
     });
 
@@ -179,11 +207,6 @@ class Connection {
         console.warn('pipe not found', data.id);
         return;
       }
-
-      if (!pipe.buffers[data.index]) {
-        pipe.received += 1;
-      }
-      pipe.buffers[data.index] = data.body;
 
       this.signalSender.emitSync({
         id: data.id,
@@ -196,6 +219,21 @@ class Connection {
         },
       });
 
+      if (!pipe.buffers[data.index]) {
+        pipe.received += 1;
+        pipe.progress = Math.floor((pipe.received / pipe.head.length) * 100);
+      }
+      pipe.buffers[data.index] = data.body;
+
+      cb({
+        id: data.id,
+        index: data.index,
+        type: pipe.head.type as TypeKey,
+        progress: pipe.progress,
+        head: pipe.head,
+        body: '',
+      });
+
       if (pipe.received === pipe.head.length) {
         try {
           const buffer = mergeArrayBuffer(pipe.buffers);
@@ -203,8 +241,12 @@ class Connection {
             const base64Text = StringBuffer.decode(new Uint8Array(buffer));
             const body = Base64.decode(base64Text);
             cb({
+              id: data.id,
+              index: data.index,
+              type: 'text',
+              progress: 100,
               head: pipe.head,
-              body,
+              body: body,
             });
           } else if (pipe.head.type === 'file') {
             const filename = decodeURIComponent(pipe.head.name);
@@ -223,6 +265,10 @@ class Connection {
 
             console.log('receive file done', data.id, filename);
             cb({
+              id: data.id,
+              index: data.index,
+              type: 'file',
+              progress: 100,
               head: {
                 ...pipe.head,
                 name: filename,

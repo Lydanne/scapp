@@ -32,28 +32,30 @@ export default function Trans() {
       const [connection] = await udpChannel.connectionEmitter.wait();
       connection.on((data) => {
         console.log('connection data', data);
-        setMsgList((list) => {
-          const item: MitemProps = {
-            name: '他',
-            createdAt: new Date().toISOString(),
-            msg: [
-              data.head.type === 'text'
-                ? {
-                    type: 'text',
-                    content: data.body,
-                  }
-                : {
-                    type: 'file',
-                    content: {
-                      name: data.head.name,
-                      size: data.head.size,
-                      path: data.body,
+        if (data.progress === 100) {
+          setMsgList((list) => {
+            const item: MitemProps = {
+              name: '他',
+              createdAt: new Date().toISOString(),
+              msg: [
+                data.head.type === 'text'
+                  ? {
+                      type: 'text',
+                      content: data.body,
+                    }
+                  : {
+                      type: 'file',
+                      content: {
+                        name: data.head.name,
+                        size: data.head.size,
+                        path: data.body,
+                      },
                     },
-                  },
-            ],
-          };
-          return [...list, item];
-        });
+              ],
+            };
+            return [...list, item];
+          });
+        }
       });
     });
   }, []);
@@ -75,7 +77,14 @@ export default function Trans() {
     });
 
     const [connection] = await udpChannel.connectionEmitter.wait();
-    connection.send('text', { text: inputMessage });
+    connection.send({
+      type: 'text',
+      head: {
+        name: 'message',
+        size: inputMessage.length,
+      },
+      body: inputMessage,
+    });
 
     setInputMessage('');
   };
@@ -88,7 +97,14 @@ export default function Trans() {
     });
     console.log('res', res);
     const [connection] = await udpChannel.connectionEmitter.wait();
-    connection.send('file', res.tempFiles[0]);
+    connection.send({
+      type: 'file',
+      head: {
+        name: res.tempFiles[0].name,
+        size: res.tempFiles[0].size,
+      },
+      body: res.tempFiles[0].path,
+    });
   };
 
   return (
