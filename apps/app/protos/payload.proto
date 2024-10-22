@@ -1,10 +1,10 @@
 syntax = "proto3";
 
 message Plink {
-    uint32 version = 1; // 2 Byte
-    string uuid = 2; // 36 Byte offset 2
-    string socketIP = 3; // 32 Byte offset 38
-    uint64 ts = 4; // 8 Byte offset 70
+    uint32 version = 1; 
+    string uuid = 2;
+    string socketIP = 3; 
+    uint64 ts = 4;
 }
 
 message Channel{
