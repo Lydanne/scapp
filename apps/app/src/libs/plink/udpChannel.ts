@@ -134,9 +134,9 @@ class Connection {
         const [ackDataStatus] = await this.signalReceiver.waitTimeout(1000);
         if (
           ackDataStatus.id === id &&
-          ackDataStatus.signal.oneofKind === 'ackDataFinish' &&
-          ackDataStatus.signal.ackDataFinish.index === index &&
-          ackDataStatus.signal.ackDataFinish.status === FinishStatus.Ok
+          ackDataStatus.signal.oneofKind === 'ackChunkFinish' &&
+          ackDataStatus.signal.ackChunkFinish.index === index &&
+          ackDataStatus.signal.ackChunkFinish.status === FinishStatus.Ok
         ) {
           index++;
         } else {
@@ -210,8 +210,8 @@ class Connection {
       this.signalSender.emitSync({
         id: data.id,
         signal: {
-          oneofKind: 'ackDataFinish',
-          ackDataFinish: {
+          oneofKind: 'ackChunkFinish',
+          ackChunkFinish: {
             index: data.index,
             status: FinishStatus.Ok,
           },

@@ -154,11 +154,11 @@ export interface SyncAction {
         ackReady: AckReadySignal;
       }
     | {
-        oneofKind: 'ackDataFinish';
+        oneofKind: 'ackChunkFinish';
         /**
-         * @generated from protobuf field: AckDtaFinish ackDataFinish = 4;
+         * @generated from protobuf field: AckChunkFinish ackChunkFinish = 4;
          */
-        ackDataFinish: AckDtaFinish;
+        ackChunkFinish: AckChunkFinish;
       }
     | {
         oneofKind: undefined;
@@ -207,9 +207,9 @@ export interface AckReadySignal {
   sign: string;
 }
 /**
- * @generated from protobuf message AckDtaFinish
+ * @generated from protobuf message AckChunkFinish
  */
-export interface AckDtaFinish {
+export interface AckChunkFinish {
   /**
    * @generated from protobuf field: uint32 index = 1;
    */
@@ -788,10 +788,10 @@ class SyncAction$Type extends MessageType<SyncAction> {
       },
       {
         no: 4,
-        name: 'ackDataFinish',
+        name: 'ackChunkFinish',
         kind: 'message',
         oneof: 'signal',
-        T: () => AckDtaFinish,
+        T: () => AckChunkFinish,
       },
     ]);
   }
@@ -839,14 +839,14 @@ class SyncAction$Type extends MessageType<SyncAction> {
             ),
           };
           break;
-        case /* AckDtaFinish ackDataFinish */ 4:
+        case /* AckChunkFinish ackChunkFinish */ 4:
           message.signal = {
-            oneofKind: 'ackDataFinish',
-            ackDataFinish: AckDtaFinish.internalBinaryRead(
+            oneofKind: 'ackChunkFinish',
+            ackChunkFinish: AckChunkFinish.internalBinaryRead(
               reader,
               reader.uint32(),
               options,
-              (message.signal as any).ackDataFinish,
+              (message.signal as any).ackChunkFinish,
             ),
           };
           break;
@@ -890,10 +890,10 @@ class SyncAction$Type extends MessageType<SyncAction> {
         writer.tag(3, WireType.LengthDelimited).fork(),
         options,
       ).join();
-    /* AckDtaFinish ackDataFinish = 4; */
-    if (message.signal.oneofKind === 'ackDataFinish')
-      AckDtaFinish.internalBinaryWrite(
-        message.signal.ackDataFinish,
+    /* AckChunkFinish ackChunkFinish = 4; */
+    if (message.signal.oneofKind === 'ackChunkFinish')
+      AckChunkFinish.internalBinaryWrite(
+        message.signal.ackChunkFinish,
         writer.tag(4, WireType.LengthDelimited).fork(),
         options,
       ).join();
@@ -1095,9 +1095,9 @@ class AckReadySignal$Type extends MessageType<AckReadySignal> {
  */
 export const AckReadySignal = new AckReadySignal$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class AckDtaFinish$Type extends MessageType<AckDtaFinish> {
+class AckChunkFinish$Type extends MessageType<AckChunkFinish> {
   constructor() {
-    super('AckDtaFinish', [
+    super('AckChunkFinish', [
       { no: 1, name: 'index', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
       {
         no: 2,
@@ -1107,20 +1107,20 @@ class AckDtaFinish$Type extends MessageType<AckDtaFinish> {
       },
     ]);
   }
-  create(value?: PartialMessage<AckDtaFinish>): AckDtaFinish {
+  create(value?: PartialMessage<AckChunkFinish>): AckChunkFinish {
     const message = globalThis.Object.create(this.messagePrototype!);
     message.index = 0;
     message.status = 0;
     if (value !== undefined)
-      reflectionMergePartial<AckDtaFinish>(this, message, value);
+      reflectionMergePartial<AckChunkFinish>(this, message, value);
     return message;
   }
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: AckDtaFinish,
-  ): AckDtaFinish {
+    target?: AckChunkFinish,
+  ): AckChunkFinish {
     let message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
@@ -1152,7 +1152,7 @@ class AckDtaFinish$Type extends MessageType<AckDtaFinish> {
     return message;
   }
   internalBinaryWrite(
-    message: AckDtaFinish,
+    message: AckChunkFinish,
     writer: IBinaryWriter,
     options: BinaryWriteOptions,
   ): IBinaryWriter {
@@ -1173,6 +1173,6 @@ class AckDtaFinish$Type extends MessageType<AckDtaFinish> {
   }
 }
 /**
- * @generated MessageType for protobuf message AckDtaFinish
+ * @generated MessageType for protobuf message AckChunkFinish
  */
-export const AckDtaFinish = new AckDtaFinish$Type();
+export const AckChunkFinish = new AckChunkFinish$Type();

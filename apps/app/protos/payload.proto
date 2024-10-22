@@ -41,7 +41,7 @@ message SyncAction{
     oneof signal {
         SynReadySignal synReady = 2;
         AckReadySignal ackReady = 3;
-        AckDtaFinish ackDataFinish = 4;
+        AckChunkFinish ackChunkFinish = 4;
 
     }
 }
@@ -65,7 +65,7 @@ message AckReadySignal{
     string sign = 3;
 }
 
-message AckDtaFinish{
+message AckChunkFinish{
     uint32 index = 1;
     FinishStatus status = 2;
 }
