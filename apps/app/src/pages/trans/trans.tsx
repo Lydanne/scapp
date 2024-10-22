@@ -11,7 +11,7 @@ import type { MitemProps } from 'src/components/mlist/mitem';
 import Mlist from 'src/components/mlist/mlist';
 import Navbar from 'src/components/navbar/navbar';
 import Page from 'src/components/page/page';
-import { Channel, type Plink } from 'src/libs/plink/payload';
+import { Channel, DataType, type Plink } from 'src/libs/plink/payload';
 import { toBinary } from 'src/libs/plink/shared';
 import udpChannel, { type SocketIP } from 'src/libs/plink/udpChannel';
 import { useRouter } from 'src/libs/tapi/router';
@@ -38,7 +38,7 @@ export default function Trans() {
               name: '他',
               createdAt: new Date().toISOString(),
               msg: [
-                data.head.type === 'text'
+                data.type === DataType.TEXT
                   ? {
                       type: 'text',
                       content: data.body,
@@ -78,7 +78,7 @@ export default function Trans() {
 
     const [connection] = await udpChannel.connectionEmitter.wait();
     connection.send({
-      type: 'text',
+      type: DataType.TEXT,
       head: {
         name: 'message',
         size: inputMessage.length,
@@ -98,7 +98,7 @@ export default function Trans() {
     console.log('res', res);
     const [connection] = await udpChannel.connectionEmitter.wait();
     connection.send({
-      type: 'file',
+      type: DataType.FILE,
       head: {
         name: res.tempFiles[0].name,
         size: res.tempFiles[0].size,

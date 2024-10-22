@@ -51,7 +51,12 @@ message SynReadySignal{
     uint32 size = 2;
     string sign = 3;
     string name = 4;
-    string type = 5;
+    DataType type = 5;
+}
+
+enum DataType {
+    TEXT = 0;
+    FILE = 1;
 }
 
 message AckReadySignal{

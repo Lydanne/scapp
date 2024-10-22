@@ -7,6 +7,7 @@ import { UdpSocket } from '../tapi/socket';
 import {
   Channel,
   type DataAction,
+  DataType,
   FinishStatus,
   type SynReadySignal,
   type SyncAction,
@@ -33,19 +34,17 @@ export type ConnectionProps = {
   seq: number;
 };
 
-export type TypeKey = 'file' | 'text';
-
 export type OnData = {
   id: number; // 消息 id
   index: number; // 块序号
-  type: TypeKey;
+  type: DataType;
   progress: number; // 0-100, 0 表示准备好，100 表示完成
   head: SynReadySignal;
   body: string;
 };
 
 export type SendData = {
-  type: TypeKey;
+  type: DataType;
   head: Partial<SynReadySignal>;
   body: string;
 };
@@ -81,7 +80,7 @@ class Connection {
     let getDataChunk: (offset: number, length: number) => Promise<ArrayBuffer>;
     const ts = Date.now();
 
-    if (type === 'file') {
+    if (type === DataType.FILE) {
       const path = head.name ?? '';
       size = head.size ?? 0;
       console.log('send file', [path, size]);
@@ -153,7 +152,7 @@ class Connection {
       }
     }
 
-    if (type === 'file' && fd) {
+    if (type === DataType.FILE && fd) {
       await fd.close();
     }
 
@@ -193,7 +192,7 @@ class Connection {
         cb({
           id: data.id,
           index: 0,
-          type: data.signal.synReady.type as TypeKey,
+          type: data.signal.synReady.type as DataType,
           progress: 0,
           head: data.signal.synReady,
           body: '',
@@ -228,7 +227,7 @@ class Connection {
       cb({
         id: data.id,
         index: data.index,
-        type: pipe.head.type as TypeKey,
+        type: pipe.head.type as DataType,
         progress: pipe.progress,
         head: pipe.head,
         body: '',
@@ -237,18 +236,18 @@ class Connection {
       if (pipe.received === pipe.head.length) {
         try {
           const buffer = mergeArrayBuffer(pipe.buffers);
-          if (pipe.head.type === 'text') {
+          if (pipe.head.type === DataType.TEXT) {
             const base64Text = StringBuffer.decode(new Uint8Array(buffer));
             const body = Base64.decode(base64Text);
             cb({
               id: data.id,
               index: data.index,
-              type: 'text',
+              type: DataType.TEXT,
               progress: 100,
               head: pipe.head,
               body: body,
             });
-          } else if (pipe.head.type === 'file') {
+          } else if (pipe.head.type === DataType.FILE) {
             const filename = decodeURIComponent(pipe.head.name);
             await FS.remove(filename);
             const fd = await FS.open(filename, 'w+');
@@ -267,7 +266,7 @@ class Connection {
             cb({
               id: data.id,
               index: data.index,
-              type: 'file',
+              type: DataType.FILE,
               progress: 100,
               head: {
                 ...pipe.head,

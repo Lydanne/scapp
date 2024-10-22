@@ -125,10 +125,7 @@ export interface DataAction {
   /**
    * @generated from protobuf field: bytes body = 3;
    */
-  body: Uint8Array; // oneof data {
-  //     string text = 3;
-  //     bytes file = 4;
-  // }
+  body: Uint8Array;
 }
 /**
  * @generated from protobuf message SyncAction
@@ -188,9 +185,9 @@ export interface SynReadySignal {
    */
   name: string;
   /**
-   * @generated from protobuf field: string type = 5;
+   * @generated from protobuf field: DataType type = 5;
    */
-  type: string;
+  type: DataType;
 }
 /**
  * @generated from protobuf message AckReadySignal
@@ -221,6 +218,19 @@ export interface AckDtaFinish {
    * @generated from protobuf field: FinishStatus status = 2;
    */
   status: FinishStatus;
+}
+/**
+ * @generated from protobuf enum DataType
+ */
+export enum DataType {
+  /**
+   * @generated from protobuf enum value: TEXT = 0;
+   */
+  TEXT = 0,
+  /**
+   * @generated from protobuf enum value: FILE = 1;
+   */
+  FILE = 1,
 }
 /**
  * @generated from protobuf enum FinishStatus
@@ -909,7 +919,7 @@ class SynReadySignal$Type extends MessageType<SynReadySignal> {
       { no: 2, name: 'size', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
       { no: 3, name: 'sign', kind: 'scalar', T: 9 /*ScalarType.STRING*/ },
       { no: 4, name: 'name', kind: 'scalar', T: 9 /*ScalarType.STRING*/ },
-      { no: 5, name: 'type', kind: 'scalar', T: 9 /*ScalarType.STRING*/ },
+      { no: 5, name: 'type', kind: 'enum', T: () => ['DataType', DataType] },
     ]);
   }
   create(value?: PartialMessage<SynReadySignal>): SynReadySignal {
@@ -918,7 +928,7 @@ class SynReadySignal$Type extends MessageType<SynReadySignal> {
     message.size = 0;
     message.sign = '';
     message.name = '';
-    message.type = '';
+    message.type = 0;
     if (value !== undefined)
       reflectionMergePartial<SynReadySignal>(this, message, value);
     return message;
@@ -946,8 +956,8 @@ class SynReadySignal$Type extends MessageType<SynReadySignal> {
         case /* string name */ 4:
           message.name = reader.string();
           break;
-        case /* string type */ 5:
-          message.type = reader.string();
+        case /* DataType type */ 5:
+          message.type = reader.int32();
           break;
         default:
           let u = options.readUnknownField;
@@ -984,9 +994,8 @@ class SynReadySignal$Type extends MessageType<SynReadySignal> {
     /* string name = 4; */
     if (message.name !== '')
       writer.tag(4, WireType.LengthDelimited).string(message.name);
-    /* string type = 5; */
-    if (message.type !== '')
-      writer.tag(5, WireType.LengthDelimited).string(message.type);
+    /* DataType type = 5; */
+    if (message.type !== 0) writer.tag(5, WireType.Varint).int32(message.type);
     let u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
