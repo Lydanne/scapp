@@ -32,7 +32,7 @@ export default function Trans() {
       const [connection] = await udpChannel.connectionEmitter.wait();
       connection.on((data) => {
         console.log('connection data', data);
-        if (data.status === OnDataStatus.DONE) {
+        if (data.status === OnDataStatus.READY) {
           appendMsg({
             id: data.id,
             name: '他',
@@ -53,6 +53,8 @@ export default function Trans() {
                   },
             ],
           });
+        }
+        if (data.status === OnDataStatus.DONE) {
         }
       });
     });
