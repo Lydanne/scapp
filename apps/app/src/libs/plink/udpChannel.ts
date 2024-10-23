@@ -207,6 +207,10 @@ class Connection {
         return;
       }
 
+      if (pipe.buffers[data.index]) {
+        console.warn('chunk already received', data.id, data.index);
+        return;
+      }
       this.signalSender.emitSync({
         id: data.id,
         signal: {
@@ -217,11 +221,8 @@ class Connection {
           },
         },
       });
-
-      if (!pipe.buffers[data.index]) {
-        pipe.received += 1;
-        pipe.progress = Math.floor((pipe.received / pipe.head.length) * 100);
-      }
+      pipe.received += 1;
+      pipe.progress = Math.floor((pipe.received / pipe.head.length) * 100);
       pipe.buffers[data.index] = data.body;
 
       cb({
