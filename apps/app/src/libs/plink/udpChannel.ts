@@ -37,11 +37,18 @@ export type ConnectionProps = {
 export type OnData = {
   id: number; // 消息 id
   index: number; // 块序号
+  status: OnDataStatus;
   type: DataType;
   progress: number; // 0-100, 0 表示准备好，100 表示完成
   head: SynReadySignal;
   body: string;
 };
+
+export enum OnDataStatus {
+  READY = 0,
+  SENDING = 1,
+  DONE = 2,
+}
 
 export type SendData = {
   id: number;
@@ -192,6 +199,7 @@ class Connection {
         cb({
           id: data.id,
           index: 0,
+          status: OnDataStatus.READY,
           type: data.signal.synReady.type as DataType,
           progress: 0,
           head: data.signal.synReady,
@@ -228,6 +236,7 @@ class Connection {
       cb({
         id: data.id,
         index: data.index,
+        status: OnDataStatus.SENDING,
         type: pipe.head.type as DataType,
         progress: pipe.progress,
         head: pipe.head,
@@ -243,6 +252,7 @@ class Connection {
             cb({
               id: data.id,
               index: data.index,
+              status: OnDataStatus.DONE,
               type: DataType.TEXT,
               progress: 100,
               head: pipe.head,
@@ -267,6 +277,7 @@ class Connection {
             cb({
               id: data.id,
               index: data.index,
+              status: OnDataStatus.DONE,
               type: DataType.FILE,
               progress: 100,
               head: {

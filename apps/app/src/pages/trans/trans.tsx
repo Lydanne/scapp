@@ -7,13 +7,13 @@ import Taro from '@tarojs/taro';
 
 import Body from 'src/components/body/body';
 import Footer from 'src/components/footer/footer';
-import type { MitemProps } from 'src/components/mlist/mitem';
+import useMlist from 'src/components/mlist/hook';
 import Mlist from 'src/components/mlist/mlist';
 import Navbar from 'src/components/navbar/navbar';
 import Page from 'src/components/page/page';
 import { Channel, DataType, type Plink } from 'src/libs/plink/payload';
 import { randId, toBinary } from 'src/libs/plink/shared';
-import udpChannel, { type SocketIP } from 'src/libs/plink/udpChannel';
+import udpChannel, { OnDataStatus } from 'src/libs/plink/udpChannel';
 import { useRouter } from 'src/libs/tapi/router';
 
 import Style from './trans.module.scss';
@@ -25,49 +25,33 @@ type TransProps = {
 export default function Trans() {
   const [inputMessage, setInputMessage] = useState('');
   const { props, back } = useRouter<TransProps>();
-  const [msgList, setMsgList] = useState<MitemProps[]>([]);
-
-  const updateMsgById = useCallback((id: number, data: MitemProps) => {
-    setMsgList((list) => {
-      for (let i = list.length - 1; i >= 0; i--) {
-        if (list[i].id === id) {
-          const updatedList = [...list];
-          updatedList[i] = { ...updatedList[i], ...data };
-          return updatedList;
-        }
-      }
-      return list;
-    });
-  }, []);
+  const { msgList, setMsgById, appendMsg } = useMlist();
 
   useEffect(() => {
     setTimeout(async () => {
       const [connection] = await udpChannel.connectionEmitter.wait();
       connection.on((data) => {
         console.log('connection data', data);
-        if (data.progress === 100) {
-          setMsgList((list) => {
-            const item: MitemProps = {
-              id: data.id,
-              name: '他',
-              createdAt: new Date().toISOString(),
-              msg: [
-                data.type === DataType.TEXT
-                  ? {
-                      type: 'text',
-                      content: data.body,
-                    }
-                  : {
-                      type: 'file',
-                      content: {
-                        name: data.head.name,
-                        size: data.head.size,
-                        path: data.body,
-                      },
+        if (data.status === OnDataStatus.DONE) {
+          appendMsg({
+            id: data.id,
+            name: '他',
+            createdAt: new Date().toISOString(),
+            msg: [
+              data.type === DataType.TEXT
+                ? {
+                    type: 'text',
+                    content: data.body,
+                  }
+                : {
+                    type: 'file',
+                    content: {
+                      name: data.head.name,
+                      size: data.head.size,
+                      path: data.body,
                     },
-              ],
-            };
-            return [...list, item];
+                  },
+            ],
           });
         }
       });
@@ -78,19 +62,16 @@ export default function Trans() {
     console.log('inputMessage', [inputMessage, inputMessage.length]);
     const id = randId();
 
-    setMsgList((list) => {
-      const item: MitemProps = {
-        id,
-        name: '我',
-        createdAt: new Date().toISOString(),
-        msg: [
-          {
-            type: 'text',
-            content: inputMessage,
-          },
-        ],
-      };
-      return [...list, item];
+    appendMsg({
+      id,
+      name: '我',
+      createdAt: new Date().toISOString(),
+      msg: [
+        {
+          type: 'text',
+          content: inputMessage,
+        },
+      ],
     });
 
     const [connection] = await udpChannel.connectionEmitter.wait();
