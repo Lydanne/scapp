@@ -41,10 +41,12 @@ export default function Trans() {
               data.type === DataType.TEXT
                 ? {
                     type: 'text',
-                    content: data.body,
+                    status: OnDataStatus.READY,
+                    content: '...',
                   }
                 : {
                     type: 'file',
+                    status: OnDataStatus.READY,
                     content: {
                       name: data.head.name,
                       size: data.head.size,
@@ -53,8 +55,19 @@ export default function Trans() {
                   },
             ],
           });
-        }
-        if (data.status === OnDataStatus.DONE) {
+        } else if (data.status === OnDataStatus.SENDING) {
+          setMsgById(data.id, (msg) => {
+            msg.msg[0].status = OnDataStatus.SENDING;
+            msg.msg[0].content = '.'.repeat(data.index);
+            msg.msg[0] = { ...msg.msg[0] };
+            return { ...msg };
+          });
+        } else if (data.status === OnDataStatus.DONE) {
+          setMsgById(data.id, (msg) => {
+            msg.msg[0].status = OnDataStatus.DONE;
+            msg.msg[0].content = data.body;
+            return { ...msg };
+          });
         }
       });
     });
@@ -71,6 +84,7 @@ export default function Trans() {
       msg: [
         {
           type: 'text',
+          status: OnDataStatus.READY,
           content: inputMessage,
         },
       ],

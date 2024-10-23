@@ -1,6 +1,8 @@
 import { View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 
+import type { OnDataStatus } from 'src/libs/plink/udpChannel';
+
 import Style from './mitem.module.scss';
 
 export type MitemProps = {
@@ -10,6 +12,7 @@ export type MitemProps = {
   msg: {
     type: string;
     content: any;
+    status?: OnDataStatus;
   }[];
 };
 

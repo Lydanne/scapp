@@ -4,18 +4,21 @@ import type { MitemProps } from './mitem';
 
 export default function useMlist() {
   const [msgList, setMsgList] = useState<MitemProps[]>([]);
-  const setMsgById = useCallback((id: number, data: MitemProps) => {
-    setMsgList((list) => {
-      for (let i = list.length - 1; i >= 0; i--) {
-        if (list[i].id === id) {
-          const updatedList = [...list];
-          updatedList[i] = { ...updatedList[i], ...data };
-          return updatedList;
+  const setMsgById = useCallback(
+    (id: number, data: (p: MitemProps) => Partial<MitemProps>) => {
+      setMsgList((list) => {
+        for (let i = list.length - 1; i >= 0; i--) {
+          if (list[i].id === id) {
+            const updatedList = [...list];
+            updatedList[i] = { ...updatedList[i], ...data(list[i]) };
+            return updatedList;
+          }
         }
-      }
-      return list;
-    });
-  }, []);
+        return list;
+      });
+    },
+    [],
+  );
   const getMsgById = useCallback(
     (id: number) => {
       for (let i = msgList.length - 1; i >= 0; i--) {
