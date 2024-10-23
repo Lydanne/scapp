@@ -4,6 +4,7 @@ import Taro from '@tarojs/taro';
 import Style from './mitem.module.scss';
 
 export type MitemProps = {
+  id: number;
   name: string;
   createdAt: string;
   msg: {

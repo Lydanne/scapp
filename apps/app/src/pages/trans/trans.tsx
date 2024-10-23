@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Close, Top } from '@nutui/icons-react-taro';
 import { TextArea } from '@nutui/nutui-react-taro';
@@ -12,7 +12,7 @@ import Mlist from 'src/components/mlist/mlist';
 import Navbar from 'src/components/navbar/navbar';
 import Page from 'src/components/page/page';
 import { Channel, DataType, type Plink } from 'src/libs/plink/payload';
-import { toBinary } from 'src/libs/plink/shared';
+import { randId, toBinary } from 'src/libs/plink/shared';
 import udpChannel, { type SocketIP } from 'src/libs/plink/udpChannel';
 import { useRouter } from 'src/libs/tapi/router';
 
@@ -27,6 +27,19 @@ export default function Trans() {
   const { props, back } = useRouter<TransProps>();
   const [msgList, setMsgList] = useState<MitemProps[]>([]);
 
+  const updateMsgById = useCallback((id: number, data: MitemProps) => {
+    setMsgList((list) => {
+      for (let i = list.length - 1; i >= 0; i--) {
+        if (list[i].id === id) {
+          const updatedList = [...list];
+          updatedList[i] = { ...updatedList[i], ...data };
+          return updatedList;
+        }
+      }
+      return list;
+    });
+  }, []);
+
   useEffect(() => {
     setTimeout(async () => {
       const [connection] = await udpChannel.connectionEmitter.wait();
@@ -35,6 +48,7 @@ export default function Trans() {
         if (data.progress === 100) {
           setMsgList((list) => {
             const item: MitemProps = {
+              id: data.id,
               name: '他',
               createdAt: new Date().toISOString(),
               msg: [
@@ -62,8 +76,11 @@ export default function Trans() {
 
   const onSend = async () => {
     console.log('inputMessage', [inputMessage, inputMessage.length]);
+    const id = randId();
+
     setMsgList((list) => {
       const item: MitemProps = {
+        id,
         name: '我',
         createdAt: new Date().toISOString(),
         msg: [
@@ -78,6 +95,7 @@ export default function Trans() {
 
     const [connection] = await udpChannel.connectionEmitter.wait();
     connection.send({
+      id,
       type: DataType.TEXT,
       head: {
         name: 'message',
@@ -91,6 +109,7 @@ export default function Trans() {
 
   const onSelectFile = async () => {
     // 微信小程序中读取文件并发送
+    const id = randId();
     const res = await Taro.chooseMessageFile({
       count: 1,
       type: 'file',
@@ -98,6 +117,7 @@ export default function Trans() {
     console.log('res', res);
     const [connection] = await udpChannel.connectionEmitter.wait();
     connection.send({
+      id,
       type: DataType.FILE,
       head: {
         name: res.tempFiles[0].name,

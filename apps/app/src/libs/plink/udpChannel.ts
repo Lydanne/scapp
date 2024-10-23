@@ -12,7 +12,7 @@ import {
   type SynReadySignal,
   type SyncAction,
 } from './payload';
-import { fromBinary, toBinary } from './shared';
+import { fromBinary, mergeArrayBuffer, rand, toBinary } from './shared';
 
 const BLOCK_SIZE = 2048;
 
@@ -44,6 +44,7 @@ export type OnData = {
 };
 
 export type SendData = {
+  id: number;
   type: DataType;
   head: Partial<SynReadySignal>;
   body: string;
@@ -70,9 +71,8 @@ class Connection {
 
   async send(data: SendData) {
     console.log('send', data);
-    const { type, head, body } = data;
+    const { type, head, body, id } = data;
 
-    const id = Date.now() % 1000000000;
     const name = encodeURIComponent(head.name ?? '');
     let size: number;
     let sign: string;
@@ -480,25 +480,6 @@ export class UdpChannel {
 
     return this;
   }
-}
-
-function rand(begin, end) {
-  return Math.floor(Math.random() * (end - begin)) + begin;
-}
-
-function mergeArrayBuffer(buffers: ArrayBufferLike[]): ArrayBuffer {
-  if (buffers.length === 0) {
-    return new ArrayBuffer(0);
-  }
-
-  const length = buffers.reduce((prev, curr) => prev + curr.byteLength, 0);
-  const result = new Uint8Array(length);
-  let offset = 0;
-  for (const buffer of buffers) {
-    result.set(new Uint8Array(buffer), offset);
-    offset += buffer.byteLength;
-  }
-  return result.buffer;
 }
 
 export default new UdpChannel().listen();

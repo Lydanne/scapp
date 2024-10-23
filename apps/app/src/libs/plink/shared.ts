@@ -21,3 +21,27 @@ export function fromBinary<T>(Context: any, buffer: ArrayBuffer): T {
     },
   });
 }
+
+export function randId(): number {
+  const id = (Date.now() % 1000000) * 1000 + Math.floor(Math.random() * 1000);
+  return id;
+}
+
+export function rand(begin: number, end: number) {
+  return Math.floor(Math.random() * (end - begin)) + begin;
+}
+
+export function mergeArrayBuffer(buffers: ArrayBufferLike[]): ArrayBuffer {
+  if (buffers.length === 0) {
+    return new ArrayBuffer(0);
+  }
+
+  const length = buffers.reduce((prev, curr) => prev + curr.byteLength, 0);
+  const result = new Uint8Array(length);
+  let offset = 0;
+  for (const buffer of buffers) {
+    result.set(new Uint8Array(buffer), offset);
+    offset += buffer.byteLength;
+  }
+  return result.buffer;
+}
