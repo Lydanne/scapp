@@ -14,6 +14,7 @@ import Page from 'src/components/page/page';
 import { Channel, DataType, type Plink } from 'src/libs/plink/payload';
 import { randId, toBinary } from 'src/libs/plink/shared';
 import udpChannel, { OnDataStatus } from 'src/libs/plink/udpChannel';
+import { formatFileSize } from 'src/libs/shared/format';
 import { useRouter } from 'src/libs/tapi/router';
 
 import Style from './trans.module.scss';
@@ -42,14 +43,16 @@ export default function Trans() {
                 ? {
                     type: 'text',
                     status: OnDataStatus.READY,
+                    progress: 0,
                     content: '...',
                   }
                 : {
                     type: 'file',
                     status: OnDataStatus.READY,
+                    progress: 0,
                     content: {
                       name: data.head.name,
-                      size: data.head.size,
+                      size: '...',
                       path: data.body,
                     },
                   },
@@ -57,15 +60,33 @@ export default function Trans() {
           });
         } else if (data.status === OnDataStatus.SENDING) {
           setMsgById(data.id, (msg) => {
+            if (msg.updatedAt && Date.now() - msg.updatedAt < 1000) return null;
+            msg.updatedAt = Date.now();
             msg.msg[0].status = OnDataStatus.SENDING;
-            msg.msg[0].content = '.'.repeat(data.index);
-            msg.msg[0] = { ...msg.msg[0] };
-            return { ...msg };
+            msg.msg[0].progress = data.progress;
+            msg.msg[0].content.size = `${formatFileSize(data.speed)}/s`;
+            return msg;
           });
         } else if (data.status === OnDataStatus.DONE) {
           setMsgById(data.id, (msg) => {
-            msg.msg[0].status = OnDataStatus.DONE;
-            msg.msg[0].content = data.body;
+            msg.msg[0] =
+              data.type === DataType.TEXT
+                ? {
+                    type: 'text',
+                    status: OnDataStatus.DONE,
+                    progress: data.progress,
+                    content: data.body,
+                  }
+                : {
+                    type: 'file',
+                    status: OnDataStatus.DONE,
+                    progress: data.progress,
+                    content: {
+                      name: data.head.name,
+                      size: `${formatFileSize(data.head.size)}  ${formatFileSize(data.speed)}/s`,
+                      path: data.body,
+                    },
+                  };
             return { ...msg };
           });
         }
@@ -121,6 +142,22 @@ export default function Trans() {
         size: res.tempFiles[0].size,
       },
       body: res.tempFiles[0].path,
+    });
+    appendMsg({
+      id,
+      name: '我',
+      createdAt: new Date().toISOString(),
+      msg: [
+        {
+          type: 'file',
+          status: OnDataStatus.READY,
+          content: {
+            name: res.tempFiles[0].name,
+            size: '...',
+            path: res.tempFiles[0].path,
+          },
+        },
+      ],
     });
   };
 

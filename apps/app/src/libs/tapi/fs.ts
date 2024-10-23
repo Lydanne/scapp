@@ -23,6 +23,7 @@ export class FS {
 
   static async sign(filePath: string, type: 'md5' | 'sha1') {
     filePath = FS.stdPathStyle(filePath);
+    console.log('filePath', filePath);
     const sign = await new Promise<string>((resolve, reject) => {
       fsm.getFileInfo({
         filePath: filePath,

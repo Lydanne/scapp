@@ -37,7 +37,28 @@ export default function IndexQuick() {
             )}
           </View>
         </View>
-        <Mlist list={[]}></Mlist>
+        <Mlist
+          list={[
+            {
+              id: 1,
+              name: '示例项目',
+              createdAt: new Date().toISOString(),
+              msg: [
+                {
+                  type: 'text',
+                  content: '这是一个示例消息',
+                },
+                {
+                  type: 'file',
+                  content: {
+                    name: '示例文件',
+                    size: '100KB',
+                  },
+                },
+              ],
+            },
+          ]}
+        ></Mlist>
         <View style={{ height: 100 }}></View>
       </Body>
     </>

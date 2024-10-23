@@ -9,10 +9,12 @@ export type MitemProps = {
   id: number;
   name: string;
   createdAt: string;
+  updatedAt?: number;
   msg: {
     type: string;
     content: any;
     status?: OnDataStatus;
+    progress?: number;
   }[];
 };
 
@@ -46,15 +48,23 @@ export default function Mitem(props: MitemProps) {
                   className={Style['file']}
                   onClick={() => onOpenFile(item, index)}
                 >
-                  <View className={Style['file-info']}>
-                    <View className={Style['file-name']}>
-                      {item.content.name}
+                  <View className={Style['file-content']}>
+                    <View className={Style['file-info']}>
+                      <View className={Style['file-name']}>
+                        {item.content.name}
+                      </View>
+                      <View className={Style['file-size']}>
+                        {item.content.size}
+                      </View>
                     </View>
-                    <View className={Style['file-size']}>
-                      {item.content.size}
-                    </View>
+                    <View className={Style['file-icon']}></View>
                   </View>
-                  <View className={Style['file-icon']}></View>
+                  {Boolean(item.progress && item.progress < 100) && (
+                    <View
+                      className={Style['file-progress']}
+                      style={{ '--progress': `${item.progress}%` } as any}
+                    ></View>
+                  )}
                 </View>
               )}
             </View>

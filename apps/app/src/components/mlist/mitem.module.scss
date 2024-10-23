@@ -39,11 +39,36 @@
 
 .file {
   display: flex;
-  align-items: center;
-  padding: 5px;
-  border: 1px solid #eaeaea;
-  border-radius: 5px;
-  background-color: #fff;
+  flex-direction: column;
+  border-radius: 8px;
+  background-color: #ffffff;
+  max-width: 90%;
+  position: relative;
+  word-wrap: break-word;
+  word-break: break-all;
+  white-space: normal;
+  overflow: hidden;
+
+  &:hover {
+    background-color: #f9f9f9;
+  }
+
+  &:active {
+    background-color: #f0f0f0;
+  }
+
+  &-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 10px 15px;
+  }
+
+  &-progress {
+    width: var(--progress, 0%);
+    height: 4px;
+    background-color: #4caf50;
+  }
 
   &-info {
     flex: 1;
@@ -75,7 +100,7 @@
   background-color: #ffffff;
   border-radius: 8px;
   padding: 10px 15px;
-  max-width: 80%;
+  max-width: 90%;
   display: inline-block;
   position: relative;
   word-wrap: break-word;

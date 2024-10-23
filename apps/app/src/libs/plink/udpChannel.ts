@@ -40,6 +40,7 @@ export type OnData = {
   status: OnDataStatus;
   type: DataType;
   progress: number; // 0-100, 0 表示准备好，100 表示完成
+  speed: number; // 速度 字节/秒
   head: SynReadySignal;
   body: string;
 };
@@ -88,7 +89,7 @@ class Connection {
     const ts = Date.now();
 
     if (type === DataType.FILE) {
-      const path = head.name ?? '';
+      const path = body ?? '';
       size = head.size ?? 0;
       console.log('send file', [path, size]);
 
@@ -173,7 +174,10 @@ class Connection {
         buffers: Uint8Array[];
         head: SynReadySignal;
         received: number;
+        receivedBytes: number;
         progress: number;
+        speed: number;
+        startTime: number;
       }
     >();
 
@@ -183,7 +187,10 @@ class Connection {
           buffers: new Array(data.signal.synReady.length),
           head: data.signal.synReady,
           received: 0,
+          receivedBytes: 0,
           progress: 0,
+          speed: 0,
+          startTime: Date.now(),
         });
         this.signalSender.emitSync({
           id: data.id,
@@ -202,6 +209,7 @@ class Connection {
           status: OnDataStatus.READY,
           type: data.signal.synReady.type as DataType,
           progress: 0,
+          speed: 0,
           head: data.signal.synReady,
           body: '',
         });
@@ -230,7 +238,12 @@ class Connection {
         },
       });
       pipe.received += 1;
+      pipe.receivedBytes += data.body.byteLength;
+      const now = Date.now();
       pipe.progress = Math.floor((pipe.received / pipe.head.length) * 100);
+      pipe.speed = Math.floor(
+        (pipe.receivedBytes / (now - pipe.startTime)) * 1000,
+      );
       pipe.buffers[data.index] = data.body;
 
       cb({
@@ -239,6 +252,7 @@ class Connection {
         status: OnDataStatus.SENDING,
         type: pipe.head.type as DataType,
         progress: pipe.progress,
+        speed: pipe.speed,
         head: pipe.head,
         body: '',
       });
@@ -255,6 +269,7 @@ class Connection {
               status: OnDataStatus.DONE,
               type: DataType.TEXT,
               progress: 100,
+              speed: pipe.speed,
               head: pipe.head,
               body: body,
             });
@@ -280,6 +295,7 @@ class Connection {
               status: OnDataStatus.DONE,
               type: DataType.FILE,
               progress: 100,
+              speed: pipe.speed,
               head: {
                 ...pipe.head,
                 name: filename,
