@@ -14,7 +14,7 @@ import {
 } from './payload';
 import { fromBinary, mergeArrayBuffer, rand, toBinary } from './shared';
 
-const BLOCK_SIZE = 1024;
+const BLOCK_SIZE = 1024 * 64;
 
 const socket = new UdpSocket();
 
