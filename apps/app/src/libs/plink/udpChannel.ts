@@ -14,7 +14,7 @@ import {
 } from './payload';
 import { fromBinary, mergeArrayBuffer, rand, toBinary } from './shared';
 
-const BLOCK_SIZE = 2048;
+const BLOCK_SIZE = 1024;
 
 const socket = new UdpSocket();
 
@@ -229,10 +229,6 @@ class Connection {
         return;
       }
 
-      if (pipe.buffers[data.index]) {
-        console.warn('chunk already received', data.id, data.index);
-        return;
-      }
       this.signalSender.emitSync({
         id: data.id,
         signal: {
@@ -243,6 +239,10 @@ class Connection {
           },
         },
       });
+      if (pipe.buffers[data.index]) {
+        console.warn('chunk already received', data.id, data.index);
+        return;
+      }
       pipe.received += 1;
       pipe.receivedBytes += data.body.byteLength;
       const now = Date.now();
