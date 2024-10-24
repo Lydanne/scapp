@@ -183,9 +183,14 @@ class Connection {
 
     this.signalReceiver.on(async (data) => {
       if (data.signal.oneofKind === 'synReady') {
+        const filename = decodeURIComponent(data.signal.synReady.name);
+        const head = {
+          ...data.signal.synReady,
+          name: filename,
+        };
         pipeMap.set(data.id, {
           buffers: new Array(data.signal.synReady.length),
-          head: data.signal.synReady,
+          head,
           received: 0,
           receivedBytes: 0,
           progress: 0,
@@ -203,6 +208,7 @@ class Connection {
             },
           },
         });
+
         cb({
           id: data.id,
           index: 0,
@@ -210,7 +216,7 @@ class Connection {
           type: data.signal.synReady.type as DataType,
           progress: 0,
           speed: 0,
-          head: data.signal.synReady,
+          head,
           body: '',
         });
       }
@@ -274,7 +280,7 @@ class Connection {
               body: body,
             });
           } else if (pipe.head.type === DataType.FILE) {
-            const filename = decodeURIComponent(pipe.head.name);
+            const filename = pipe.head.name;
             await FS.remove(filename);
             const fd = await FS.open(filename, 'w+');
 
@@ -296,10 +302,7 @@ class Connection {
               type: DataType.FILE,
               progress: 100,
               speed: pipe.speed,
-              head: {
-                ...pipe.head,
-                name: filename,
-              },
+              head: pipe.head,
               body: fd.filePath,
             });
           }
@@ -338,7 +341,7 @@ export class UdpChannel {
 
       socket.receiver.on((res) => {
         const data = fromBinary<Channel>(Channel, res.message);
-        console.log('[UdpChannel]', 'receiver', data);
+        // console.log('[UdpChannel]', 'receiver', data);
         if (data.action?.oneofKind === 'connect') {
           const id = data.id;
           if (this.connectionClient.has(id)) {
