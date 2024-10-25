@@ -77,7 +77,7 @@ class Connection {
     this.seq = data.seq;
   }
 
-  async send(data: SendData) {
+  async send(data: SendData, cb?: (onData: OnData) => any) {
     console.log('send', data);
     const { type, head, body, id } = data;
 
@@ -147,6 +147,17 @@ class Connection {
           ackDataStatus.signal.ackChunkFinish.status === FinishStatus.Ok
         ) {
           index++;
+          const speed = Math.floor((offsetLen / (Date.now() - ts)) * 1000);
+          cb?.({
+            id,
+            index,
+            status: OnDataStatus.SENDING,
+            type,
+            progress: Math.floor((index / length) * 100),
+            speed,
+            head: head as SynReadySignal,
+            body: '',
+          });
         } else {
           console.log('发送重试', ackDataStatus);
         }
@@ -163,6 +174,17 @@ class Connection {
     if (type === DataType.FILE && fd) {
       await fd.close();
     }
+
+    cb?.({
+      id,
+      index: length,
+      status: OnDataStatus.DONE,
+      type,
+      progress: 100,
+      speed: 0,
+      head: head as SynReadySignal,
+      body: '',
+    });
 
     console.log('发送完成', [id, length], Date.now() - ts);
   }

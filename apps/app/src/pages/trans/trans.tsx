@@ -85,7 +85,7 @@ export default function Trans() {
                     progress: data.progress,
                     content: {
                       name: data.head.name,
-                      size: `${formatFileSize(data.head.size)}  ${formatFileSize(data.speed)}/s`,
+                      size: `${formatFileSize(data.head.size)}`,
                       path: data.body,
                     },
                   };
@@ -136,15 +136,29 @@ export default function Trans() {
     });
     console.log('res', res);
     const [connection] = await udpChannel.connectionEmitter.wait();
-    connection.send({
-      id,
-      type: DataType.FILE,
-      head: {
-        name: res.tempFiles[0].name,
-        size: res.tempFiles[0].size,
+    connection.send(
+      {
+        id,
+        type: DataType.FILE,
+        head: {
+          name: res.tempFiles[0].name,
+          size: res.tempFiles[0].size,
+        },
+        body: res.tempFiles[0].path,
       },
-      body: res.tempFiles[0].path,
-    });
+      (onData) => {
+        setMsgById(id, (msg) => {
+          msg.msg[0].status = onData.status;
+          msg.msg[0].progress = onData.progress;
+          if (onData.status === OnDataStatus.SENDING) {
+            msg.msg[0].content.size = `${formatFileSize(onData.speed)}/s`;
+          } else {
+            msg.msg[0].content.size = `${formatFileSize(onData.head.size)}`;
+          }
+          return msg;
+        });
+      },
+    );
     appendMsg({
       id,
       name: '我',
@@ -155,7 +169,7 @@ export default function Trans() {
           status: OnDataStatus.READY,
           content: {
             name: res.tempFiles[0].name,
-            size: '...',
+            size: `${formatFileSize(res.tempFiles[0].size)}`,
             path: res.tempFiles[0].path,
           },
         },
