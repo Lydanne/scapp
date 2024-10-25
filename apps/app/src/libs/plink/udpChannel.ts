@@ -139,7 +139,7 @@ class Connection {
         body: new Uint8Array(buffer),
       });
       try {
-        const [ackDataStatus] = await this.signalReceiver.waitTimeout(1000);
+        const [ackDataStatus] = await this.signalReceiver.waitTimeout(1500);
         if (
           ackDataStatus.id === id &&
           ackDataStatus.signal.oneofKind === 'ackChunkFinish' &&
@@ -152,7 +152,7 @@ class Connection {
         }
       } catch (error) {
         console.log('发送错误', error);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
       if (index === length) {

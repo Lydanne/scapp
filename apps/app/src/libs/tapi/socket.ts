@@ -23,31 +23,54 @@ export class UdpSocket {
     const port = udp.bind(undefined as unknown as number);
     this.port = port;
 
-    const packetBufferMap = new Map<number, ArrayBuffer[]>();
-    // wx.packetBufferMap = packetBufferMap;
+    let packets: Packet[] = [];
+    // wx.packets = packets;
 
     udp.onMessage((e) => {
       const message = e.message;
       const packet = unwrapSubPacket(message);
 
-      const packetBuffers = packetBufferMap.has(packet.id)
-        ? (packetBufferMap.get(packet.id) as ArrayBuffer[])
-        : [];
-      packetBufferMap.set(packet.id, packetBuffers);
-
-      packetBuffers.push(packet.message);
+      packets.push(packet);
       // console.log('onMessage', packetBufferMap);
 
-      if (packetBuffers.length === packet.length) {
-        const message = mergePacket(packetBuffers);
-        this.receiver.emitSync({ ...e, message });
-        packetBufferMap.delete(packet.id);
+      if (packets.length >= packet.length) {
+        const filterPacketBuffers: ArrayBuffer[] = [];
+        let filterCount = 0;
+        for (let i = 0; i < packets.length; i++) {
+          const pack = packets[i];
+          if (pack.id === packet.id) {
+            filterPacketBuffers[pack.index] = pack.message;
+            filterCount++;
+          }
+        }
+        if (filterCount !== packet.length) {
+          // console.log(
+          //   'onMessage Error',
+          //   filterPacketBuffers.length,
+          //   packet.length,
+          //   packets,
+          // );
+          return;
+        }
+        try {
+          const message = mergePacket(filterPacketBuffers);
+          this.receiver.emitSync({ ...e, message });
+          packets = [];
+        } catch (error) {
+          console.log(
+            'onMessage mergePacket Error',
+            String(error),
+            filterPacketBuffers,
+            packets,
+          );
+        }
       }
     });
     udp.onError((e) => {
       this.errorEmitter.emit(e);
     });
-    this.sender.on((option) => {
+    let uniseq = 0;
+    this.sender.on(async (option) => {
       const message = option.message;
       // console.log('send', option, !(message instanceof ArrayBuffer));
 
@@ -55,11 +78,14 @@ export class UdpSocket {
         udp.send(option);
         return this;
       }
-      const id = randId();
+      const id = uniseq++;
       const packets = splitPacket(message, CHUNK_SIZE);
       for (let i = 0; i < packets.length; i++) {
         const subPacket = wrapSubPacket(id, i, packets.length, packets[i]);
         udp.send({ ...option, message: subPacket });
+      }
+      if (uniseq > Number.MAX_SAFE_INTEGER) {
+        uniseq = 0;
       }
     });
     cb(port);
