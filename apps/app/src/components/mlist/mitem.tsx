@@ -1,4 +1,6 @@
-import { View } from '@tarojs/components';
+import { getIcon } from 'omni-file';
+
+import { Image, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 
 import type { OnDataStatus } from 'src/libs/plink/udpChannel';
@@ -30,7 +32,13 @@ export default function Mitem(props: MitemProps) {
   };
   return (
     <View className={Style['item']}>
-      <View className={Style['item-author']}></View>
+      <View className={Style['item-author']}>
+        <Image
+          className={Style['item-author-img']}
+          src={`https://api.dicebear.com/9.x/bottts/avif`}
+          mode="aspectFill"
+        />
+      </View>
       <View className={Style['item-right']}>
         <View className={Style['item-derive']}>{props.name}</View>
         <View className={Style['item-time']}>{props.createdAt}</View>
@@ -57,7 +65,14 @@ export default function Mitem(props: MitemProps) {
                         {item.content.size}
                       </View>
                     </View>
-                    <View className={Style['file-icon']}></View>
+                    <View className={Style['file-icon']}>
+                      <Image
+                        className={Style['file-icon-img']}
+                        src={`https://codyadam.github.io/omni-file/icons/${getIcon(
+                          item.content.name,
+                        )}.svg`}
+                      ></Image>
+                    </View>
                   </View>
                   {Boolean(item.progress && item.progress < 100) && (
                     <View
