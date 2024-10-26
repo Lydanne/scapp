@@ -23,6 +23,8 @@ type TransProps = {
   plink: Plink;
 };
 
+const UPT_PROGRESS = 300;
+
 export default function Trans() {
   const [inputMessage, setInputMessage] = useState('');
   const { props, back } = useRouter<TransProps>();
@@ -61,7 +63,8 @@ export default function Trans() {
           });
         } else if (data.status === OnDataStatus.SENDING) {
           setMsgById(data.id, (msg) => {
-            if (msg.updatedAt && Date.now() - msg.updatedAt < 1000) return null;
+            if (msg.updatedAt && Date.now() - msg.updatedAt < UPT_PROGRESS)
+              return null;
             msg.updatedAt = Date.now();
             msg.msg[0].status = OnDataStatus.SENDING;
             msg.msg[0].progress = data.progress;
@@ -149,7 +152,8 @@ export default function Trans() {
       (onData) => {
         setMsgById(id, (msg) => {
           if (onData.status === OnDataStatus.SENDING) {
-            if (msg.updatedAt && Date.now() - msg.updatedAt < 1000) return null;
+            if (msg.updatedAt && Date.now() - msg.updatedAt < UPT_PROGRESS)
+              return null;
             msg.updatedAt = Date.now();
             msg.msg[0].status = onData.status;
             msg.msg[0].progress = onData.progress;
