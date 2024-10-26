@@ -12,7 +12,7 @@ import {
   type SynReadySignal,
   type SyncAction,
 } from './payload';
-import { fromBinary, mergeArrayBuffer, rand, toBinary } from './shared';
+import { fromBinary, mergeArrayBuffer, rand, randId, toBinary } from './shared';
 
 const BLOCK_SIZE = 1024 * 64;
 
@@ -58,11 +58,24 @@ export type SendData = {
   body: string;
 };
 
-class Connection {
+export enum OnDisconnectCode {
+  SUCCESS = 0,
+  ERROR = 1, // 未知错误
+  DETECT_ERROR = 2, // 探测错误
+}
+
+export type OnDisconnect = {
+  connection: Connection;
+  code: OnDisconnectCode;
+};
+
+export class Connection {
   id: number;
   status: ChannelStatus;
   socketIP: SocketIP;
   seq: number;
+  detectAt: number;
+  detectErrorCount: number;
 
   sender = new Emitter<(data: DataAction) => any>();
   receiver = new Emitter<(data: DataAction) => any>();
@@ -337,6 +350,19 @@ class Connection {
       }
     });
   }
+
+  about(id: number) {
+    // this.signalSender.emitSync({
+    //   id,
+    //   signal: {
+    //     oneofKind: 'about',
+    //   },
+    // });
+  }
+
+  close() {
+    this.about(0);
+  }
 }
 
 export class UdpChannel {
@@ -346,13 +372,14 @@ export class UdpChannel {
 
   listenEmitter = new Emitter<(port: number) => any>();
   connectionEmitter = new Emitter<(connection: Connection) => any>();
-  rawEmitter = new Emitter<() => Connection>();
+  disconnectEmitter = new Emitter<(connection: OnDisconnect) => any>();
 
   constructor() {
     this.connectionEmitter.on((data) => {
       console.log('[UdpChannel]', 'connectionEmitter', data);
     });
   }
+
   listen() {
     if (UdpChannel.listened) {
       return this;
@@ -366,8 +393,8 @@ export class UdpChannel {
       socket.receiver.on((res) => {
         const data = fromBinary<Channel>(Channel, res.message);
         // console.log('[UdpChannel]', 'receiver', data);
+        const id = data.id;
         if (data.action?.oneofKind === 'connect') {
-          const id = data.id;
           if (this.connectionClient.has(id)) {
             // 验证连接
             const client = this.connectionClient.get(id) as Connection;
@@ -479,17 +506,113 @@ export class UdpChannel {
             });
           }
         } else if (data.action?.oneofKind === 'data') {
-          const id = data.id;
           if (this.connectionClient.has(id)) {
             const client = this.connectionClient.get(id) as Connection;
             client.receiver.emitSync(data.action.data);
           }
         } else if (data.action.oneofKind === 'sync') {
-          const id = data.id;
           if (this.connectionClient.has(id)) {
             const client = this.connectionClient.get(id) as Connection;
             client.signalReceiver.emitSync(data.action.sync);
           }
+        } else if (data.action.oneofKind === 'disconnect') {
+          const connection = this.connectionClient.get(id);
+          if (!connection) {
+            return;
+          }
+          if (connection.status === ChannelStatus.connected) {
+            // 客户端请求断开连接
+            socket.sender.emitSync({
+              address: res.remoteInfo.address,
+              port: res.remoteInfo.port,
+              message: toBinary(Channel, {
+                version: 1,
+                id: id,
+                ts: BigInt(Date.now()),
+                action: {
+                  oneofKind: 'disconnect',
+                  disconnect: {
+                    seq: connection.seq,
+                    ack: data.action.disconnect.seq + 1,
+                  },
+                },
+              }),
+            });
+            connection.status = ChannelStatus.disconnecting;
+          } else if (connection.status === ChannelStatus.disconnecting) {
+            if (connection.seq + 1 === data.action.disconnect.ack) {
+              this.disconnectEmitter.emitLifeCycle({
+                connection,
+                code: OnDisconnectCode.SUCCESS,
+              });
+              connection.status = ChannelStatus.disconnected;
+              connection.close();
+              this.connectionClient.delete(id);
+            } else {
+              connection.status = ChannelStatus.connected;
+            }
+          }
+        } else if (data.action.oneofKind === 'detect') {
+          console.log('[UdpChannel]', 'detect', data.action.detect, data);
+          const connection = this.connectionClient.get(id);
+          if (!connection) {
+            return;
+          }
+          if (connection.status !== ChannelStatus.connected) {
+            return;
+          }
+          const detect = data.action.detect;
+          // const rtt = Date.now() - Number(data.ts);
+
+          const sendDetect = () => {
+            connection.detectAt = Date.now();
+            connection.detectErrorCount = 0;
+            socket.sender.emit({
+              address: res.remoteInfo.address,
+              port: res.remoteInfo.port,
+              message: toBinary(Channel, {
+                version: 1,
+                id,
+                ts: BigInt(Date.now()),
+                action: {
+                  oneofKind: 'detect',
+                  detect: {
+                    rtt: 0,
+                    seq: detect.seq + 1,
+                  },
+                },
+              }),
+            });
+          };
+          setTimeout(sendDetect, 3000);
+          setTimeout(() => {
+            if (
+              connection.status === ChannelStatus.connected &&
+              Date.now() - connection.detectAt > 5000
+            ) {
+              if (connection.detectErrorCount > 3) {
+                this.disconnectEmitter.emitLifeCycle({
+                  connection,
+                  code: OnDisconnectCode.DETECT_ERROR,
+                });
+                console.log(
+                  '[UdpChannel]',
+                  'detect Error',
+                  'disconnect',
+                  connection.detectErrorCount,
+                );
+              } else {
+                connection.detectErrorCount++;
+                sendDetect();
+                console.log(
+                  '[UdpChannel]',
+                  'detect Error',
+                  'reSendDetect',
+                  connection.detectErrorCount,
+                );
+              }
+            }
+          }, 6000);
         }
       });
 
@@ -503,7 +626,7 @@ export class UdpChannel {
 
   connect(socketIP: SocketIP) {
     const [ip, port] = socketIP.split(':');
-    const id = rand(1, 10000);
+    const id = randId();
     const seq = rand(1, 100);
     socket.sender.emit({
       address: ip,
@@ -522,6 +645,35 @@ export class UdpChannel {
       }),
     });
 
+    setTimeout(() => {
+      socket.receiver.emit({
+        errMsg: '',
+        localInfo: {
+          address: ip,
+          family: 'IPv4',
+          port: parseInt(port),
+          size: 0,
+        },
+        remoteInfo: {
+          address: ip,
+          family: 'IPv4',
+          port: parseInt(port),
+        },
+        message: toBinary(Channel, {
+          version: 1,
+          id,
+          ts: BigInt(Date.now()),
+          action: {
+            oneofKind: 'detect',
+            detect: {
+              rtt: 0,
+              seq: 0,
+            },
+          },
+        }),
+      });
+    }, 3000);
+
     this.connectionClient.set(
       id,
       new Connection({
@@ -534,6 +686,36 @@ export class UdpChannel {
 
     return this;
   }
+
+  async disconnect(id: number) {
+    console.log('[UdpChannel]', 'disconnect', id);
+    const connection = this.connectionClient.get(id);
+    if (!connection) {
+      console.warn('[UdpChannel]', 'disconnect', 'connection not found', id);
+      return false;
+    }
+    const [ip, port] = connection.socketIP.split(':');
+    const seq = rand(1, 100);
+    socket.sender.emit({
+      address: ip,
+      port: parseInt(port),
+      message: toBinary(Channel, {
+        version: 1,
+        id,
+        ts: BigInt(Date.now()),
+        action: {
+          oneofKind: 'disconnect',
+          disconnect: {
+            seq,
+            ack: 0,
+          },
+        },
+      }),
+    });
+    return true;
+  }
 }
 
-export default new UdpChannel().listen();
+const udpChannel = new UdpChannel().listen();
+
+export default udpChannel;

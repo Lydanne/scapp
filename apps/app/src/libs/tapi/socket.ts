@@ -30,8 +30,9 @@ export class UdpSocket {
       const message = e.message;
       const packet = unwrapSubPacket(message);
 
+      // console.log('[UdpSocket]', 'onMessage', packet);
+
       packets.push(packet);
-      // console.log('onMessage', packetBufferMap);
 
       if (packets.length >= packet.length) {
         const filterPacketBuffers: ArrayBuffer[] = [];
@@ -72,7 +73,7 @@ export class UdpSocket {
     let uniseq = 0;
     this.sender.on(async (option) => {
       const message = option.message;
-      // console.log('send', option, !(message instanceof ArrayBuffer));
+      // console.log('[UdpSocket]', 'sender', option);
 
       if (typeof message === 'string') {
         udp.send(option);
@@ -82,6 +83,7 @@ export class UdpSocket {
       const packets = splitPacket(message, CHUNK_SIZE);
       for (let i = 0; i < packets.length; i++) {
         const subPacket = wrapSubPacket(id, i, packets.length, packets[i]);
+        // console.log('[UdpSocket]', 'udpSend', id, i, packets.length);
         udp.send({ ...option, message: subPacket });
       }
       if (uniseq > Number.MAX_SAFE_INTEGER) {

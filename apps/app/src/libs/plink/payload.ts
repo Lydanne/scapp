@@ -18,19 +18,19 @@ export interface Plink {
   /**
    * @generated from protobuf field: uint32 version = 1;
    */
-  version: number; // 2 Byte
+  version: number;
   /**
    * @generated from protobuf field: string uuid = 2;
    */
-  uuid: string; // 36 Byte offset 2
+  uuid: string;
   /**
    * @generated from protobuf field: string socketIP = 3;
    */
-  socketIP: string; // 32 Byte offset 38
+  socketIP: string;
   /**
    * @generated from protobuf field: uint64 ts = 4;
    */
-  ts: bigint; // 8 Byte offset 70
+  ts: bigint;
 }
 /**
  * @generated from protobuf message Channel
@@ -79,6 +79,13 @@ export interface Channel {
          * @generated from protobuf field: SyncAction sync = 7;
          */
         sync: SyncAction;
+      }
+    | {
+        oneofKind: 'detect';
+        /**
+         * @generated from protobuf field: DetectSignal detect = 8;
+         */
+        detect: DetectSignal;
       }
     | {
         oneofKind: undefined;
@@ -163,6 +170,19 @@ export interface SyncAction {
     | {
         oneofKind: undefined;
       };
+}
+/**
+ * @generated from protobuf message DetectSignal
+ */
+export interface DetectSignal {
+  /**
+   * @generated from protobuf field: uint32 rtt = 1;
+   */
+  rtt: number; // 接收时间戳
+  /**
+   * @generated from protobuf field: uint32 seq = 2;
+   */
+  seq: number; // 数据包序号
 }
 /**
  * @generated from protobuf message SynReadySignal
@@ -384,6 +404,13 @@ class Channel$Type extends MessageType<Channel> {
         oneof: 'action',
         T: () => SyncAction,
       },
+      {
+        no: 8,
+        name: 'detect',
+        kind: 'message',
+        oneof: 'action',
+        T: () => DetectSignal,
+      },
     ]);
   }
   create(value?: PartialMessage<Channel>): Channel {
@@ -460,6 +487,17 @@ class Channel$Type extends MessageType<Channel> {
             ),
           };
           break;
+        case /* DetectSignal detect */ 8:
+          message.action = {
+            oneofKind: 'detect',
+            detect: DetectSignal.internalBinaryRead(
+              reader,
+              reader.uint32(),
+              options,
+              (message.action as any).detect,
+            ),
+          };
+          break;
         default:
           let u = options.readUnknownField;
           if (u === 'throw')
@@ -517,6 +555,13 @@ class Channel$Type extends MessageType<Channel> {
       SyncAction.internalBinaryWrite(
         message.action.sync,
         writer.tag(7, WireType.LengthDelimited).fork(),
+        options,
+      ).join();
+    /* DetectSignal detect = 8; */
+    if (message.action.oneofKind === 'detect')
+      DetectSignal.internalBinaryWrite(
+        message.action.detect,
+        writer.tag(8, WireType.LengthDelimited).fork(),
         options,
       ).join();
     let u = options.writeUnknownFields;
@@ -911,6 +956,81 @@ class SyncAction$Type extends MessageType<SyncAction> {
  * @generated MessageType for protobuf message SyncAction
  */
 export const SyncAction = new SyncAction$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class DetectSignal$Type extends MessageType<DetectSignal> {
+  constructor() {
+    super('DetectSignal', [
+      { no: 1, name: 'rtt', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
+      { no: 2, name: 'seq', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
+    ]);
+  }
+  create(value?: PartialMessage<DetectSignal>): DetectSignal {
+    const message = globalThis.Object.create(this.messagePrototype!);
+    message.rtt = 0;
+    message.seq = 0;
+    if (value !== undefined)
+      reflectionMergePartial<DetectSignal>(this, message, value);
+    return message;
+  }
+  internalBinaryRead(
+    reader: IBinaryReader,
+    length: number,
+    options: BinaryReadOptions,
+    target?: DetectSignal,
+  ): DetectSignal {
+    let message = target ?? this.create(),
+      end = reader.pos + length;
+    while (reader.pos < end) {
+      let [fieldNo, wireType] = reader.tag();
+      switch (fieldNo) {
+        case /* uint32 rtt */ 1:
+          message.rtt = reader.uint32();
+          break;
+        case /* uint32 seq */ 2:
+          message.seq = reader.uint32();
+          break;
+        default:
+          let u = options.readUnknownField;
+          if (u === 'throw')
+            throw new globalThis.Error(
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
+            );
+          let d = reader.skip(wireType);
+          if (u !== false)
+            (u === true ? UnknownFieldHandler.onRead : u)(
+              this.typeName,
+              message,
+              fieldNo,
+              wireType,
+              d,
+            );
+      }
+    }
+    return message;
+  }
+  internalBinaryWrite(
+    message: DetectSignal,
+    writer: IBinaryWriter,
+    options: BinaryWriteOptions,
+  ): IBinaryWriter {
+    /* uint32 rtt = 1; */
+    if (message.rtt !== 0) writer.tag(1, WireType.Varint).uint32(message.rtt);
+    /* uint32 seq = 2; */
+    if (message.seq !== 0) writer.tag(2, WireType.Varint).uint32(message.seq);
+    let u = options.writeUnknownFields;
+    if (u !== false)
+      (u == true ? UnknownFieldHandler.onWrite : u)(
+        this.typeName,
+        message,
+        writer,
+      );
+    return writer;
+  }
+}
+/**
+ * @generated MessageType for protobuf message DetectSignal
+ */
+export const DetectSignal = new DetectSignal$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class SynReadySignal$Type extends MessageType<SynReadySignal> {
   constructor() {

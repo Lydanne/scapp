@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Close, Top } from '@nutui/icons-react-taro';
 import { TextArea } from '@nutui/nutui-react-taro';
 import { View } from '@tarojs/components';
-import Taro from '@tarojs/taro';
+import Taro, { useUnload } from '@tarojs/taro';
 
 import Body from 'src/components/body/body';
 import Footer from 'src/components/footer/footer';
@@ -13,7 +13,10 @@ import Navbar from 'src/components/navbar/navbar';
 import Page from 'src/components/page/page';
 import { Channel, DataType, type Plink } from 'src/libs/plink/payload';
 import { randId, toBinary } from 'src/libs/plink/shared';
-import udpChannel, { OnDataStatus } from 'src/libs/plink/udpChannel';
+import udpChannel, {
+  type Connection,
+  OnDataStatus,
+} from 'src/libs/plink/udpChannel';
 import { formatFileSize } from 'src/libs/shared/format';
 import { useRouter } from 'src/libs/tapi/router';
 
@@ -31,8 +34,9 @@ export default function Trans() {
   const { msgList, setMsgById, appendMsg } = useMlist();
 
   useEffect(() => {
+    let connection: Connection;
     setTimeout(async () => {
-      const [connection] = await udpChannel.connectionEmitter.wait();
+      [connection] = await udpChannel.connectionEmitter.wait();
       connection.on((data) => {
         // console.log('connection data', data);
         if (data.status === OnDataStatus.READY) {
@@ -96,7 +100,18 @@ export default function Trans() {
           });
         }
       });
+      udpChannel.disconnectEmitter.wait().then(([e]) => {
+        if (e.connection.id === connection.id) {
+          Taro.showModal({
+            title: '提示',
+            content: '连接已断开',
+          });
+        }
+      });
     });
+    return () => {
+      udpChannel.disconnect(connection.id);
+    };
   }, []);
 
   const onSend = async () => {
