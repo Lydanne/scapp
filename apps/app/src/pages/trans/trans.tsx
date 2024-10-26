@@ -159,6 +159,8 @@ export default function Trans() {
             msg.msg[0].progress = onData.progress;
             msg.msg[0].content.size = `${formatFileSize(onData.speed)}/s`;
           } else {
+            msg.msg[0].status = onData.status;
+            msg.msg[0].progress = onData.progress;
             msg.msg[0].content.size = `${formatFileSize(onData.head.size)}`;
           }
           return msg;
