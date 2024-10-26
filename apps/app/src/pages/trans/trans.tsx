@@ -148,9 +148,11 @@ export default function Trans() {
       },
       (onData) => {
         setMsgById(id, (msg) => {
-          msg.msg[0].status = onData.status;
-          msg.msg[0].progress = onData.progress;
           if (onData.status === OnDataStatus.SENDING) {
+            if (msg.updatedAt && Date.now() - msg.updatedAt < 1000) return null;
+            msg.updatedAt = Date.now();
+            msg.msg[0].status = onData.status;
+            msg.msg[0].progress = onData.progress;
             msg.msg[0].content.size = `${formatFileSize(onData.speed)}/s`;
           } else {
             msg.msg[0].content.size = `${formatFileSize(onData.head.size)}`;

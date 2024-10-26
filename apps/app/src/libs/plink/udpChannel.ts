@@ -147,7 +147,9 @@ class Connection {
           ackDataStatus.signal.ackChunkFinish.status === FinishStatus.Ok
         ) {
           index++;
-          const speed = Math.floor((offsetLen / (Date.now() - ts)) * 1000);
+          const speed = Math.floor(
+            ((offset + offsetLen) / (Date.now() - ts)) * 1000,
+          );
           cb?.({
             id,
             index,
