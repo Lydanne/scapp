@@ -3,7 +3,7 @@ import { bufferMd5 } from '../shared/bufferMd5';
 import { Emitter } from '../shared/emitter';
 import { StringBuffer } from '../shared/stringbuffer';
 import { FS, type FSOpen } from '../tapi/fs';
-import { UdpSocket } from '../tapi/socket';
+import { ChannelSocket } from './channelSocket';
 import {
   Channel,
   type ConnectAction,
@@ -18,7 +18,7 @@ import { fromBinary, mergeArrayBuffer, rand, randId, toBinary } from './shared';
 
 const BLOCK_SIZE = 1024 * 64;
 
-const socket = new UdpSocket();
+const socket = new ChannelSocket();
 
 export type SocketIP = `${string}:${number}`;
 
