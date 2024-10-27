@@ -6,8 +6,10 @@ import { FS, type FSOpen } from '../tapi/fs';
 import { UdpSocket } from '../tapi/socket';
 import {
   Channel,
+  type ConnectAction,
   type DataAction,
   DataType,
+  type DetectAction,
   FinishStatus,
   type SynReadySignal,
   type SyncAction,
@@ -21,10 +23,11 @@ const socket = new UdpSocket();
 export type SocketIP = `${string}:${number}`;
 
 export enum ChannelStatus {
-  connecting = 'connecting',
-  connected = 'connected',
-  disconnecting = 'disconnecting',
-  disconnected = 'disconnected',
+  init = 0,
+  connecting = 1,
+  connected = 2,
+  disconnecting = 3,
+  disconnected = 4,
 }
 
 export type ConnectionProps = {
@@ -71,17 +74,15 @@ export type OnDisconnect = {
 
 export class Connection {
   id: number;
-  status: ChannelStatus;
+  status: ChannelStatus = ChannelStatus.init;
   socketIP: SocketIP;
-  seq: number;
+  seq: number = 0;
   detectAt: number = 0;
   detectErrorCount: number = 0;
 
-  sender = new Emitter<(data: DataAction) => any>();
-  receiver = new Emitter<(data: DataAction) => any>();
-
-  signalSender = new Emitter<(data: SyncAction) => any>();
-  signalReceiver = new Emitter<(data: SyncAction) => any>();
+  dataMpsc = new MpscChannel<DataAction>();
+  syncMpsc = new MpscChannel<SyncAction>();
+  detectMpsc = new MpscChannel<DetectAction>();
 
   constructor(data: ConnectionProps) {
     this.id = data.id;
@@ -123,7 +124,7 @@ export class Connection {
 
     const length = Math.ceil(size / BLOCK_SIZE);
 
-    this.signalSender.emitSync({
+    const sync: SyncAction = {
       id,
       signal: {
         oneofKind: 'synReady',
@@ -135,8 +136,9 @@ export class Connection {
           type,
         },
       },
-    });
-    const [ackReady] = await this.signalReceiver.wait();
+    };
+    this.syncMpsc.tx.emitSync(sync);
+    const [ackReady] = await this.syncMpsc.rx.waitTimeout(1500);
     if (ackReady.signal.oneofKind !== 'ackReady') {
       throw new Error('ackReady error');
     }
@@ -146,13 +148,14 @@ export class Connection {
       const offset = index * BLOCK_SIZE;
       const offsetLen = Math.min(size - offset, BLOCK_SIZE);
       const buffer = await getDataChunk(offset, offsetLen);
-      this.sender.emitSync({
+      const data: DataAction = {
         id,
         index,
         body: new Uint8Array(buffer),
-      });
+      };
+      this.dataMpsc.tx.emitSync(data);
       try {
-        const [ackDataStatus] = await this.signalReceiver.waitTimeout(1500);
+        const [ackDataStatus] = await this.syncMpsc.rx.waitTimeout(1500);
         if (
           ackDataStatus.id === id &&
           ackDataStatus.signal.oneofKind === 'ackChunkFinish' &&
@@ -218,7 +221,7 @@ export class Connection {
       }
     >();
 
-    this.signalReceiver.on(async (data) => {
+    this.syncMpsc.rx.on(async (data) => {
       if (data.signal.oneofKind === 'synReady') {
         const filename = decodeURIComponent(data.signal.synReady.name);
         const head = {
@@ -234,7 +237,8 @@ export class Connection {
           speed: 0,
           startTime: Date.now(),
         });
-        this.signalSender.emitSync({
+
+        const ackReady: SyncAction = {
           id: data.id,
           signal: {
             oneofKind: 'ackReady',
@@ -244,7 +248,8 @@ export class Connection {
               size: data.signal.synReady.size,
             },
           },
-        });
+        };
+        this.syncMpsc.tx.emitSync(ackReady);
 
         cb({
           id: data.id,
@@ -259,14 +264,14 @@ export class Connection {
       }
     });
 
-    this.receiver.on(async (data) => {
+    this.dataMpsc.rx.on(async (data) => {
       const pipe = pipeMap.get(data.id);
       if (!pipe) {
         console.warn('pipe not found', data.id);
         return;
       }
 
-      this.signalSender.emitSync({
+      const ackChunkFinish: SyncAction = {
         id: data.id,
         signal: {
           oneofKind: 'ackChunkFinish',
@@ -275,7 +280,8 @@ export class Connection {
             status: FinishStatus.Ok,
           },
         },
-      });
+      };
+      this.syncMpsc.tx.emitSync(ackChunkFinish);
       if (pipe.buffers[data.index]) {
         console.warn('chunk already received', data.id, data.index);
         return;
@@ -390,201 +396,170 @@ export class UdpChannel {
       console.log('[UdpChannel]', 'listen', port);
       this.listenEmitter.emitLifeCycle(port);
 
-      socket.receiver.on((res) => {
-        const data = fromBinary<Channel>(Channel, res.message);
-        // console.log('[UdpChannel]', 'receiver', data);
-        const id = data.id;
-        if (data.action?.oneofKind === 'connect') {
-          if (this.connectionClient.has(id)) {
-            // 验证连接
-            const client = this.connectionClient.get(id) as Connection;
-            if (client.seq + 1 === data.action.connect.ack) {
-              if (client.status !== ChannelStatus.connecting) {
-                return;
-              }
-              const connection = new Connection({
-                ...client,
-                status: ChannelStatus.connected,
-              });
-              this.connectionClient.set(id, connection);
-              this.connectionEmitter.emitLifeCycle(connection);
-              if (data.action.connect.seq != 0) {
+      socket.receiver.on((ev) => {
+        const data = fromBinary<Channel>(Channel, ev.message);
+        const client = this.connectionClient.get(data.id);
+        // console.log('[UdpChannel]', 'receiver', data, client);
+
+        switch (data.action.oneofKind) {
+          case 'connect':
+            if (client) {
+              // 验证连接
+              if (client.seq + 1 === data.action.connect.ack) {
+                if (client.status !== ChannelStatus.connecting) {
+                  return;
+                }
+
+                if (data.action.connect.seq != 0) {
+                  // 最后发送确认连接
+                  socket.sender.emitSync({
+                    address: ev.remoteInfo.address,
+                    port: ev.remoteInfo.port,
+                    message: toBinary(Channel, {
+                      version: 1,
+                      id: data.id,
+                      ts: BigInt(Date.now()),
+                      action: {
+                        oneofKind: 'connect',
+                        connect: {
+                          seq: 0,
+                          ack: data.action.connect.seq + 1,
+                        },
+                      },
+                    }),
+                  });
+                }
+
+                client.status = ChannelStatus.connected;
+                this.connectionClient.set(data.id, client);
+                this.connectionEmitter.emitLifeCycle(client);
+
+                client.dataMpsc.tx.on((data) => {
+                  socket.sender.emit({
+                    address: ev.remoteInfo.address,
+                    port: ev.remoteInfo.port,
+                    message: toBinary(Channel, {
+                      version: 1,
+                      id: client.id,
+                      ts: BigInt(Date.now()),
+                      action: {
+                        oneofKind: 'data',
+                        data: data,
+                      },
+                    }),
+                  });
+                });
+                client.syncMpsc.tx.on((data) => {
+                  socket.sender.emit({
+                    address: ev.remoteInfo.address,
+                    port: ev.remoteInfo.port,
+                    message: toBinary(Channel, {
+                      version: 1,
+                      id: client.id,
+                      ts: BigInt(Date.now()),
+                      action: {
+                        oneofKind: 'sync',
+                        sync: data,
+                      },
+                    }),
+                  });
+                });
+              } else {
+                console.log('[UdpChannel]', 'onMessage', 'seq error');
                 socket.sender.emit({
-                  address: res.remoteInfo.address,
-                  port: res.remoteInfo.port,
+                  address: ev.remoteInfo.address,
+                  port: ev.remoteInfo.port,
                   message: toBinary(Channel, {
                     version: 1,
-                    id: id,
+                    id: client.id,
                     ts: BigInt(Date.now()),
                     action: {
-                      oneofKind: 'connect',
+                      oneofKind: 'disconnect',
                       connect: {
                         seq: 0,
-                        ack: data.action.connect.seq + 1,
+                        ack: 0,
                       },
                     },
                   }),
                 });
               }
-
-              connection.sender.on((data) => {
-                socket.sender.emit({
-                  address: res.remoteInfo.address,
-                  port: res.remoteInfo.port,
-                  message: toBinary(Channel, {
-                    version: 1,
-                    id: id,
-                    ts: BigInt(Date.now()),
-                    action: {
-                      oneofKind: 'data',
-                      data: data,
-                    },
-                  }),
-                });
-              });
-              connection.signalSender.on((data) => {
-                socket.sender.emit({
-                  address: res.remoteInfo.address,
-                  port: res.remoteInfo.port,
-                  message: toBinary(Channel, {
-                    version: 1,
-                    id: id,
-                    ts: BigInt(Date.now()),
-                    action: {
-                      oneofKind: 'sync',
-                      sync: data,
-                    },
-                  }),
-                });
-              });
             } else {
-              console.log('[UdpChannel]', 'onMessage', 'seq error');
+              // 请求连接
+              const seq = rand(1, 100);
+              this.connectionClient.set(
+                data.id,
+                new Connection({
+                  id: data.id,
+                  status: ChannelStatus.connecting,
+                  seq,
+                  socketIP: `${ev.remoteInfo.address}:${ev.remoteInfo.port}`,
+                }),
+              );
               socket.sender.emit({
-                address: res.remoteInfo.address,
-                port: res.remoteInfo.port,
+                address: ev.remoteInfo.address,
+                port: ev.remoteInfo.port,
                 message: toBinary(Channel, {
                   version: 1,
-                  id: id,
+                  id: data.id,
                   ts: BigInt(Date.now()),
                   action: {
-                    oneofKind: 'disconnect',
+                    oneofKind: 'connect',
                     connect: {
-                      seq: 0,
-                      ack: 0,
+                      seq: seq,
+                      ack: data.action.connect.seq + 1,
                     },
                   },
                 }),
               });
             }
-          } else {
-            // 请求连接
-            const seq = rand(1, 100);
-            this.connectionClient.set(
-              id,
-              new Connection({
-                id,
-                status: ChannelStatus.connecting,
-                seq,
-                socketIP: `${res.remoteInfo.address}:${res.remoteInfo.port}`,
-              }),
-            );
-            socket.sender.emit({
-              address: res.remoteInfo.address,
-              port: res.remoteInfo.port,
-              message: toBinary(Channel, {
-                version: 1,
-                id: id,
-                ts: BigInt(Date.now()),
-                action: {
-                  oneofKind: 'connect',
-                  connect: {
-                    seq: seq,
-                    ack: data.action.connect.seq + 1,
-                  },
-                },
-              }),
-            });
-          }
-        } else if (data.action?.oneofKind === 'data') {
-          if (this.connectionClient.has(id)) {
-            const client = this.connectionClient.get(id) as Connection;
-            client.receiver.emitSync(data.action.data);
-          }
-        } else if (data.action.oneofKind === 'sync') {
-          if (this.connectionClient.has(id)) {
-            const client = this.connectionClient.get(id) as Connection;
-            client.signalReceiver.emitSync(data.action.sync);
-          }
-        } else if (data.action.oneofKind === 'disconnect') {
-          const connection = this.connectionClient.get(id);
-          if (!connection) {
-            return;
-          }
-          if (connection.status === ChannelStatus.connected) {
-            // 客户端请求断开连接
-            socket.sender.emitSync({
-              address: res.remoteInfo.address,
-              port: res.remoteInfo.port,
-              message: toBinary(Channel, {
-                version: 1,
-                id: id,
-                ts: BigInt(Date.now()),
-                action: {
-                  oneofKind: 'disconnect',
-                  disconnect: {
-                    seq: connection.seq,
-                    ack: data.action.disconnect.seq + 1,
-                  },
-                },
-              }),
-            });
-            connection.status = ChannelStatus.disconnecting;
-          } else if (connection.status === ChannelStatus.disconnecting) {
-            if (connection.seq + 1 === data.action.disconnect.ack) {
-              this.disconnectEmitter.emitLifeCycle({
-                connection,
-                code: OnDisconnectCode.SUCCESS,
-              });
-              connection.status = ChannelStatus.disconnected;
-              connection.close();
-              this.connectionClient.delete(id);
-            } else {
-              connection.status = ChannelStatus.connected;
+            break;
+          case 'disconnect':
+            if (client) {
+              if (client.status === ChannelStatus.connected) {
+                // 客户端请求断开连接
+                socket.sender.emitSync({
+                  address: ev.remoteInfo.address,
+                  port: ev.remoteInfo.port,
+                  message: toBinary(Channel, {
+                    version: 1,
+                    id: client.id,
+                    ts: BigInt(Date.now()),
+                    action: {
+                      oneofKind: 'disconnect',
+                      disconnect: {
+                        seq: client.seq,
+                        ack: data.action.disconnect.seq + 1,
+                      },
+                    },
+                  }),
+                });
+                client.status = ChannelStatus.disconnecting;
+              } else if (client.status === ChannelStatus.disconnecting) {
+                if (client.seq + 1 === data.action.disconnect.ack) {
+                  this.disconnectEmitter.emitLifeCycle({
+                    connection: client,
+                    code: OnDisconnectCode.SUCCESS,
+                  });
+                  client.status = ChannelStatus.disconnected;
+                  client.close();
+                  this.connectionClient.delete(data.id);
+                } else {
+                  client.status = ChannelStatus.connected;
+                }
+              }
             }
-          }
-        } else if (data.action.oneofKind === 'detect') {
-          // 响应检测
-          const connection = this.connectionClient.get(id);
-          if (!connection) {
-            return;
-          }
-          if (connection.status !== ChannelStatus.connected) {
-            return;
-          }
-          if (data.action.detect.ack !== 0) {
-            return;
-          }
-          // console.log('[UdpChannel]', 'detect', data.action.detect, data);
-          const detect = data.action.detect;
-          // const rtt = Date.now() - Number(data.ts);
-
-          socket.sender.emit({
-            address: res.remoteInfo.address,
-            port: res.remoteInfo.port,
-            message: toBinary(Channel, {
-              version: 1,
-              id,
-              ts: BigInt(Date.now()),
-              action: {
-                oneofKind: 'detect',
-                detect: {
-                  seq: rand(1, 100),
-                  ack: detect.seq + 1,
-                  rtt: 0,
-                },
-              },
-            }),
-          });
+            break;
+          case 'data':
+            client?.dataMpsc.rx.emitSync(data.action.data);
+            break;
+          case 'sync':
+            client?.syncMpsc.rx.emitSync(data.action.sync);
+            break;
+          case 'detect':
+            // client?.signalSender.emitSync(data.action.detect);
+            break;
+          default:
+            break;
         }
       });
 
@@ -725,6 +700,11 @@ export class UdpChannel {
     });
     return true;
   }
+}
+
+export class MpscChannel<T> {
+  tx = new Emitter<(data: T) => any>();
+  rx = new Emitter<(data: T) => any>();
 }
 
 const udpChannel = new UdpChannel().listen();

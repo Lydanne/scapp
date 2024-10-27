@@ -30,8 +30,6 @@ export class UdpSocket {
       const message = e.message;
       const packet = unwrapSubPacket(message);
 
-      // console.log('[UdpSocket]', 'onMessage', packet);
-
       packets.push(packet);
 
       if (packets.length >= packet.length) {
@@ -55,6 +53,7 @@ export class UdpSocket {
         }
         try {
           const message = mergePacket(filterPacketBuffers);
+          // console.log('[UdpSocket]', 'receiver', packet);
           this.receiver.emitSync({ ...e, message });
           packets = [];
         } catch (error) {

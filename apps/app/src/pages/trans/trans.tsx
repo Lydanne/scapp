@@ -72,7 +72,9 @@ export default function Trans() {
             msg.updatedAt = Date.now();
             msg.msg[0].status = OnDataStatus.SENDING;
             msg.msg[0].progress = data.progress;
-            msg.msg[0].content.size = `${formatFileSize(data.speed)}/s`;
+            if (data.speed) {
+              msg.msg[0].content.size = `${formatFileSize(data.speed)}/s`;
+            }
             return msg;
           });
         } else if (data.status === OnDataStatus.DONE) {
@@ -172,11 +174,15 @@ export default function Trans() {
             msg.updatedAt = Date.now();
             msg.msg[0].status = onData.status;
             msg.msg[0].progress = onData.progress;
-            msg.msg[0].content.size = `${formatFileSize(onData.speed)}/s`;
+            if (onData.speed) {
+              msg.msg[0].content.size = `${formatFileSize(onData.speed)}/s`;
+            }
           } else {
             msg.msg[0].status = onData.status;
             msg.msg[0].progress = onData.progress;
-            msg.msg[0].content.size = `${formatFileSize(onData.head.size)}`;
+            if (onData.head.size) {
+              msg.msg[0].content.size = `${formatFileSize(onData.head.size)}`;
+            }
           }
           return msg;
         });
