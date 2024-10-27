@@ -83,9 +83,9 @@ export interface Channel {
     | {
         oneofKind: 'detect';
         /**
-         * @generated from protobuf field: DetectSignal detect = 8;
+         * @generated from protobuf field: DetectAction detect = 8;
          */
-        detect: DetectSignal;
+        detect: DetectAction;
       }
     | {
         oneofKind: undefined;
@@ -172,17 +172,21 @@ export interface SyncAction {
       };
 }
 /**
- * @generated from protobuf message DetectSignal
+ * @generated from protobuf message DetectAction
  */
-export interface DetectSignal {
+export interface DetectAction {
   /**
-   * @generated from protobuf field: uint32 rtt = 1;
-   */
-  rtt: number; // 接收时间戳
-  /**
-   * @generated from protobuf field: uint32 seq = 2;
+   * @generated from protobuf field: uint32 seq = 1;
    */
   seq: number; // 数据包序号
+  /**
+   * @generated from protobuf field: uint32 ack = 2;
+   */
+  ack: number; // 确认序号
+  /**
+   * @generated from protobuf field: uint32 rtt = 3;
+   */
+  rtt: number; // 接收时间戳
 }
 /**
  * @generated from protobuf message SynReadySignal
@@ -409,7 +413,7 @@ class Channel$Type extends MessageType<Channel> {
         name: 'detect',
         kind: 'message',
         oneof: 'action',
-        T: () => DetectSignal,
+        T: () => DetectAction,
       },
     ]);
   }
@@ -487,10 +491,10 @@ class Channel$Type extends MessageType<Channel> {
             ),
           };
           break;
-        case /* DetectSignal detect */ 8:
+        case /* DetectAction detect */ 8:
           message.action = {
             oneofKind: 'detect',
-            detect: DetectSignal.internalBinaryRead(
+            detect: DetectAction.internalBinaryRead(
               reader,
               reader.uint32(),
               options,
@@ -557,9 +561,9 @@ class Channel$Type extends MessageType<Channel> {
         writer.tag(7, WireType.LengthDelimited).fork(),
         options,
       ).join();
-    /* DetectSignal detect = 8; */
+    /* DetectAction detect = 8; */
     if (message.action.oneofKind === 'detect')
-      DetectSignal.internalBinaryWrite(
+      DetectAction.internalBinaryWrite(
         message.action.detect,
         writer.tag(8, WireType.LengthDelimited).fork(),
         options,
@@ -957,37 +961,42 @@ class SyncAction$Type extends MessageType<SyncAction> {
  */
 export const SyncAction = new SyncAction$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class DetectSignal$Type extends MessageType<DetectSignal> {
+class DetectAction$Type extends MessageType<DetectAction> {
   constructor() {
-    super('DetectSignal', [
-      { no: 1, name: 'rtt', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
-      { no: 2, name: 'seq', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
+    super('DetectAction', [
+      { no: 1, name: 'seq', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
+      { no: 2, name: 'ack', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
+      { no: 3, name: 'rtt', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
     ]);
   }
-  create(value?: PartialMessage<DetectSignal>): DetectSignal {
+  create(value?: PartialMessage<DetectAction>): DetectAction {
     const message = globalThis.Object.create(this.messagePrototype!);
-    message.rtt = 0;
     message.seq = 0;
+    message.ack = 0;
+    message.rtt = 0;
     if (value !== undefined)
-      reflectionMergePartial<DetectSignal>(this, message, value);
+      reflectionMergePartial<DetectAction>(this, message, value);
     return message;
   }
   internalBinaryRead(
     reader: IBinaryReader,
     length: number,
     options: BinaryReadOptions,
-    target?: DetectSignal,
-  ): DetectSignal {
+    target?: DetectAction,
+  ): DetectAction {
     let message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
       let [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
-        case /* uint32 rtt */ 1:
-          message.rtt = reader.uint32();
-          break;
-        case /* uint32 seq */ 2:
+        case /* uint32 seq */ 1:
           message.seq = reader.uint32();
+          break;
+        case /* uint32 ack */ 2:
+          message.ack = reader.uint32();
+          break;
+        case /* uint32 rtt */ 3:
+          message.rtt = reader.uint32();
           break;
         default:
           let u = options.readUnknownField;
@@ -1009,14 +1018,16 @@ class DetectSignal$Type extends MessageType<DetectSignal> {
     return message;
   }
   internalBinaryWrite(
-    message: DetectSignal,
+    message: DetectAction,
     writer: IBinaryWriter,
     options: BinaryWriteOptions,
   ): IBinaryWriter {
-    /* uint32 rtt = 1; */
-    if (message.rtt !== 0) writer.tag(1, WireType.Varint).uint32(message.rtt);
-    /* uint32 seq = 2; */
-    if (message.seq !== 0) writer.tag(2, WireType.Varint).uint32(message.seq);
+    /* uint32 seq = 1; */
+    if (message.seq !== 0) writer.tag(1, WireType.Varint).uint32(message.seq);
+    /* uint32 ack = 2; */
+    if (message.ack !== 0) writer.tag(2, WireType.Varint).uint32(message.ack);
+    /* uint32 rtt = 3; */
+    if (message.rtt !== 0) writer.tag(3, WireType.Varint).uint32(message.rtt);
     let u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
@@ -1028,9 +1039,9 @@ class DetectSignal$Type extends MessageType<DetectSignal> {
   }
 }
 /**
- * @generated MessageType for protobuf message DetectSignal
+ * @generated MessageType for protobuf message DetectAction
  */
-export const DetectSignal = new DetectSignal$Type();
+export const DetectAction = new DetectAction$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class SynReadySignal$Type extends MessageType<SynReadySignal> {
   constructor() {

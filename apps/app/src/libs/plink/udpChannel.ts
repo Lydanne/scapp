@@ -74,8 +74,8 @@ export class Connection {
   status: ChannelStatus;
   socketIP: SocketIP;
   seq: number;
-  detectAt: number;
-  detectErrorCount: number;
+  detectAt: number = 0;
+  detectErrorCount: number = 0;
 
   sender = new Emitter<(data: DataAction) => any>();
   receiver = new Emitter<(data: DataAction) => any>();
@@ -553,7 +553,7 @@ export class UdpChannel {
             }
           }
         } else if (data.action.oneofKind === 'detect') {
-          console.log('[UdpChannel]', 'detect', data.action.detect, data);
+          // 响应检测
           const connection = this.connectionClient.get(id);
           if (!connection) {
             return;
@@ -561,64 +561,104 @@ export class UdpChannel {
           if (connection.status !== ChannelStatus.connected) {
             return;
           }
+          if (data.action.detect.ack !== 0) {
+            return;
+          }
+          // console.log('[UdpChannel]', 'detect', data.action.detect, data);
           const detect = data.action.detect;
           // const rtt = Date.now() - Number(data.ts);
 
-          const sendDetect = () => {
-            connection.detectAt = Date.now();
-            connection.detectErrorCount = 0;
-            socket.sender.emit({
-              address: res.remoteInfo.address,
-              port: res.remoteInfo.port,
-              message: toBinary(Channel, {
-                version: 1,
-                id,
-                ts: BigInt(Date.now()),
-                action: {
-                  oneofKind: 'detect',
-                  detect: {
-                    rtt: 0,
-                    seq: detect.seq + 1,
-                  },
+          socket.sender.emit({
+            address: res.remoteInfo.address,
+            port: res.remoteInfo.port,
+            message: toBinary(Channel, {
+              version: 1,
+              id,
+              ts: BigInt(Date.now()),
+              action: {
+                oneofKind: 'detect',
+                detect: {
+                  seq: rand(1, 100),
+                  ack: detect.seq + 1,
+                  rtt: 0,
                 },
-              }),
-            });
-          };
-          setTimeout(sendDetect, 3000);
-          setTimeout(() => {
-            if (
-              connection.status === ChannelStatus.connected &&
-              Date.now() - connection.detectAt > 5000
-            ) {
-              if (connection.detectErrorCount > 3) {
-                this.disconnectEmitter.emitLifeCycle({
-                  connection,
-                  code: OnDisconnectCode.DETECT_ERROR,
-                });
-                console.log(
-                  '[UdpChannel]',
-                  'detect Error',
-                  'disconnect',
-                  connection.detectErrorCount,
-                );
-              } else {
-                connection.detectErrorCount++;
-                sendDetect();
-                console.log(
-                  '[UdpChannel]',
-                  'detect Error',
-                  'reSendDetect',
-                  connection.detectErrorCount,
-                );
-              }
-            }
-          }, 6000);
+              },
+            }),
+          });
         }
       });
 
       socket.errorEmitter.on((err) => {
         console.log('[UdpChannel]', 'onError', err);
       });
+      if (false)
+        setInterval(() => {
+          for (const connection of this.connectionClient.values()) {
+            if (
+              connection.status === ChannelStatus.connected &&
+              Date.now() - connection.detectAt > 5000
+            ) {
+              setTimeout(async () => {
+                console.log('[UdpChannel]', 'detect', connection.id);
+
+                const now = Date.now();
+                connection.detectAt = now;
+                connection.detectErrorCount = 0;
+                const [ip, port] = connection.socketIP.split(':');
+                const seq = rand(1, 100);
+                socket.sender.emit({
+                  address: ip,
+                  port: parseInt(port),
+                  message: toBinary(Channel, {
+                    version: 1,
+                    id: connection.id,
+                    ts: BigInt(Date.now()),
+                    action: {
+                      oneofKind: 'detect',
+                      detect: {
+                        seq,
+                        ack: 0,
+                        rtt: 0,
+                      },
+                    },
+                  }),
+                });
+                while (true) {
+                  try {
+                    const [ev] = await socket.receiver.waitTimeout(1000);
+                    const data = fromBinary<Channel>(Channel, ev.message);
+                    if (
+                      data.action?.oneofKind === 'detect' &&
+                      data.action.detect.ack === seq + 1
+                    ) {
+                      break;
+                    }
+                  } catch (error) {
+                    connection.detectErrorCount++;
+                    console.log('[UdpChannel]', 'detect timeout', error);
+                    if (connection.detectErrorCount > 3) {
+                      connection.status = ChannelStatus.disconnected;
+                      connection.close();
+                      this.disconnectEmitter.emitLifeCycle({
+                        connection,
+                        code: OnDisconnectCode.DETECT_ERROR,
+                      });
+                      this.connectionClient.delete(connection.id);
+                      break;
+                    }
+                  }
+                }
+
+                console.log(
+                  '[UdpChannel]',
+                  'detect done',
+                  connection.id,
+                  Date.now() - now,
+                );
+              });
+            }
+          }
+        }, 1000);
     });
 
     return this;
@@ -644,35 +684,6 @@ export class UdpChannel {
         },
       }),
     });
-
-    setTimeout(() => {
-      socket.receiver.emit({
-        errMsg: '',
-        localInfo: {
-          address: ip,
-          family: 'IPv4',
-          port: parseInt(port),
-          size: 0,
-        },
-        remoteInfo: {
-          address: ip,
-          family: 'IPv4',
-          port: parseInt(port),
-        },
-        message: toBinary(Channel, {
-          version: 1,
-          id,
-          ts: BigInt(Date.now()),
-          action: {
-            oneofKind: 'detect',
-            detect: {
-              rtt: 0,
-              seq: 0,
-            },
-          },
-        }),
-      });
-    }, 3000);
 
     this.connectionClient.set(
       id,

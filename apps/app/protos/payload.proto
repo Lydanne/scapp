@@ -16,7 +16,7 @@ message Channel{
         DisconnectAction disconnect = 5;
         DataAction data = 6;
         SyncAction sync = 7;
-        DetectSignal detect = 8;
+        DetectAction detect = 8;
     }
 }
 
@@ -46,9 +46,10 @@ message SyncAction{
     }
 }
 
-message DetectSignal{
-    uint32 rtt = 1; // 接收时间戳
-    uint32 seq = 2; // 数据包序号
+message DetectAction{
+    uint32 seq = 1; // 数据包序号
+    uint32 ack = 2; // 确认序号
+    uint32 rtt = 3; // 接收时间戳
 }
 
 message SynReadySignal{
