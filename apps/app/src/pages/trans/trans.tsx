@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Close, Top } from '@nutui/icons-react-taro';
 import { TextArea } from '@nutui/nutui-react-taro';
-import { View } from '@tarojs/components';
+import { Image, View } from '@tarojs/components';
 import Taro, { useUnload } from '@tarojs/taro';
 
 import Body from 'src/components/body/body';
@@ -210,17 +210,24 @@ export default function Trans() {
     <Page footer footerHeight={60}>
       <Navbar>
         <View className={Style['close']} onClick={back}>
-          <Close />
+          <Close size={15} />
         </View>
         <View className={Style['author']}>
+          <Image
+            className={Style['author-img']}
+            src={`https://api.dicebear.com/9.x/bottts/avif`}
+            mode="aspectFill"
+          />
           <View
             className={`${Style['author-status']} ${Style['online']}`}
           ></View>
         </View>
         <View className={Style['author']}>
-          <View className={Style['author-status']}></View>
-        </View>
-        <View className={Style['author']}>
+          <Image
+            className={Style['author-img']}
+            src={`https://api.dicebear.com/9.x/bottts/avif`}
+            mode="aspectFill"
+          />
           <View className={Style['author-status']}></View>
         </View>
       </Navbar>
