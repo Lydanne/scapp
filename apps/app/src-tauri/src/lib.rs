@@ -31,7 +31,12 @@ pub fn run() {
         //   }
         //   Ok(())
         // })
-        .invoke_handler(tauri::generate_handler![socket_bind, net_local_ip])
+        .invoke_handler(tauri::generate_handler![
+            socket_bind,
+            socket_send,
+            socket_receive,
+            net_local_ip
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

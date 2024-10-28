@@ -1,29 +1,60 @@
 use std::{
     net::{SocketAddr, UdpSocket},
     sync::Mutex,
+    thread,
 };
 
+use serde::Serialize;
+use tauri::{ipc::Channel, AppHandle, Emitter};
+
 static SOCKET: Mutex<Option<UdpSocket>> = Mutex::new(None);
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OnReceived {
+    message: Vec<u8>,
+    remote_info: SocketAddr,
+}
 
 #[tauri::command]
 pub async fn socket_bind() -> String {
     log::info!("Hello from Rust!");
     let socket = UdpSocket::bind("0.0.0.0:0").expect("Failed to bind socket");
 
-    // // 要发送的数据
-    // let data = b"Hello, world!";
-
-    // // 目标地址和端口
-    // let target_address = "192.168.10.255:12305";
-
-    // // 发送数据到目标地址
-    // socket
-    //     .send_to(data, target_address)
-    //     .expect("Failed to send data");
-
-    // log::info!("Data sent to {}", target_address);
     let socket_ip = format!("{}", socket.local_addr().unwrap());
     SOCKET.lock().unwrap().replace(socket);
 
     socket_ip
+}
+
+#[tauri::command]
+pub fn socket_send(socket_ip: String, message: Vec<u8>) {
+    log::info!("socket_send: {:?}", (&socket_ip, &message));
+    let socket = SOCKET.lock().unwrap();
+    if let Some(socket) = socket.as_ref() {
+        socket
+            .send_to(&message, socket_ip)
+            .expect("Failed to send data");
+    }
+}
+
+#[tauri::command]
+pub fn socket_receive(on_event: Channel<OnReceived>) {
+    thread::spawn(move || loop {
+        thread::sleep(std::time::Duration::from_millis(100));
+        let socket = SOCKET.lock().unwrap();
+        if let Some(socket) = socket.as_ref() {
+            let mut buffer = vec![0; 1400];
+            let (amt, src) = socket
+                .recv_from(&mut buffer)
+                .expect("Failed to receive data");
+            log::info!("Received message: {} {:?}", amt, src);
+            on_event
+                .send(OnReceived {
+                    message: buffer[..amt].to_vec(),
+                    remote_info: src,
+                })
+                .unwrap();
+        }
+    });
 }
