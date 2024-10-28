@@ -1,4 +1,5 @@
 import { View } from '@tarojs/components';
+import { useReady } from '@tarojs/taro';
 
 import Body from 'src/components/body/body';
 import Navbar from 'src/components/navbar/navbar';
@@ -15,6 +16,10 @@ export default function Start() {
       id: '11',
     });
   };
+
+  useReady(() => {
+    onClickStart();
+  });
 
   return (
     <Page disableScroll>
