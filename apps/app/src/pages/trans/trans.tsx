@@ -59,7 +59,7 @@ export default function Trans() {
                     progress: 0,
                     content: {
                       name: data.head.name,
-                      size: '...',
+                      size: 0,
                       path: data.body,
                     },
                   },
@@ -72,7 +72,7 @@ export default function Trans() {
             msg.updatedAt = Date.now();
             msg.msg[0].status = OnDataStatus.SENDING;
             msg.msg[0].progress = data.progress;
-            if (data.speed) {
+            if (data.speed && data.type === DataType.FILE) {
               msg.msg[0].content.size = `${formatFileSize(data.speed)}/s`;
             }
             return msg;
@@ -174,13 +174,13 @@ export default function Trans() {
             msg.updatedAt = Date.now();
             msg.msg[0].status = onData.status;
             msg.msg[0].progress = onData.progress;
-            if (onData.speed) {
+            if (onData.speed && onData.type === DataType.FILE) {
               msg.msg[0].content.size = `${formatFileSize(onData.speed)}/s`;
             }
           } else {
             msg.msg[0].status = onData.status;
             msg.msg[0].progress = onData.progress;
-            if (onData.head.size) {
+            if (onData.head.size && onData.type === DataType.FILE) {
               msg.msg[0].content.size = `${formatFileSize(onData.head.size)}`;
             }
           }
