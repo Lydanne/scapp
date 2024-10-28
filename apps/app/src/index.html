@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
@@ -23,6 +23,7 @@
   <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
   <script>
     // VConsole will be exported to `window.VConsole` by default.
-    var vConsole = new window.VConsole();
+    window.vConsole = new window.VConsole();
+    window.invoke = window.__TAURI__.core.invoke;
   </script>
 </html>

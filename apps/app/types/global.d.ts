@@ -32,4 +32,5 @@ declare interface Window {
       invoke: (command: string, payload: any) => Promise<any>;
     };
   };
+  invoke: (command: string, payload?: any) => Promise<any>;
 }
