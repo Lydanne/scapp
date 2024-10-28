@@ -42,19 +42,25 @@ pub fn socket_send(socket_ip: String, message: Vec<u8>) {
 pub fn socket_receive(on_event: Channel<OnReceived>) {
     thread::spawn(move || loop {
         thread::sleep(std::time::Duration::from_millis(100));
-        let socket = SOCKET.lock().unwrap();
-        if let Some(socket) = socket.as_ref() {
-            let mut buffer = vec![0; 1400];
-            let (amt, src) = socket
-                .recv_from(&mut buffer)
-                .expect("Failed to receive data");
-            log::info!("Received message: {} {:?}", amt, src);
-            on_event
-                .send(OnReceived {
-                    message: buffer[..amt].to_vec(),
-                    remote_info: src,
-                })
-                .unwrap();
-        }
+        let socket_clone = {
+            let socket = SOCKET.lock().unwrap();
+            if let Some(socket) = socket.as_ref() {
+                socket.try_clone().expect("Failed to clone socket")
+            } else {
+                continue;
+            }
+        }; // 锁在这里被释放
+
+        let mut buffer = vec![0; 1400];
+        let (amt, src) = socket_clone
+            .recv_from(&mut buffer)
+            .expect("Failed to receive data");
+        log::info!("Received message: {} {:?}", amt, src);
+        on_event
+            .send(OnReceived {
+                message: buffer[..amt].to_vec(),
+                remote_info: src,
+            })
+            .unwrap();
     });
 }
