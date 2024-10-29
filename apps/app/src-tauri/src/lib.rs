@@ -3,6 +3,9 @@ use tauri_plugin_log::{Target, TargetKind};
 mod socket;
 pub use socket::*;
 
+mod channel_socket;
+pub use channel_socket::*;
+
 mod net;
 pub use net::*;
 
@@ -35,6 +38,9 @@ pub fn run() {
             socket_bind,
             socket_send,
             socket_receive,
+            channel_socket_bind,
+            channel_socket_send,
+            channel_socket_receive,
             net_local_ip
         ])
         .run(tauri::generate_context!())
