@@ -22,7 +22,7 @@ export class UdpSocketNative {
 
       const onEvent = new Channel<any>();
       onEvent.onmessage = (ev) => {
-        console.log(`got event`, ev);
+        // console.log(`got event`, Date.now() - ev.ts);
         const message = ev.message;
         const [address, port] = ev.remoteInfo.split(':');
         const remoteInfo = {
