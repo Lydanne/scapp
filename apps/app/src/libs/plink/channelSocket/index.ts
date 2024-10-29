@@ -1,7 +1,7 @@
 import { type UDPSocket } from '@tarojs/taro';
 
-import { Emitter } from '../shared/emitter';
-import { UdpSocket } from '../tapi/udpsocket/index';
+import { Emitter } from '../../shared/emitter';
+import { UdpSocket } from '../../tapi/udpsocket/index';
 
 const CHUNK_SIZE = 1024;
 
