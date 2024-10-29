@@ -16,7 +16,7 @@ import {
 } from './payload';
 import { fromBinary, mergeArrayBuffer, rand, randId, toBinary } from './shared';
 
-const BLOCK_SIZE = 1024 * 64;
+const BLOCK_SIZE = 1024 * 128;
 
 const socket = new ChannelSocket();
 
