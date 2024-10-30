@@ -1,9 +1,9 @@
-import { Base64 } from '../shared/base64';
-import { bufferMd5 } from '../shared/bufferMd5';
-import { Emitter } from '../shared/emitter';
-import { StringBuffer } from '../shared/stringbuffer';
-import { FS, type FSOpen } from '../tapi/fs';
-import { ChannelSocket } from './channelSocket';
+import { Base64 } from '../../shared/base64';
+import { bufferMd5 } from '../../shared/bufferMd5';
+import { Emitter } from '../../shared/emitter';
+import { StringBuffer } from '../../shared/stringbuffer';
+import { FS, type FSOpen } from '../../tapi/fs';
+import { ChannelSocket } from '../channelSocket';
 import {
   Channel,
   type ConnectAction,
@@ -13,8 +13,14 @@ import {
   FinishStatus,
   type SynReadySignal,
   type SyncAction,
-} from './payload';
-import { fromBinary, mergeArrayBuffer, rand, randId, toBinary } from './shared';
+} from '../payload';
+import {
+  fromBinary,
+  mergeArrayBuffer,
+  rand,
+  randId,
+  toBinary,
+} from '../shared';
 
 const BLOCK_SIZE = 1024 * 128;
 

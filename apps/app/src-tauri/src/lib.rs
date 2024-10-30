@@ -9,6 +9,11 @@ pub use channel_socket::*;
 mod net;
 pub use net::*;
 
+mod udp_channel;
+pub use udp_channel::*;
+
+mod plink;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -41,6 +46,12 @@ pub fn run() {
             channel_socket_bind,
             channel_socket_send,
             channel_socket_receive,
+            udp_channel_connect,
+            udp_channel_send_message,
+            udp_channel_disconnect,
+            udp_channel_listen,
+            udp_channel_send,
+            udp_channel_close_connection,
             net_local_ip
         ])
         .run(tauri::generate_context!())
