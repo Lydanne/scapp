@@ -13,6 +13,7 @@ static CHUNK_SIZE: usize = 1024;
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OnReceived {
+    #[serde(with = "serde_bytes")]
     message: Vec<u8>,
     remote_info: SocketAddr,
     ts: u64,
