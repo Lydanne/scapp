@@ -56,6 +56,9 @@ const config = {
     publicPath: '/',
     staticDirectory: 'static',
     // esnextModules: ['nutui-react'],
+    devServer: {
+      open: false,
+    },
     postcss: {
       pxtransform: {
         enable: true,
