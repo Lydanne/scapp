@@ -3,7 +3,7 @@ import { type UDPSocket } from '@tarojs/taro';
 import { Emitter } from '../../shared/emitter';
 import { UdpSocket } from '../../tapi/udpsocket/index';
 
-const CHUNK_SIZE = 1024;
+const CHUNK_SIZE = 1300;
 
 export class SocketPipe {
   sender = new Emitter<(e: UDPSocket.send.Option) => any>();
@@ -26,7 +26,7 @@ export class SocketPipe {
       let packets: Packet[] = [];
       // wx.packets = packets;
 
-      this.udp.receiver.on((e) => {
+      this.udp.receiver.on(async (e) => {
         const message = e.message;
         const packet = unwrapSubPacket(message);
 
@@ -54,7 +54,7 @@ export class SocketPipe {
           try {
             const message = mergePacket(filterPacketBuffers);
             // console.log('[UdpSocket]', 'receiver', packet);
-            this.receiver.emitSync({ ...e, message });
+            await this.receiver.emit({ ...e, message });
             packets = [];
           } catch (error) {
             console.log(
@@ -75,15 +75,15 @@ export class SocketPipe {
         // console.log('[UdpSocket]', 'sender', option);
 
         if (typeof message === 'string') {
-          this.udp.sender.emitSync(option);
-          return this;
+          await this.udp.sender.emit(option);
+          return;
         }
         const id = uniseq++;
         const packets = splitPacket(message, CHUNK_SIZE);
         for (let i = 0; i < packets.length; i++) {
           const subPacket = wrapSubPacket(id, i, packets.length, packets[i]);
           // console.log('[UdpSocket]', 'udpSend', id, i, packets.length);
-          this.udp.sender.emitSync({ ...option, message: subPacket });
+          await this.udp.sender.emit({ ...option, message: subPacket });
         }
         if (uniseq > Number.MAX_SAFE_INTEGER) {
           uniseq = 0;

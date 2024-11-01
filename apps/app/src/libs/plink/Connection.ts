@@ -121,7 +121,7 @@ export class Connection {
       },
     };
     this.syncMpsc.tx.emitSync(sync);
-    const [ackReady] = await this.syncMpsc.rx.waitTimeout(3000);
+    const [ackReady] = await this.syncMpsc.rx.waitTimeout(1000);
     if (ackReady.signal.oneofKind !== 'ackReady') {
       throw new Error('ackReady error');
     }
@@ -136,9 +136,9 @@ export class Connection {
         index,
         body: new Uint8Array(buffer),
       };
-      this.dataMpsc.tx.emitSync(data);
+      await this.dataMpsc.tx.emit(data);
       try {
-        const [ackDataStatus] = await this.syncMpsc.rx.waitTimeout(3000);
+        const [ackDataStatus] = await this.syncMpsc.rx.waitTimeout(1000);
         if (
           ackDataStatus.id === id &&
           ackDataStatus.signal.oneofKind === 'ackChunkFinish' &&
@@ -159,12 +159,9 @@ export class Connection {
             head: head as SynReadySignal,
             body: '',
           });
-        } else {
-          console.log('发送重试', ackDataStatus);
         }
       } catch (error) {
         console.log('发送错误', error);
-        await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
       if (index === length) {

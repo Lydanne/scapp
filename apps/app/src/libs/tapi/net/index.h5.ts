@@ -1,5 +1,5 @@
-import Taro from '@tarojs/taro';
+import { invoke } from '@tauri-apps/api/core';
 
 export function getLocalIPAddress() {
-  return window.invoke('net_local_ip');
+  return invoke('net_local_ip');
 }

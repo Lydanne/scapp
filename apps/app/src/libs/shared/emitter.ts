@@ -37,14 +37,14 @@ export class Emitter<CB extends (...args: any[]) => void> {
 
   emit(...args: ParamsType<CB>) {
     this.lastEmitArgs = undefined;
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
       if (this.debounce === undefined) {
-        setTimeout(() => {
+        Promise.resolve().then(() => {
           try {
             this.emitSync(...args);
             resolve();
           } catch (error) {
-            return Promise.reject;
+            reject(error);
           }
         });
       } else {

@@ -11,7 +11,7 @@ import { fromBinary, rand, randId, toBinary } from './shared';
 
 export * from './Connection';
 
-export const BLOCK_SIZE = 1024 * 128;
+export const BLOCK_SIZE = 1024 * 64;
 
 const socket = new SocketPipe();
 
