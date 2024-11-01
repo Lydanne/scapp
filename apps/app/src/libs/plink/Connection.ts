@@ -74,6 +74,22 @@ export class Connection {
     this.seq = data.seq;
   }
 
+  waitSignal(timeout: number, filter: (signal: SyncAction) => boolean) {
+    return new Promise((resolve, reject) => {
+      const clear = this.syncMpsc.rx.on((signal) => {
+        if (filter(signal)) {
+          resolve(undefined);
+          clearTimeout(timer);
+          clear();
+        }
+      });
+      const timer = setTimeout(() => {
+        clear();
+        reject(new Error('timeout'));
+      }, timeout);
+    });
+  }
+
   async send(data: SendData, cb?: (onData: OnData) => any) {
     console.log('send', data);
     const { type, head, body, id } = data;
@@ -121,16 +137,10 @@ export class Connection {
       },
     };
     await this.syncMpsc.tx.emit(sync);
-    let ackRedyed = false;
-    while (!ackRedyed) {
-      const [ackReady] = await this.syncMpsc.rx.waitTimeout(1000);
-      if (ackReady.signal.oneofKind === 'ackReady') {
-        ackRedyed = true;
-      }
-    }
-    if (!ackRedyed) {
-      throw new Error('ackReady error');
-    }
+    await this.waitSignal(
+      1000,
+      (signal) => signal.signal.oneofKind === 'ackReady' && signal.id === id,
+    );
 
     let index = 0;
     while (1) {
@@ -145,28 +155,28 @@ export class Connection {
 
       await this.dataMpsc.tx.emit(data);
       try {
-        const [ackDataStatus] = await this.syncMpsc.rx.waitTimeout(1000);
-        if (
-          ackDataStatus.id === id &&
-          ackDataStatus.signal.oneofKind === 'ackChunkFinish' &&
-          ackDataStatus.signal.ackChunkFinish.index === index &&
-          ackDataStatus.signal.ackChunkFinish.status === FinishStatus.Ok
-        ) {
-          index++;
-          const speed = Math.floor(
-            ((offset + offsetLen) / (Date.now() - ts)) * 1000,
-          );
-          cb?.({
-            id,
-            index,
-            status: OnDataStatus.SENDING,
-            type,
-            progress: Math.floor((index / length) * 100),
-            speed,
-            head: head as SynReadySignal,
-            body: '',
-          });
-        }
+        await this.waitSignal(
+          1000,
+          (signal) =>
+            signal.signal.oneofKind === 'ackChunkFinish' &&
+            signal.id === id &&
+            signal.signal.ackChunkFinish.index === index &&
+            signal.signal.ackChunkFinish.status === FinishStatus.Ok,
+        );
+        index++;
+        const speed = Math.floor(
+          ((offset + offsetLen) / (Date.now() - ts)) * 1000,
+        );
+        cb?.({
+          id,
+          index,
+          status: OnDataStatus.SENDING,
+          type,
+          progress: Math.floor((index / length) * 100),
+          speed,
+          head: head as SynReadySignal,
+          body: '',
+        });
       } catch (error) {
         console.log('发送错误', error);
       }
