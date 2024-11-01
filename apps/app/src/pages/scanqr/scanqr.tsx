@@ -6,8 +6,8 @@ import { View } from '@tarojs/components';
 import Footer from 'src/components/footer/footer';
 import Page from 'src/components/page/page';
 import { parsePlinkCode } from 'src/libs/plink';
-import type { SocketIP } from 'src/libs/plink/udpChannel';
-import udpChannel from 'src/libs/plink/udpChannel';
+import type { SocketIP } from 'src/libs/plink/UdpChannel';
+import udpChannel from 'src/libs/plink/UdpChannel';
 import { useRouter } from 'src/libs/tapi/router';
 
 import Scan from './components/scan/scan';

@@ -3,7 +3,7 @@ import { getIcon } from 'omni-file';
 import { Image, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 
-import type { OnDataStatus } from 'src/libs/plink/udpChannel';
+import type { OnDataStatus } from 'src/libs/plink/UdpChannel';
 
 import Style from './mitem.module.scss';
 

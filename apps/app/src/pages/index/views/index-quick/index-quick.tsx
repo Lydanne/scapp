@@ -7,7 +7,7 @@ import Mlist from 'src/components/mlist/mlist';
 import Navbar from 'src/components/navbar/navbar';
 import Qrcode from 'src/components/qrcode/qrcode';
 import { getPlinkCode } from 'src/libs/plink';
-import udpChannel from 'src/libs/plink/udpChannel';
+import udpChannel from 'src/libs/plink/UdpChannel';
 import { useRouter } from 'src/libs/tapi/router';
 
 import Style from './index-quick.module.scss';
