@@ -120,9 +120,15 @@ export class Connection {
         },
       },
     };
-    this.syncMpsc.tx.emitSync(sync);
-    const [ackReady] = await this.syncMpsc.rx.waitTimeout(1000);
-    if (ackReady.signal.oneofKind !== 'ackReady') {
+    await this.syncMpsc.tx.emit(sync);
+    let ackRedyed = false;
+    while (!ackRedyed) {
+      const [ackReady] = await this.syncMpsc.rx.waitTimeout(1000);
+      if (ackReady.signal.oneofKind === 'ackReady') {
+        ackRedyed = true;
+      }
+    }
+    if (!ackRedyed) {
       throw new Error('ackReady error');
     }
 
@@ -136,6 +142,7 @@ export class Connection {
         index,
         body: new Uint8Array(buffer),
       };
+
       await this.dataMpsc.tx.emit(data);
       try {
         const [ackDataStatus] = await this.syncMpsc.rx.waitTimeout(1000);
@@ -247,7 +254,7 @@ export class Connection {
     this.dataMpsc.rx.on(async (data) => {
       const pipe = pipeMap.get(data.id);
       if (!pipe) {
-        console.warn('pipe not found', data.id);
+        console.log('pipe not found', data.id);
         return;
       }
 
@@ -261,7 +268,8 @@ export class Connection {
           },
         },
       };
-      this.syncMpsc.tx.emitSync(ackChunkFinish);
+
+      await this.syncMpsc.tx.emit(ackChunkFinish);
       if (pipe.buffers[data.index]) {
         console.warn('chunk already received', data.id, data.index);
         return;
