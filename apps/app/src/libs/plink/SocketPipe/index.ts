@@ -5,7 +5,7 @@ import { UdpSocket } from '../../tapi/udpsocket/index';
 
 const CHUNK_SIZE = 1024;
 
-export class ChannelSocket {
+export class SocketPipe {
   sender = new Emitter<(e: UDPSocket.send.Option) => any>();
   receiver = new Emitter<(e: UDPSocket.onMessage.CallbackResult) => any>();
 

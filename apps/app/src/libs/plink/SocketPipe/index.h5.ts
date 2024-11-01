@@ -3,7 +3,7 @@ import { Channel, invoke } from '@tauri-apps/api/core';
 
 import { Emitter } from '../../shared/emitter';
 
-export class ChannelSocket {
+export class SocketPipe {
   sender = new Emitter<(e: UDPSocket.send.Option) => any>();
   receiver = new Emitter<(e: UDPSocket.onMessage.CallbackResult) => any>();
 

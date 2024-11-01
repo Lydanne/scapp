@@ -1,6 +1,6 @@
 import { Emitter } from '../shared/emitter';
 import { ChannelStatus, Connection, type SocketIP } from './Connection';
-import { ChannelSocket } from './channelSocket';
+import { SocketPipe } from './SocketPipe';
 import {
   Channel,
   type ConnectAction,
@@ -13,7 +13,7 @@ export * from './Connection';
 
 export const BLOCK_SIZE = 1024 * 128;
 
-const socket = new ChannelSocket();
+const socket = new SocketPipe();
 
 export enum OnDisconnectCode {
   SUCCESS = 0,
