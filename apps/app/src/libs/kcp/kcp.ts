@@ -272,7 +272,7 @@ export class KCP {
   }
 
   // 获取下一个数据包大小
-  private peeksize(): number {
+  peeksize(): number {
     if (this.rcv_queue.length === 0) {
       return -1;
     }

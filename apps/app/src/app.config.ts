@@ -1,5 +1,6 @@
 export default defineAppConfig({
   pages: [
+    'pages/kcp-test/index',
     'pages/start/start',
     'pages/index/index',
     'pages/scanqr/scanqr',
@@ -8,7 +9,7 @@ export default defineAppConfig({
   window: {
     backgroundTextStyle: 'light',
     navigationBarBackgroundColor: '#fff',
-    navigationBarTitleText: 'WeChat',
+    navigationBarTitleText: 'KCP Test',
     navigationBarTextStyle: 'black',
   },
 });
