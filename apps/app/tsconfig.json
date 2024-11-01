@@ -9,8 +9,8 @@
     "noImplicitAny": false,
     "allowSyntheticDefaultImports": true,
     "outDir": "lib",
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "strictNullChecks": true,
     "sourceMap": true,
     "baseUrl": ".",
@@ -21,7 +21,9 @@
     "typeRoots": ["node_modules/@types"],
     "paths": {
       "src/*": ["src/*"]
-    }
+    },
+    "types": ["@types/jest", "@types/node"],
+    "esModuleInterop": true
   },
   "include": ["./src", "./types"],
   "compileOnSave": false
