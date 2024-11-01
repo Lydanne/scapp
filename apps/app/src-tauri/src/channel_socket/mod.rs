@@ -1,13 +1,15 @@
 use std::{
-    net::{SocketAddr, UdpSocket},
+    net::SocketAddr,
     sync::Mutex,
-    thread,
+    collections::HashMap,
 };
 
 use serde::Serialize;
-use tauri::{ipc::Channel, AppHandle, Emitter};
+use tauri::{ipc::Channel, AppHandle};
+use tokio::net::UdpSocket;
+use std::sync::Arc;
 
-static SOCKET: Mutex<Option<UdpSocket>> = Mutex::new(None);
+static SOCKET: Mutex<Option<Arc<UdpSocket>>> = Mutex::new(None);
 static CHUNK_SIZE: usize = 1024;
 
 #[derive(Clone, Serialize)]
@@ -53,8 +55,9 @@ fn unwrap_sub_packet(data: &[u8]) -> Packet {
 #[tauri::command]
 pub async fn channel_socket_bind() -> String {
     log::info!("channel_socket_bind!");
-    let socket = UdpSocket::bind("0.0.0.0:0").expect("Failed to bind socket");
-
+    let socket = UdpSocket::bind("0.0.0.0:0").await.expect("Failed to bind socket");
+    let socket = Arc::new(socket);
+    
     let socket_ip = format!("{}", socket.local_addr().unwrap());
     SOCKET.lock().unwrap().replace(socket);
 
@@ -62,9 +65,13 @@ pub async fn channel_socket_bind() -> String {
 }
 
 #[tauri::command]
-pub fn channel_socket_send(socket_ip: String, message: Vec<u8>) {
-    let socket = SOCKET.lock().unwrap();
-    if let Some(socket) = socket.as_ref() {
+pub async fn channel_socket_send(socket_ip: String, message: Vec<u8>) {
+    let socket = {
+        let guard = SOCKET.lock().unwrap();
+        guard.as_ref().map(|s| s.clone())
+    };
+
+    if let Some(socket) = socket {
         static mut UNISEQ: u32 = 0;
         let id = unsafe {
             let current = UNISEQ;
@@ -83,28 +90,25 @@ pub fn channel_socket_send(socket_ip: String, message: Vec<u8>) {
             let sub_packet = wrap_sub_packet(id, i as u32, total_chunks, &chunk);
             socket
                 .send_to(&sub_packet, &socket_ip)
+                .await
                 .expect("Failed to send data");
         }
     }
 }
 
 #[tauri::command]
-pub fn channel_socket_receive(on_event: Channel<OnReceived>) {
-    use std::collections::HashMap;
-    let socket_clone = {
+pub async fn channel_socket_receive(on_event: Channel<OnReceived>) {
+    let socket = {
         let socket = SOCKET.lock().unwrap();
-        socket.as_ref().unwrap().try_clone().unwrap()
+        socket.as_ref().unwrap().clone()
     };
 
-    thread::spawn(move || {
+    tokio::spawn(async move {
         let mut packets: HashMap<u32, Vec<Option<Vec<u8>>>> = HashMap::new();
+        let mut buffer = vec![0; 1400];
 
         loop {
-            let mut buffer = vec![0; 1400];
-            let (amt, src) = socket_clone
-                .recv_from(&mut buffer)
-                .expect("Failed to receive data");
-
+            let (amt, src) = socket.recv_from(&mut buffer).await.expect("Failed to receive data");
             let packet = unwrap_sub_packet(&buffer[..amt]);
 
             let packet_list = packets
