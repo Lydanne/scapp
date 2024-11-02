@@ -13,8 +13,7 @@ import {
   type SyncAction,
 } from './payload';
 import { mergeArrayBuffer } from './shared';
-
-export type SocketIP = `${string}:${number}`;
+import type { SocketIP } from './types';
 
 export enum ChannelStatus {
   init = 0,

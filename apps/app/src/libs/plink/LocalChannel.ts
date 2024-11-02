@@ -1,5 +1,5 @@
 import { Emitter } from '../shared/emitter';
-import { ChannelStatus, Connection, type SocketIP } from './Connection';
+import { ChannelStatus, Connection } from './Connection';
 import { SocketPipe } from './SocketPipe';
 import {
   Channel,
@@ -8,6 +8,7 @@ import {
   type SynReadySignal,
 } from './payload';
 import { fromBinary, rand, randId, toBinary } from './shared';
+import { type SocketIP } from './types';
 
 export * from './Connection';
 
