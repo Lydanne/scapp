@@ -7,7 +7,7 @@ import Mlist from 'src/components/mlist/mlist';
 import Navbar from 'src/components/navbar/navbar';
 import Qrcode from 'src/components/qrcode/qrcode';
 import { getPlinkCode } from 'src/libs/plink';
-import udpChannel from 'src/libs/plink/UdpChannel';
+import channel from 'src/libs/plink/LocalChannel';
 import { useRouter } from 'src/libs/tapi/router';
 
 import Style from './index-quick.module.scss';
@@ -17,10 +17,10 @@ export default function IndexQuick() {
   const { to } = useRouter();
   useEffect(() => {
     setTimeout(async () => {
-      const [port] = await udpChannel.listenEmitter.wait();
+      const [port] = await channel.listenEmitter.wait();
       setQrData(await getPlinkCode(port));
     });
-    return udpChannel.connectionEmitter.on((connection) => {
+    return channel.connectionEmitter.on((connection) => {
       to('/pages/trans/trans', { plink: { socketIP: connection.socketIP } });
     });
   }, []);

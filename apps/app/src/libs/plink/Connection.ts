@@ -2,8 +2,8 @@ import { Base64 } from '../shared/base64';
 import { bufferMd5 } from '../shared/bufferMd5';
 import { StringBuffer } from '../shared/stringbuffer';
 import { FS, type FSOpen } from '../tapi/fs';
-import { MpscChannel } from './MpscChannel';
-import { BLOCK_SIZE } from './UdpChannel';
+import { BLOCK_SIZE } from './LocalChannel';
+import { Mpsc } from './Mpsc';
 import {
   type DataAction,
   DataType,
@@ -63,9 +63,9 @@ export class Connection {
   detectAt: number = 0;
   detectErrorCount: number = 0;
 
-  dataMpsc = new MpscChannel<DataAction>();
-  syncMpsc = new MpscChannel<SyncAction>();
-  detectMpsc = new MpscChannel<DetectAction>();
+  dataMpsc = new Mpsc<DataAction>();
+  syncMpsc = new Mpsc<SyncAction>();
+  detectMpsc = new Mpsc<DetectAction>();
 
   constructor(data: ConnectionProps) {
     this.id = data.id;

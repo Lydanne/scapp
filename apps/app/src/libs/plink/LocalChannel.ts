@@ -26,7 +26,7 @@ export type OnDisconnect = {
   code: OnDisconnectCode;
 };
 
-export class UdpChannel {
+export class LocalChannel {
   static listened = 0;
 
   connectionClient = new Map<number, Connection>();
@@ -37,24 +37,24 @@ export class UdpChannel {
 
   constructor() {
     this.connectionEmitter.on((data) => {
-      console.log('[UdpChannel]', 'connectionEmitter', data);
+      console.log('[LocalChannel]', 'connectionEmitter', data);
     });
   }
 
   listen() {
-    if (UdpChannel.listened) {
+    if (LocalChannel.listened) {
       return this;
     }
 
     socket.listen((port) => {
-      UdpChannel.listened = port;
-      console.log('[UdpChannel]', 'listen', port);
+      LocalChannel.listened = port;
+      console.log('[LocalChannel]', 'listen', port);
       this.listenEmitter.emitLifeCycle(port);
 
       socket.receiver.on((ev) => {
         const data = fromBinary<Channel>(Channel, ev.message);
         const client = this.connectionClient.get(data.id);
-        // console.log('[UdpChannel]', 'receiver', data, client);
+        // console.log('[LocalChannel]', 'receiver', data, client);
 
         switch (data.action.oneofKind) {
           case 'connect':
@@ -120,7 +120,7 @@ export class UdpChannel {
                   });
                 });
               } else {
-                console.log('[UdpChannel]', 'onMessage', 'seq error');
+                console.log('[LocalChannel]', 'onMessage', 'seq error');
                 socket.sender.emit({
                   address: ev.remoteInfo.address,
                   port: ev.remoteInfo.port,
@@ -219,7 +219,7 @@ export class UdpChannel {
       });
 
       socket.errorEmitter.on((err) => {
-        console.log('[UdpChannel]', 'onError', err);
+        console.log('[LocalChannel]', 'onError', err);
       });
       if (false)
         setInterval(() => {
@@ -229,7 +229,7 @@ export class UdpChannel {
               Date.now() - connection.detectAt > 5000
             ) {
               setTimeout(async () => {
-                console.log('[UdpChannel]', 'detect', connection.id);
+                console.log('[LocalChannel]', 'detect', connection.id);
 
                 const now = Date.now();
                 connection.detectAt = now;
@@ -265,7 +265,7 @@ export class UdpChannel {
                     }
                   } catch (error) {
                     connection.detectErrorCount++;
-                    console.log('[UdpChannel]', 'detect timeout', error);
+                    console.log('[LocalChannel]', 'detect timeout', error);
                     if (connection.detectErrorCount > 3) {
                       connection.status = ChannelStatus.disconnected;
                       connection.close();
@@ -280,7 +280,7 @@ export class UdpChannel {
                 }
 
                 console.log(
-                  '[UdpChannel]',
+                  '[LocalChannel]',
                   'detect done',
                   connection.id,
                   Date.now() - now,
@@ -329,10 +329,10 @@ export class UdpChannel {
   }
 
   async disconnect(id: number) {
-    console.log('[UdpChannel]', 'disconnect', id);
+    console.log('[LocalChannel]', 'disconnect', id);
     const connection = this.connectionClient.get(id);
     if (!connection) {
-      console.warn('[UdpChannel]', 'disconnect', 'connection not found', id);
+      console.warn('[LocalChannel]', 'disconnect', 'connection not found', id);
       return false;
     }
     const [ip, port] = connection.socketIP.split(':');
@@ -357,6 +357,6 @@ export class UdpChannel {
   }
 }
 
-const udpChannel = new UdpChannel().listen();
+const channel = new LocalChannel().listen();
 
-export default udpChannel;
+export default channel;

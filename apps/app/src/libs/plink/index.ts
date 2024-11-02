@@ -1,4 +1,4 @@
 export * from './Connection';
-export * from './MpscChannel';
+export * from './Mpsc';
 export * from './PlinkCode';
-export * from './UdpChannel';
+export * from './LocalChannel';

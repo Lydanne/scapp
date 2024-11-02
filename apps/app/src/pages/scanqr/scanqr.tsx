@@ -6,8 +6,8 @@ import { View } from '@tarojs/components';
 import Footer from 'src/components/footer/footer';
 import Page from 'src/components/page/page';
 import { parsePlinkCode } from 'src/libs/plink';
-import type { SocketIP } from 'src/libs/plink/UdpChannel';
-import udpChannel from 'src/libs/plink/UdpChannel';
+import type { SocketIP } from 'src/libs/plink/LocalChannel';
+import channel from 'src/libs/plink/LocalChannel';
 import { useRouter } from 'src/libs/tapi/router';
 
 import Scan from './components/scan/scan';
@@ -23,7 +23,7 @@ export default function Scanqr() {
       if (scanData.current) {
         const plink = parsePlinkCode(scanData.current);
         console.log('scanData', plink);
-        udpChannel.connect(plink.socketIP as SocketIP);
+        channel.connect(plink.socketIP as SocketIP);
       }
     }, 100);
   };
