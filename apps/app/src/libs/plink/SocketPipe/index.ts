@@ -94,6 +94,10 @@ export class SocketPipe {
 
     return this;
   }
+
+  close(cb: () => any) {
+    // this.udp.close(cb);
+  }
 }
 
 function splitPacket(message: ArrayBuffer, size: number): ArrayBuffer[] {

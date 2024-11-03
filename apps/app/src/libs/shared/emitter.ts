@@ -109,6 +109,7 @@ export class Emitter<CB extends (...args: any[]) => void> {
   }
 
   destroy() {
+    this.lastEmitArgs = undefined;
     this.events.clear();
   }
 }

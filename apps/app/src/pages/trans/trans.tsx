@@ -11,10 +11,12 @@ import useMlist from 'src/components/mlist/hook';
 import Mlist from 'src/components/mlist/mlist';
 import Navbar from 'src/components/navbar/navbar';
 import Page from 'src/components/page/page';
-import { type Connection, OnDataStatus } from 'src/libs/plink/Connection';
-import channel from 'src/libs/plink/LocalChannel';
+import ChannelManager from 'src/libs/plink/ChannelManager';
+import { type LocalConnection } from 'src/libs/plink/Connection';
+import type { IConnection } from 'src/libs/plink/IChannel';
 import { Channel, DataType, type Plink } from 'src/libs/plink/payload';
 import { randId, toBinary } from 'src/libs/plink/shared';
+import { OnDataStatus } from 'src/libs/plink/types';
 import { formatFileSize } from 'src/libs/shared/format';
 import { useRouter } from 'src/libs/tapi/router';
 
@@ -32,9 +34,9 @@ export default function Trans() {
   const { msgList, setMsgById, appendMsg } = useMlist();
 
   useEffect(() => {
-    let connection: Connection;
+    let connection: IConnection;
     setTimeout(async () => {
-      [connection] = await channel.connectionEmitter.wait();
+      [connection] = await ChannelManager.channel.emConnection.wait();
       connection.on((data) => {
         // console.log('connection data', data);
         if (data.status === OnDataStatus.READY) {
@@ -100,7 +102,7 @@ export default function Trans() {
           });
         }
       });
-      channel.disconnectEmitter.wait().then(([e]) => {
+      ChannelManager.channel.emDisconnect.wait().then(([e]) => {
         if (e.connection.id === connection.id) {
           Taro.showModal({
             title: '提示',
@@ -110,7 +112,7 @@ export default function Trans() {
       });
     });
     return () => {
-      channel.disconnect(connection.id);
+      ChannelManager.channel.disconnect(connection);
     };
   }, []);
 
@@ -131,7 +133,7 @@ export default function Trans() {
       ],
     });
 
-    const [connection] = await channel.connectionEmitter.wait();
+    const [connection] = await ChannelManager.channel.emConnection.wait();
     connection.send({
       id,
       type: DataType.TEXT,
@@ -153,7 +155,7 @@ export default function Trans() {
       type: 'file',
     });
     console.log('res', res);
-    const [connection] = await channel.connectionEmitter.wait();
+    const [connection] = await ChannelManager.channel.emConnection.wait();
     connection.send(
       {
         id,

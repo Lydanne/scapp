@@ -7,7 +7,7 @@ import Mlist from 'src/components/mlist/mlist';
 import Navbar from 'src/components/navbar/navbar';
 import Qrcode from 'src/components/qrcode/qrcode';
 import { getPlinkCode } from 'src/libs/plink';
-import channel from 'src/libs/plink/LocalChannel';
+import ChannelManager from 'src/libs/plink/ChannelManager';
 import { useRouter } from 'src/libs/tapi/router';
 
 import Style from './index-quick.module.scss';
@@ -16,12 +16,13 @@ export default function IndexQuick() {
   const [qrData, setQrData] = useState('');
   const { to } = useRouter();
   useEffect(() => {
-    setTimeout(async () => {
-      const [port] = await channel.listenEmitter.wait();
+    return ChannelManager.emReload.on(async (channel) => {
+      console.log('[IndexQuick]', 'reloadEmitter', channel);
+      channel.emConnection.on((connection) => {
+        to('/pages/trans/trans', { plink: { socketIP: connection.socketIP } });
+      });
+      const [port] = await channel.emListen.wait();
       setQrData(await getPlinkCode(port));
-    });
-    return channel.connectionEmitter.on((connection) => {
-      to('/pages/trans/trans', { plink: { socketIP: connection.socketIP } });
     });
   }, []);
   return (

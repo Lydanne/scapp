@@ -2,6 +2,7 @@ import { Base64 } from '../shared/base64';
 import { bufferMd5 } from '../shared/bufferMd5';
 import { StringBuffer } from '../shared/stringbuffer';
 import { FS, type FSOpen } from '../tapi/fs';
+import { IConnection } from './IChannel';
 import { BLOCK_SIZE } from './LocalChannel';
 import { Mpsc } from './Mpsc';
 import {
@@ -13,65 +14,21 @@ import {
   type SyncAction,
 } from './payload';
 import { mergeArrayBuffer } from './shared';
-import type { SocketIP } from './types';
+import {
+  ChannelStatus,
+  type OnData,
+  OnDataStatus,
+  type SendData,
+  SocketIP,
+} from './types';
 
-export enum ChannelStatus {
-  init = 0,
-  connecting = 1,
-  connected = 2,
-  disconnecting = 3,
-  disconnected = 4,
-}
-
-export type ConnectionProps = {
-  id: number;
-  status: ChannelStatus;
-  socketIP: SocketIP;
-  seq: number;
-};
-
-export type OnData = {
-  id: number; // 消息 id
-  index: number; // 块序号
-  status: OnDataStatus;
-  type: DataType;
-  progress: number; // 0-100, 0 表示准备好，100 表示完成
-  speed: number; // 速度 字节/秒
-  head: SynReadySignal;
-  body: string;
-};
-
-export enum OnDataStatus {
-  READY = 0,
-  SENDING = 1,
-  DONE = 2,
-}
-
-export type SendData = {
-  id: number;
-  type: DataType;
-  head: Partial<SynReadySignal>;
-  body: string;
-};
-
-export class Connection {
-  id: number;
-  status: ChannelStatus = ChannelStatus.init;
-  socketIP: SocketIP;
-  seq: number = 0;
+export class LocalConnection extends IConnection {
   detectAt: number = 0;
   detectErrorCount: number = 0;
 
   dataMpsc = new Mpsc<DataAction>();
   syncMpsc = new Mpsc<SyncAction>();
   detectMpsc = new Mpsc<DetectAction>();
-
-  constructor(data: ConnectionProps) {
-    this.id = data.id;
-    this.status = data.status;
-    this.socketIP = data.socketIP;
-    this.seq = data.seq;
-  }
 
   waitSignal(timeout: number, filter: (signal: SyncAction) => boolean) {
     return new Promise((resolve, reject) => {

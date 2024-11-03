@@ -1,5 +1,6 @@
 import { Emitter } from '../shared/emitter';
-import { ChannelStatus, Connection } from './Connection';
+import { IChannel } from './IChannel';
+import { LocalConnection } from './LocalConnection';
 import { SocketPipe } from './SocketPipe';
 import {
   Channel,
@@ -8,9 +9,9 @@ import {
   type SynReadySignal,
 } from './payload';
 import { fromBinary, rand, randId, toBinary } from './shared';
-import { type SocketIP } from './types';
+import { ChannelStatus, type SocketIP } from './types';
 
-export * from './Connection';
+export * from './LocalConnection';
 
 export const BLOCK_SIZE = 1024 * 64;
 
@@ -23,279 +24,291 @@ export enum OnDisconnectCode {
 }
 
 export type OnDisconnect = {
-  connection: Connection;
+  connection: LocalConnection;
   code: OnDisconnectCode;
 };
 
-export class LocalChannel {
+export class LocalChannel extends IChannel<LocalConnection> {
   static listened = 0;
 
-  connectionClient = new Map<number, Connection>();
-
-  listenEmitter = new Emitter<(port: number) => any>();
-  connectionEmitter = new Emitter<(connection: Connection) => any>();
-  disconnectEmitter = new Emitter<(connection: OnDisconnect) => any>();
+  connectionClient = new Map<number, LocalConnection>();
 
   constructor() {
-    this.connectionEmitter.on((data) => {
+    super();
+    this.emConnection.on((data) => {
       console.log('[LocalChannel]', 'connectionEmitter', data);
     });
   }
 
   listen() {
-    if (LocalChannel.listened) {
-      return this;
-    }
+    return new Promise<number>((resolve) => {
+      if (LocalChannel.listened) {
+        return resolve(LocalChannel.listened);
+      }
+      socket.listen((port) => {
+        LocalChannel.listened = port;
+        resolve(port);
+        console.log('[LocalChannel]', 'listen', port);
+        this.emListen.emitLifeCycle(port);
 
-    socket.listen((port) => {
-      LocalChannel.listened = port;
-      console.log('[LocalChannel]', 'listen', port);
-      this.listenEmitter.emitLifeCycle(port);
+        socket.receiver.on((ev) => {
+          const data = fromBinary<Channel>(Channel, ev.message);
+          const client = this.connectionClient.get(data.id);
+          console.log('[LocalChannel]', 'receiver', data, client);
 
-      socket.receiver.on((ev) => {
-        const data = fromBinary<Channel>(Channel, ev.message);
-        const client = this.connectionClient.get(data.id);
-        // console.log('[LocalChannel]', 'receiver', data, client);
+          switch (data.action.oneofKind) {
+            case 'connect':
+              if (client) {
+                // 验证连接
+                if (client.seq + 1 === data.action.connect.ack) {
+                  if (client.status !== ChannelStatus.connecting) {
+                    return;
+                  }
 
-        switch (data.action.oneofKind) {
-          case 'connect':
-            if (client) {
-              // 验证连接
-              if (client.seq + 1 === data.action.connect.ack) {
-                if (client.status !== ChannelStatus.connecting) {
-                  return;
-                }
+                  if (data.action.connect.seq != 0) {
+                    // 最后发送确认连接
+                    socket.sender.emitSync({
+                      address: ev.remoteInfo.address,
+                      port: ev.remoteInfo.port,
+                      message: toBinary(Channel, {
+                        version: 1,
+                        id: data.id,
+                        ts: BigInt(Date.now()),
+                        action: {
+                          oneofKind: 'connect',
+                          connect: {
+                            seq: 0,
+                            ack: data.action.connect.seq + 1,
+                          },
+                        },
+                      }),
+                    });
+                  }
 
-                if (data.action.connect.seq != 0) {
-                  // 最后发送确认连接
-                  socket.sender.emitSync({
+                  client.status = ChannelStatus.connected;
+                  this.connectionClient.set(data.id, client);
+                  this.emConnection.emitLifeCycle(client);
+
+                  client.dataMpsc.tx.on((data) => {
+                    socket.sender.emit({
+                      address: ev.remoteInfo.address,
+                      port: ev.remoteInfo.port,
+                      message: toBinary(Channel, {
+                        version: 1,
+                        id: client.id,
+                        ts: BigInt(Date.now()),
+                        action: {
+                          oneofKind: 'data',
+                          data: data,
+                        },
+                      }),
+                    });
+                  });
+                  client.syncMpsc.tx.on((data) => {
+                    socket.sender.emit({
+                      address: ev.remoteInfo.address,
+                      port: ev.remoteInfo.port,
+                      message: toBinary(Channel, {
+                        version: 1,
+                        id: client.id,
+                        ts: BigInt(Date.now()),
+                        action: {
+                          oneofKind: 'sync',
+                          sync: data,
+                        },
+                      }),
+                    });
+                  });
+                } else {
+                  console.log(
+                    '[LocalChannel]',
+                    'onMessage',
+                    'seq error',
+                    client,
+                  );
+                  socket.sender.emit({
                     address: ev.remoteInfo.address,
                     port: ev.remoteInfo.port,
                     message: toBinary(Channel, {
                       version: 1,
-                      id: data.id,
+                      id: client.id,
                       ts: BigInt(Date.now()),
                       action: {
-                        oneofKind: 'connect',
-                        connect: {
+                        oneofKind: 'disconnect',
+                        disconnect: {
                           seq: 0,
-                          ack: data.action.connect.seq + 1,
+                          ack: 0,
                         },
                       },
                     }),
                   });
                 }
-
-                client.status = ChannelStatus.connected;
-                this.connectionClient.set(data.id, client);
-                this.connectionEmitter.emitLifeCycle(client);
-
-                client.dataMpsc.tx.on((data) => {
-                  socket.sender.emit({
-                    address: ev.remoteInfo.address,
-                    port: ev.remoteInfo.port,
-                    message: toBinary(Channel, {
-                      version: 1,
-                      id: client.id,
-                      ts: BigInt(Date.now()),
-                      action: {
-                        oneofKind: 'data',
-                        data: data,
-                      },
-                    }),
-                  });
-                });
-                client.syncMpsc.tx.on((data) => {
-                  socket.sender.emit({
-                    address: ev.remoteInfo.address,
-                    port: ev.remoteInfo.port,
-                    message: toBinary(Channel, {
-                      version: 1,
-                      id: client.id,
-                      ts: BigInt(Date.now()),
-                      action: {
-                        oneofKind: 'sync',
-                        sync: data,
-                      },
-                    }),
-                  });
-                });
               } else {
-                console.log('[LocalChannel]', 'onMessage', 'seq error');
-                socket.sender.emit({
-                  address: ev.remoteInfo.address,
-                  port: ev.remoteInfo.port,
-                  message: toBinary(Channel, {
-                    version: 1,
-                    id: client.id,
-                    ts: BigInt(Date.now()),
-                    action: {
-                      oneofKind: 'disconnect',
-                      connect: {
-                        seq: 0,
-                        ack: 0,
-                      },
-                    },
-                  }),
-                });
-              }
-            } else {
-              // 请求连接
-              const seq = rand(1, 100);
-              this.connectionClient.set(
-                data.id,
-                new Connection({
-                  id: data.id,
-                  status: ChannelStatus.connecting,
-                  seq,
-                  socketIP: `${ev.remoteInfo.address}:${ev.remoteInfo.port}`,
-                }),
-              );
-              socket.sender.emit({
-                address: ev.remoteInfo.address,
-                port: ev.remoteInfo.port,
-                message: toBinary(Channel, {
-                  version: 1,
-                  id: data.id,
-                  ts: BigInt(Date.now()),
-                  action: {
-                    oneofKind: 'connect',
-                    connect: {
-                      seq: seq,
-                      ack: data.action.connect.seq + 1,
-                    },
-                  },
-                }),
-              });
-            }
-            break;
-          case 'disconnect':
-            if (client) {
-              if (client.status === ChannelStatus.connected) {
-                // 客户端请求断开连接
-                socket.sender.emitSync({
-                  address: ev.remoteInfo.address,
-                  port: ev.remoteInfo.port,
-                  message: toBinary(Channel, {
-                    version: 1,
-                    id: client.id,
-                    ts: BigInt(Date.now()),
-                    action: {
-                      oneofKind: 'disconnect',
-                      disconnect: {
-                        seq: client.seq,
-                        ack: data.action.disconnect.seq + 1,
-                      },
-                    },
-                  }),
-                });
-                client.status = ChannelStatus.disconnecting;
-              } else if (client.status === ChannelStatus.disconnecting) {
-                if (client.seq + 1 === data.action.disconnect.ack) {
-                  this.disconnectEmitter.emitLifeCycle({
-                    connection: client,
-                    code: OnDisconnectCode.SUCCESS,
-                  });
-                  client.status = ChannelStatus.disconnected;
-                  client.close();
-                  this.connectionClient.delete(data.id);
-                } else {
-                  client.status = ChannelStatus.connected;
-                }
-              }
-            }
-            break;
-          case 'data':
-            client?.dataMpsc.rx.emitSync(data.action.data);
-            break;
-          case 'sync':
-            client?.syncMpsc.rx.emitSync(data.action.sync);
-            break;
-          case 'detect':
-            // client?.signalSender.emitSync(data.action.detect);
-            break;
-          default:
-            break;
-        }
-      });
-
-      socket.errorEmitter.on((err) => {
-        console.log('[LocalChannel]', 'onError', err);
-      });
-      if (false)
-        setInterval(() => {
-          for (const connection of this.connectionClient.values()) {
-            if (
-              connection.status === ChannelStatus.connected &&
-              Date.now() - connection.detectAt > 5000
-            ) {
-              setTimeout(async () => {
-                console.log('[LocalChannel]', 'detect', connection.id);
-
-                const now = Date.now();
-                connection.detectAt = now;
-                connection.detectErrorCount = 0;
-                const [ip, port] = connection.socketIP.split(':');
+                // 请求连接
                 const seq = rand(1, 100);
+                this.connectionClient.set(
+                  data.id,
+                  new LocalConnection({
+                    id: data.id,
+                    status: ChannelStatus.connecting,
+                    seq,
+                    socketIP: `${ev.remoteInfo.address}:${ev.remoteInfo.port}`,
+                  }),
+                );
                 socket.sender.emit({
-                  address: ip,
-                  port: parseInt(port),
+                  address: ev.remoteInfo.address,
+                  port: ev.remoteInfo.port,
                   message: toBinary(Channel, {
                     version: 1,
-                    id: connection.id,
+                    id: data.id,
                     ts: BigInt(Date.now()),
                     action: {
-                      oneofKind: 'detect',
-                      detect: {
-                        seq,
-                        ack: 0,
-                        rtt: 0,
+                      oneofKind: 'connect',
+                      connect: {
+                        seq: seq,
+                        ack: data.action.connect.seq + 1,
                       },
                     },
                   }),
                 });
-                while (true) {
-                  try {
-                    const [ev] = await socket.receiver.waitTimeout(1000);
-                    const data = fromBinary<Channel>(Channel, ev.message);
-                    if (
-                      data.action?.oneofKind === 'detect' &&
-                      data.action.detect.ack === seq + 1
-                    ) {
-                      break;
-                    }
-                  } catch (error) {
-                    connection.detectErrorCount++;
-                    console.log('[LocalChannel]', 'detect timeout', error);
-                    if (connection.detectErrorCount > 3) {
-                      connection.status = ChannelStatus.disconnected;
-                      connection.close();
-                      this.disconnectEmitter.emitLifeCycle({
-                        connection,
-                        code: OnDisconnectCode.DETECT_ERROR,
-                      });
-                      this.connectionClient.delete(connection.id);
-                      break;
-                    }
+              }
+              break;
+            case 'disconnect':
+              if (client) {
+                if (client.status === ChannelStatus.connected) {
+                  // 客户端请求断开连接
+                  socket.sender.emitSync({
+                    address: ev.remoteInfo.address,
+                    port: ev.remoteInfo.port,
+                    message: toBinary(Channel, {
+                      version: 1,
+                      id: client.id,
+                      ts: BigInt(Date.now()),
+                      action: {
+                        oneofKind: 'disconnect',
+                        disconnect: {
+                          seq: client.seq,
+                          ack: data.action.disconnect.seq + 1,
+                        },
+                      },
+                    }),
+                  });
+                  client.status = ChannelStatus.disconnecting;
+                } else if (client.status === ChannelStatus.disconnecting) {
+                  if (client.seq + 1 === data.action.disconnect.ack) {
+                    this.emDisconnect.emitLifeCycle({
+                      connection: client,
+                      code: OnDisconnectCode.SUCCESS,
+                    });
+                    client.status = ChannelStatus.disconnected;
+                    client.close();
+                    this.connectionClient.delete(data.id);
+                  } else {
+                    client.status = ChannelStatus.connected;
                   }
                 }
-
-                console.log(
-                  '[LocalChannel]',
-                  'detect done',
-                  connection.id,
-                  Date.now() - now,
-                );
-              });
-            }
+              }
+              break;
+            case 'data':
+              client?.dataMpsc.rx.emitSync(data.action.data);
+              break;
+            case 'sync':
+              client?.syncMpsc.rx.emitSync(data.action.sync);
+              break;
+            case 'detect':
+              // client?.signalSender.emitSync(data.action.detect);
+              break;
+            default:
+              break;
           }
-        }, 1000);
-    });
+        });
 
-    return this;
+        socket.errorEmitter.on((err) => {
+          console.log('[LocalChannel]', 'onError', err);
+        });
+        if (false)
+          setInterval(() => {
+            for (const connection of this.connectionClient.values()) {
+              if (
+                connection.status === ChannelStatus.connected &&
+                Date.now() - connection.detectAt > 5000
+              ) {
+                setTimeout(async () => {
+                  console.log('[LocalChannel]', 'detect', connection.id);
+
+                  const now = Date.now();
+                  connection.detectAt = now;
+                  connection.detectErrorCount = 0;
+                  const [ip, port] = connection.socketIP.split(':');
+                  const seq = rand(1, 100);
+                  socket.sender.emit({
+                    address: ip,
+                    port: parseInt(port),
+                    message: toBinary(Channel, {
+                      version: 1,
+                      id: connection.id,
+                      ts: BigInt(Date.now()),
+                      action: {
+                        oneofKind: 'detect',
+                        detect: {
+                          seq,
+                          ack: 0,
+                          rtt: 0,
+                        },
+                      },
+                    }),
+                  });
+                  while (true) {
+                    try {
+                      const [ev] = await socket.receiver.waitTimeout(1000);
+                      const data = fromBinary<Channel>(Channel, ev.message);
+                      if (
+                        data.action?.oneofKind === 'detect' &&
+                        data.action.detect.ack === seq + 1
+                      ) {
+                        break;
+                      }
+                    } catch (error) {
+                      connection.detectErrorCount++;
+                      console.log('[LocalChannel]', 'detect timeout', error);
+                      if (connection.detectErrorCount > 3) {
+                        connection.status = ChannelStatus.disconnected;
+                        connection.close();
+                        this.emDisconnect.emitLifeCycle({
+                          connection,
+                          code: OnDisconnectCode.DETECT_ERROR,
+                        });
+                        this.connectionClient.delete(connection.id);
+                        break;
+                      }
+                    }
+                  }
+
+                  console.log(
+                    '[LocalChannel]',
+                    'detect done',
+                    connection.id,
+                    Date.now() - now,
+                  );
+                });
+              }
+            }
+          }, 1000);
+      });
+    });
   }
 
-  connect(socketIP: SocketIP) {
+  async close() {
+    socket.close(async () => {
+      console.log('[LocalChannel]', 'close');
+      this.emClose.emit();
+      this.emConnection.destroy();
+      // this.disconnectEmitter.destroy();
+      // this.listenEmitter.destroy();
+    });
+  }
+
+  async connect(socketIP: SocketIP) {
     const [ip, port] = socketIP.split(':');
     const id = randId();
     const seq = rand(1, 100);
@@ -315,27 +328,21 @@ export class LocalChannel {
         },
       }),
     });
-
-    this.connectionClient.set(
+    const connection = new LocalConnection({
       id,
-      new Connection({
-        id,
-        status: ChannelStatus.connecting,
-        socketIP: socketIP,
-        seq,
-      }),
-    );
+      status: ChannelStatus.connecting,
+      socketIP: socketIP,
+      seq,
+    });
+    this.connectionClient.set(id, connection);
 
-    return this;
+    await this.emConnection.waitTimeout(5000);
+
+    return connection;
   }
 
-  async disconnect(id: number) {
-    console.log('[LocalChannel]', 'disconnect', id);
-    const connection = this.connectionClient.get(id);
-    if (!connection) {
-      console.warn('[LocalChannel]', 'disconnect', 'connection not found', id);
-      return false;
-    }
+  async disconnect(connection: LocalConnection) {
+    console.log('[LocalChannel]', 'disconnect', connection);
     const [ip, port] = connection.socketIP.split(':');
     const seq = rand(1, 100);
     socket.sender.emit({
@@ -343,7 +350,7 @@ export class LocalChannel {
       port: parseInt(port),
       message: toBinary(Channel, {
         version: 1,
-        id,
+        id: connection.id,
         ts: BigInt(Date.now()),
         action: {
           oneofKind: 'disconnect',
@@ -357,7 +364,3 @@ export class LocalChannel {
     return true;
   }
 }
-
-const channel = new LocalChannel().listen();
-
-export default channel;
