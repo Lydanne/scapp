@@ -16,7 +16,7 @@ export default function IndexQuick() {
   const [qrData, setQrData] = useState('');
   const { to } = useRouter();
   useEffect(() => {
-    return ChannelManager.emReload.on(async (channel) => {
+    return ChannelManager.emLoad.on(async (channel) => {
       console.log('[IndexQuick]', 'reloadEmitter', channel);
       channel.emConnection.on((connection) => {
         to('/pages/trans/trans', { plink: { socketIP: connection.socketIP } });

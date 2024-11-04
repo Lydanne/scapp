@@ -1,17 +1,19 @@
 import { Emitter } from '../shared/emitter';
 import type { IChannel, IConnection } from './IChannel';
 import { LocalChannel } from './LocalChannel';
+import { OssChannel } from './OssChannel';
 
 export default new (class ChannelManager {
   private currChannelName: string = 'local';
   private channels: Map<string, IChannel<IConnection>> = new Map();
 
-  public emReload = new Emitter<
+  public emLoad = new Emitter<
     (channel: IChannel<IConnection>, prev?: IChannel<IConnection>) => any
   >();
 
   constructor() {
     this.channels.set('local', new LocalChannel());
+    this.channels.set('oss', new OssChannel());
     this.load('local');
   }
 
@@ -34,7 +36,7 @@ export default new (class ChannelManager {
     if (!this.channels.has(name)) {
       throw new Error(`Channel ${name} not found`);
     }
-    this.emReload.emitLifeCycle(
+    this.emLoad.emitLifeCycle(
       this.channels.get(name) as IChannel<IConnection>,
       this.channel,
     );
