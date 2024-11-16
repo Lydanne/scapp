@@ -12,7 +12,6 @@ import Mlist from 'src/components/mlist/mlist';
 import Navbar from 'src/components/navbar/navbar';
 import Page from 'src/components/page/page';
 import ChannelManager from 'src/libs/plink/ChannelManager';
-import { type LocalConnection } from 'src/libs/plink/Connection';
 import type { IConnection } from 'src/libs/plink/IChannel';
 import { Channel, DataType, type Plink } from 'src/libs/plink/payload';
 import { randId, toBinary } from 'src/libs/plink/shared';
