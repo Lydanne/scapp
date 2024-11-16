@@ -1,7 +1,7 @@
-import { IChannel } from './IChannel';
+import { IChannel } from '../IChannel';
+import { randId } from '../shared';
+import { ChannelStatus, type SocketIP } from '../types';
 import { OssConnection } from './OssConnection';
-import { randId } from './shared';
-import { ChannelStatus, type SocketIP } from './types';
 
 export class OssChannel extends IChannel<OssConnection> {
   async connect(socketIP: SocketIP): Promise<OssConnection> {

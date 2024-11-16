@@ -1,15 +1,15 @@
-import { Emitter } from '../shared/emitter';
-import { IChannel } from './IChannel';
-import { LocalConnection } from './LocalConnection';
-import { SocketPipe } from './SocketPipe';
+import { Emitter } from '../../shared/emitter';
+import { IChannel } from '../IChannel';
+import { SocketPipe } from '../SocketPipe';
 import {
   Channel,
   type ConnectAction,
   DataType,
   type SynReadySignal,
-} from './payload';
-import { fromBinary, rand, randId, toBinary } from './shared';
-import { ChannelStatus, type SocketIP } from './types';
+} from '../payload';
+import { fromBinary, rand, randId, toBinary } from '../shared';
+import { ChannelStatus, type SocketIP } from '../types';
+import { LocalConnection } from './LocalConnection';
 
 export * from './LocalConnection';
 

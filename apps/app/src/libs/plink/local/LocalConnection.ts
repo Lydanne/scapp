@@ -1,10 +1,9 @@
-import { Base64 } from '../shared/base64';
-import { bufferMd5 } from '../shared/bufferMd5';
-import { StringBuffer } from '../shared/stringbuffer';
-import { FS, type FSOpen } from '../tapi/fs';
-import { IConnection } from './IChannel';
-import { BLOCK_SIZE } from './LocalChannel';
-import { Mpsc } from './Mpsc';
+import { Base64 } from '../../shared/base64';
+import { bufferMd5 } from '../../shared/bufferMd5';
+import { StringBuffer } from '../../shared/stringbuffer';
+import { FS, type FSOpen } from '../../tapi/fs';
+import { IConnection } from '../IChannel';
+import { Mpsc } from '../Mpsc';
 import {
   type DataAction,
   DataType,
@@ -12,15 +11,16 @@ import {
   FinishStatus,
   type SynReadySignal,
   type SyncAction,
-} from './payload';
-import { mergeArrayBuffer } from './shared';
+} from '../payload';
+import { mergeArrayBuffer } from '../shared';
 import {
   ChannelStatus,
   type OnData,
   OnDataStatus,
   type SendData,
   SocketIP,
-} from './types';
+} from '../types';
+import { BLOCK_SIZE } from './LocalChannel';
 
 export class LocalConnection extends IConnection {
   detectAt: number = 0;

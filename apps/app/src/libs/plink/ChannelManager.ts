@@ -1,7 +1,8 @@
 import { Emitter } from '../shared/emitter';
 import type { IChannel, IConnection } from './IChannel';
-import { LocalChannel } from './LocalChannel';
-import { OssChannel } from './OssChannel';
+import { LocalChannel } from './local/LocalChannel';
+import { NativeChannel } from './native/NativeChannel';
+import { OssChannel } from './oss/OssChannel';
 
 export default new (class ChannelManager {
   private currChannelName: string = 'local';
@@ -14,6 +15,7 @@ export default new (class ChannelManager {
   constructor() {
     this.channels.set('local', new LocalChannel());
     this.channels.set('oss', new OssChannel());
+    this.channels.set('native', new NativeChannel());
     this.load('local');
   }
 
