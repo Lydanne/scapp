@@ -16,7 +16,7 @@ export default new (class ChannelManager {
     this.channels.set('local', new LocalChannel());
     this.channels.set('oss', new OssChannel());
     this.channels.set('native', new NativeChannel());
-    this.load('local');
+    this.load('native');
   }
 
   async close(name: string) {

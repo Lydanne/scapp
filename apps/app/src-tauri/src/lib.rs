@@ -9,6 +9,14 @@ pub use channel_socket::*;
 mod net;
 pub use net::*;
 
+mod plink;
+pub use plink::*;
+pub use plink::native_channel::*;
+
+
+mod shared;
+pub use shared::*;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -41,7 +49,8 @@ pub fn run() {
             channel_socket_bind,
             channel_socket_send,
             channel_socket_receive,
-            net_local_ip
+            net_local_ip,
+            native_channel_listen
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
