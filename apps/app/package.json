@@ -29,7 +29,7 @@
     "dev:jd": "npm run build:jd -- --watch",
     "dev:quickapp": "npm run build:quickapp -- --watch",
     "build:proto": "npx protoc --ts_out ./src/libs/plink/ --proto_path protos protos/payload.proto",
-    "build:proto:rs": "npx protoc --rs_out ./src-tauri/src/plink/ ./protos/payload.proto",
+    "build:proto:rs": "npx protoc --rs_out ./src-tauri/src/plink/proto ./protos/payload.proto",
     "test": "jest",
     "test:watch": "jest --watch"
   },
