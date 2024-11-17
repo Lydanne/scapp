@@ -96,6 +96,8 @@ version = "0.1.0"
 dependencies = [
  "local-ip-address",
  "log",
+ "once_cell",
+ "protobuf",
  "serde",
  "serde_bytes",
  "serde_json",
@@ -2432,6 +2434,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3e4daa0dcf6feba26f985457cdf104d4b4256fc5a09547140f3631bb076b19a"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "protobuf"
+version = "3.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3a7c64d9bf75b1b8d981124c14c179074e8caa7dfe7b6a12e6222ddcd0c8f72"
+dependencies = [
+ "once_cell",
+ "protobuf-support",
+ "thiserror",
+]
+
+[[package]]
+name = "protobuf-support"
+version = "3.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b088fd20b938a875ea00843b6faf48579462630015c3788d397ad6a786663252"
+dependencies = [
+ "thiserror",
 ]
 
 [[package]]
