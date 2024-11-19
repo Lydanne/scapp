@@ -2,7 +2,8 @@ use once_cell::sync::Lazy;
 use protobuf::Message;
 use rand::Rng;
 use serde::Serialize;
-use tauri::ipc;
+use tauri::Emitter;
+use tauri::{ipc::Channel, AppHandle};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 use tokio::net::UdpSocket;
@@ -43,14 +44,8 @@ pub async fn native_channel_disconnect() -> bool {
     true
 }
 
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EmConnection {
-    id: u32,
-}
-
 #[tauri::command]
-pub async fn native_channel_listen(em_connection: ipc::Channel<EmConnection>) -> u32 {
+pub async fn native_channel_listen(app: AppHandle) -> u32 {
     // 开始生成代码
     let socket = UdpSocket::bind("0.0.0.0:0")
         .await
@@ -70,7 +65,7 @@ pub async fn native_channel_listen(em_connection: ipc::Channel<EmConnection>) ->
                         println!("{:?}", channel);
                         if let Some(action) = channel.action {
                             let mut connections = CONNECTIONS.lock().unwrap();
-                            println!("connections {:?}", connections);
+                            // println!("connections {:?}", connections);
 
                             let client = connections.get_mut(&channel.id);
                             match action {
@@ -109,8 +104,7 @@ pub async fn native_channel_listen(em_connection: ipc::Channel<EmConnection>) ->
                                                 });
                                             }
                                             client.status = ChannelStatus::Connected;
-                                            em_connection.send(EmConnection{id: channel.id}).unwrap();
-                                            println!("em_connection send");
+                                            app.emit("em_connection", client.clone()).unwrap();
                                         } else {
                                             // 连接失败
                                             let message = payload::Channel {

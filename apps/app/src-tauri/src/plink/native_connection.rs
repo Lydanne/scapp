@@ -1,15 +1,18 @@
+use serde::Serialize;
+
 use super::proto::payload::{DataType, SynReadySignal};
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Serialize)]
 pub enum ChannelStatus {
-    Init,
-    Connecting,
-    Connected,
-    Disconnecting,
-    Disconnected,
+    Init = 0,
+    Connecting = 1,
+    Connected = 2,
+    Disconnecting = 3,
+    Disconnected = 4,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct NativeConnection {
     pub id: u32,
     pub status: ChannelStatus,

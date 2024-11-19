@@ -1,4 +1,5 @@
 import { Channel, invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 
 import { IChannel } from '../IChannel';
 import { randId } from '../shared';
@@ -6,6 +7,7 @@ import { ChannelStatus, type SocketIP } from '../types';
 import { NativeConnection } from './NativeConnection';
 
 export class NativeChannel extends IChannel<NativeConnection> {
+  static listened: number = 0;
   async connect(socketIP: SocketIP): Promise<NativeConnection> {
     const id = randId();
     const connection = new NativeConnection({
@@ -20,14 +22,16 @@ export class NativeChannel extends IChannel<NativeConnection> {
     return Promise.resolve(true);
   }
   async listen(): Promise<number> {
-    const emConnection = new Channel<any>();
-    emConnection.onmessage((data) => {
-      console.log('emConnection', data);
+    if (NativeChannel.listened) {
+      return NativeChannel.listened;
+    }
+    listen('em_connection', (event) => {
+      console.log('em_connection', event);
+      this.emConnection.emit(new NativeConnection(event.payload));
     });
-    let port = await invoke('native_channel_listen', {
-      emConnection: emConnection,
-    });
+    let port = await invoke('native_channel_listen');
     this.emListen.emitLifeCycle(port as number);
+    NativeChannel.listened = port as number;
     return port as number;
   }
   async close(): Promise<void> {
