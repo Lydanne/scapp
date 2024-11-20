@@ -3,12 +3,19 @@ use serde::Serialize;
 use super::proto::payload::{DataType, SynReadySignal};
 
 #[derive(PartialEq, Debug, Clone, Serialize)]
+#[serde(into = "i32")]
 pub enum ChannelStatus {
     Init = 0,
     Connecting = 1,
     Connected = 2,
     Disconnecting = 3,
     Disconnected = 4,
+}
+
+impl Into<i32> for ChannelStatus {
+    fn into(self) -> i32 {
+        self as i32
+    }
 }
 
 #[derive(Clone, Serialize, Debug)]
