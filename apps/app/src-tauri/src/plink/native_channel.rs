@@ -61,9 +61,9 @@ pub async fn native_channel_listen(app: AppHandle) -> u32 {
             task: tokio::spawn(async move {
                 receive_packet(socket.clone(), |on_received| {
                     let channel = payload::Channel::parse_from_bytes(&on_received.message);
-                    if let Ok(channel) = channel {
+                    if let Ok(ref channel) = channel {
                         println!("{:?}", channel);
-                        if let Some(action) = channel.action {
+                        if let Some(action) = &channel.action {
                             let mut connections = CONNECTIONS.lock().unwrap();
                             // println!("connections {:?}", connections);
 
@@ -163,6 +163,10 @@ pub async fn native_channel_listen(app: AppHandle) -> u32 {
                                 }
                                 payload::channel::Action::Data(_) => {
                                     println!("data");
+                                    let mut connections = CONNECTIONS.lock().unwrap();
+                                    if let Some(client) = connections.get_mut(&channel.id) {
+                                        app.emit("em_data", channel.write_to_bytes().unwrap()).unwrap();
+                                    }
                                 }
                                 payload::channel::Action::Sync(_) => {
                                     println!("sync");

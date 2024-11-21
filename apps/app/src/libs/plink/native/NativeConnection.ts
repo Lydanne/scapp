@@ -1,7 +1,10 @@
 import { IConnection } from '../IChannel';
+import { Mpsc } from '../Mpsc';
 import type { OnData, SendData } from '../types';
 
 export class NativeConnection extends IConnection {
+  mpData = new Mpsc<OnData>();
+  mpSend = new Mpsc<SendData>();
   constructor(data: any) {
     super(data);
   }
