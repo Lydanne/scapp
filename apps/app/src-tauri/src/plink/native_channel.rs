@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex, RwLock};
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc;
 
-use crate::native_connection::{ChannelStatus, OnDataStatus, PipeData, SynReadySignalPipe};
+use crate::native_connection::{ChannelStatus, OnData, OnDataStatus, PipeData, SynReadySignalPipe};
 use crate::send_packet;
 use crate::{proto::payload, receive_packet, Udp};
 
@@ -103,7 +103,7 @@ pub async fn native_channel_listen(app: AppHandle) -> u32 {
                                                 send_message(socket.clone(), &on_received.remote_info, message);
                                             }
                                             client.status = ChannelStatus::Connected;
-                                            app.emit("em_connection", client.clone()).unwrap();
+                                            app.emit("on_connection", client.clone()).unwrap();
                                         } else {
                                             // 连接失败
                                             let message = payload::Channel {
@@ -181,8 +181,12 @@ pub async fn native_channel_listen(app: AppHandle) -> u32 {
                                         if pipe.received == pipe.head.length {
                                             pipe.status = OnDataStatus::Done;
                                             pipe.progress = 100;
-                                            pipe.speed = pipe.received_bytes as u32 / (get_ts() - pipe.start_time) as u32;
-                                            app.emit("em_data", pipe.to_owned()).unwrap();
+                                            let now = get_ts();
+                                            let speed = if now > pipe.start_time { pipe.received_bytes as f64 / (now - pipe.start_time) as f64 } else { 0.0 };
+                                            pipe.speed = speed;
+                                            let mut on_data = OnData::from(pipe.to_owned());
+                                            on_data.id = channel.id;
+                                            app.emit("on_data", on_data).unwrap();
                                         }
                                     }
                                 }
@@ -210,13 +214,13 @@ pub async fn native_channel_listen(app: AppHandle) -> u32 {
                                                 )),
                                                 special_fields: Default::default(),
                                             });
-                                            client.pipe_map.insert(action.id, PipeData{
+                                            let pipe = PipeData{
                                                 id: action.id,
                                                 index: 0,
                                                 status: OnDataStatus::Ready,
                                                 tp: ready.type_.into(),
                                                 progress: 0,
-                                                speed: 0,
+                                                speed: 0.0,
                                                 head: SynReadySignalPipe{
                                                     length: ready.length,
                                                     size: ready.size,
@@ -227,7 +231,11 @@ pub async fn native_channel_listen(app: AppHandle) -> u32 {
                                                 received: 0,
                                                 received_bytes: 0,
                                                 start_time: channel.ts,
-                                            });
+                                            };
+                                            let mut on_data = OnData::from(pipe.clone());
+                                            on_data.id = channel.id;
+                                            app.emit("on_data", on_data).unwrap();
+                                            client.pipe_map.insert(action.id, pipe);
                                         }
                                     }
                                 }

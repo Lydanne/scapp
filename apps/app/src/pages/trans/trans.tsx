@@ -36,10 +36,11 @@ export default function Trans() {
     let connection: IConnection;
     setTimeout(async () => {
       [connection] = await ChannelManager.channel.emConnection.wait();
+      console.log('connection', connection);
+
       connection.on((data) => {
-        // console.log('connection data', data);
+        console.log('connection data', data);
         if (data.status === OnDataStatus.READY) {
-          console.log('connection data', data);
           appendMsg({
             id: data.id,
             name: '他',
@@ -77,7 +78,6 @@ export default function Trans() {
             return msg;
           });
         } else if (data.status === OnDataStatus.DONE) {
-          console.log('connection data', data);
           setMsgById(data.id, (msg) => {
             msg.msg[0] =
               data.type === DataType.TEXT

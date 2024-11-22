@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
+use base64::Engine;
 use protobuf::EnumOrUnknown;
 use serde::Serialize;
+
+use crate::shared;
 
 use super::proto::payload::{self, DataType, SynReadySignal};
 
@@ -88,7 +91,7 @@ pub struct PipeData {
     pub status: OnDataStatus,
     pub tp: DataTypePipe,
     pub progress: u32,
-    pub speed: u32,
+    pub speed: f64,
     pub head: SynReadySignalPipe,
     pub buffers: Vec<Vec<u8>>,
     pub received: u32,
@@ -117,23 +120,6 @@ impl NativeConnection {
             lasts: Vec::new(),
             pipe_map: HashMap::new(),
         }
-    }
-
-    pub fn send(&mut self, data: SendData) {
-        self.seq += 1;
-    }
-
-    pub fn on(&mut self, cb: Box<dyn Fn(OnData) -> ()>) {
-        cb(OnData {
-            id: self.id,
-            index: self.seq,
-            status: OnDataStatus::Ready,
-            tp: DataTypePipe::TEXT,
-            progress: 0,
-            speed: 0,
-            head: SynReadySignalPipe::default(),
-            body: "".to_string(),
-        });
     }
 }
 
@@ -164,9 +150,9 @@ pub struct OnData {
     pub id: u32,
     pub index: u32,
     pub status: OnDataStatus,
-    pub tp: DataTypePipe,
+    pub r#type: DataTypePipe,
     pub progress: u32,
-    pub speed: u32,
+    pub speed: f64,
     pub head: SynReadySignalPipe,
     pub body: String,
 }
@@ -174,13 +160,13 @@ pub struct OnData {
 impl From<PipeData> for OnData {
     fn from(value: PipeData) -> Self {
         let body = value.buffers.into_iter().flatten().collect::<Vec<u8>>();
-        let body = base64::decode(&body).unwrap_or(body);
-        let body = String::from_utf8(body).unwrap_or_default();
+        let body = shared::base64::decode_4(body);
+        
         Self {
             id: value.id,
             index: value.index,
             status: value.status,
-            tp: value.tp,
+            r#type: value.tp,
             progress: value.progress,
             speed: value.speed,
             head: value.head,

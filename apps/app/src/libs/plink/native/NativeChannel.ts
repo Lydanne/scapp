@@ -26,17 +26,17 @@ export class NativeChannel extends IChannel<NativeConnection> {
     if (NativeChannel.listened) {
       return NativeChannel.listened;
     }
-    listen<NativeConnection>('em_connection', (event) => {
-      console.log('em_connection', event);
+    listen<NativeConnection>('on_connection', (event) => {
+      console.log('on_connection', event);
       const connection = new NativeConnection(event.payload);
       this.connections.set(event.payload.id, connection);
-      this.emConnection.emit(connection);
+      this.emConnection.emitLifeCycle(connection);
     });
-    listen<OnData>('em_data', (event) => {
-      console.log('em_data', event);
+    listen<OnData>('on_data', (event) => {
+      console.log('on_data', event);
       const connection = this.connections.get(event.payload.id);
       if (connection) {
-        connection.mpData.tx.emit(event.payload);
+        connection.emData.emit(event.payload);
       }
     });
     let port = await invoke('native_channel_listen');
