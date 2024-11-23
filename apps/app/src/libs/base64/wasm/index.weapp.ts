@@ -355,7 +355,6 @@ export async function init(module: WebAssembly.Module): Promise<WasmInstance> {
 
   g.wasmInitPromise = WXWebAssembly.instantiate(module, imports).then(
     (instance) => {
-      console.log('WASM', instance);
       return __wbg_finalize_init(instance, module);
     },
   );
