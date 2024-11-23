@@ -5,10 +5,7 @@ import { attachConsole } from '@tauri-apps/plugin-log';
 
 // 全局样式
 import './app.scss';
-import base64 from './libs/base64';
 import { APP } from './libs/tapi/platform';
-
-console.log(base64());
 
 if (APP) {
   attachConsole();
