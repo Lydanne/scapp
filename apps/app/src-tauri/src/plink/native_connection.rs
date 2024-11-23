@@ -160,7 +160,7 @@ pub struct OnData {
 impl From<PipeData> for OnData {
     fn from(value: PipeData) -> Self {
         let body = value.buffers.into_iter().flatten().collect::<Vec<u8>>();
-        let body = shared::base64::decode_4(body);
+        let body = shared::base64::decode(body);
         
         Self {
             id: value.id,
