@@ -18,6 +18,7 @@ interface WasmInstance {
 
 interface GlobalObject {
   wasm?: WasmInstance;
+  wasmInitPromise?: Promise<WasmInstance>;
 }
 
 const g: GlobalObject = {};
@@ -48,12 +49,28 @@ function passArray8ToWasm0(
   return ptr;
 }
 
-const cachedTextDecoder = new TextDecoder('utf-8', {
-  ignoreBOM: true,
-  fatal: true,
-});
-
-cachedTextDecoder.decode();
+const cachedTextDecoder = {
+  decode: (bytes: Uint8Array): string => {
+    let str = '';
+    let i = 0;
+    while (i < bytes.length) {
+      let c = bytes[i];
+      if (c < 128) {
+        str += String.fromCharCode(c);
+        i++;
+      } else if (c > 191 && c < 224) {
+        str += String.fromCharCode(((c & 31) << 6) | (bytes[i + 1] & 63));
+        i += 2;
+      } else {
+        str += String.fromCharCode(
+          ((c & 15) << 12) | ((bytes[i + 1] & 63) << 6) | (bytes[i + 2] & 63),
+        );
+        i += 3;
+      }
+    }
+    return str;
+  },
+};
 
 function getStringFromWasm0(ptr: number, len: number): string {
   if (!g.wasm) throw new Error('WASM module not initialized');
@@ -67,7 +84,11 @@ function getStringFromWasm0(ptr: number, len: number): string {
  * @param {Uint8Array} body
  * @returns {string}
  */
-export function decode(body: Uint8Array): string {
+export async function decode(body: Uint8Array): Promise<string> {
+  if (!g.wasm) {
+    if (!g.wasmInitPromise) throw new Error('WASM module not initialized');
+    await g.wasmInitPromise;
+  }
   if (!g.wasm) throw new Error('WASM module not initialized');
   let deferred2_0: number = 0;
   let deferred2_1: number = 0;
@@ -189,7 +210,11 @@ function getArrayU8FromWasm0(ptr: number, len: number): Uint8Array {
  * @param {string} body
  * @returns {Uint8Array}
  */
-export function encode(body: string): Uint8Array {
+export async function encode(body: string): Promise<Uint8Array> {
+  if (!g.wasm) {
+    if (!g.wasmInitPromise) throw new Error('WASM module not initialized');
+    await g.wasmInitPromise;
+  }
   if (!g.wasm) throw new Error('WASM module not initialized');
   const ptr0 = passStringToWasm0(
     body,
@@ -207,7 +232,11 @@ export function encode(body: string): Uint8Array {
  * @param {string} body
  * @returns {string}
  */
-export function str_encode(body: string): string {
+export async function str_encode(body: string): Promise<string> {
+  if (!g.wasm) {
+    if (!g.wasmInitPromise) throw new Error('WASM module not initialized');
+    await g.wasmInitPromise;
+  }
   if (!g.wasm) throw new Error('WASM module not initialized');
   let deferred2_0: number = 0;
   let deferred2_1: number = 0;
@@ -231,7 +260,11 @@ export function str_encode(body: string): string {
  * @param {string} body
  * @returns {string}
  */
-export function str_decode(body: string): string {
+export async function str_decode(body: string): Promise<string> {
+  if (!g.wasm) {
+    if (!g.wasmInitPromise) throw new Error('WASM module not initialized');
+    await g.wasmInitPromise;
+  }
   if (!g.wasm) throw new Error('WASM module not initialized');
   let deferred2_0: number = 0;
   let deferred2_1: number = 0;
@@ -308,12 +341,17 @@ declare const WXWebAssembly: {
 
 export async function init(module: WebAssembly.Module): Promise<WasmInstance> {
   if (g.wasm !== undefined) return g.wasm;
+  if (g.wasmInitPromise !== undefined) return g.wasmInitPromise;
 
   const imports = __wbg_get_imports();
   __wbg_init_memory(imports);
 
-  const instance = await WXWebAssembly.instantiate(module, imports);
-  console.log('WASM', instance);
+  g.wasmInitPromise = WXWebAssembly.instantiate(module, imports).then(
+    (instance) => {
+      console.log('WASM', instance);
+      return __wbg_finalize_init(instance, module);
+    },
+  );
 
-  return __wbg_finalize_init(instance, module);
+  return g.wasmInitPromise;
 }

@@ -319,7 +319,7 @@ function __wbg_finalize_init(
 
 type SyncInitInput = BufferSource | WebAssembly.Module;
 
-export function initSync(
+export function init(
   module: SyncInitInput | { module: SyncInitInput },
 ): WasmExports {
   if (wasm !== undefined) return wasm;

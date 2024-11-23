@@ -1,4 +1,5 @@
-import { Base64 } from '../../shared/base64';
+import { Base64 } from 'src/libs/base64';
+
 import { bufferMd5 } from '../../shared/bufferMd5';
 import { StringBuffer } from '../../shared/stringbuffer';
 import { FS, type FSOpen } from '../../tapi/fs';
@@ -78,8 +79,7 @@ export class LocalConnection extends IConnection {
       getDataChunk = async (offset, length) => await fd!.read(offset, length);
     } else {
       const text = body;
-      const base64Text = Base64.encode(text);
-      const buffer = StringBuffer.encode(base64Text);
+      const buffer = await Base64.encode(text);
       size = buffer.byteLength;
       sign = bufferMd5(buffer);
       getDataChunk = async (offset, length) => {
@@ -275,8 +275,7 @@ export class LocalConnection extends IConnection {
         try {
           const buffer = mergeArrayBuffer(pipe.buffers);
           if (pipe.head.type === DataType.TEXT) {
-            const base64Text = StringBuffer.decode(new Uint8Array(buffer));
-            const body = Base64.decode(base64Text);
+            const body = await Base64.decode(new Uint8Array(buffer));
             cb({
               id: data.id,
               index: data.index,
