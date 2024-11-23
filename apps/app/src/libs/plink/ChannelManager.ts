@@ -1,4 +1,5 @@
 import { Emitter } from '../shared/emitter';
+import { APP } from '../tapi/platform';
 import type { IChannel, IConnection } from './IChannel';
 import { LocalChannel } from './local/LocalChannel';
 import { NativeChannel } from './native/NativeChannel';
@@ -16,7 +17,11 @@ export default new (class ChannelManager {
     this.channels.set('local', new LocalChannel());
     this.channels.set('oss', new OssChannel());
     this.channels.set('native', new NativeChannel());
-    this.load('native');
+    if (APP) {
+      this.load('native');
+    } else {
+      this.load('local');
+    }
   }
 
   async close(name: string) {
