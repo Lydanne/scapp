@@ -34,3 +34,8 @@ declare interface Window {
   };
   invoke: (command: string, payload?: any) => Promise<any>;
 }
+
+declare module "*.wasm" {
+  const content: any;
+  export default content;
+} 

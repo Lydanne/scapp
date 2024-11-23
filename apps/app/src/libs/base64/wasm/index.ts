@@ -319,9 +319,9 @@ function __wbg_finalize_init(
 
 type SyncInitInput = BufferSource | WebAssembly.Module;
 
-export function init(
+export async function init(
   module: SyncInitInput | { module: SyncInitInput },
-): WasmExports {
+): Promise<WasmExports> {
   if (wasm !== undefined) return wasm;
 
   let moduleToUse!: SyncInitInput;
@@ -329,9 +329,8 @@ export function init(
     if (Object.getPrototypeOf(module) === Object.prototype) {
       moduleToUse = (module as { module: SyncInitInput }).module;
     } else {
-      moduleToUse = module as SyncInitInput;
-      console.warn(
-        'using deprecated parameters for `initSync()`; pass a single object instead',
+      moduleToUse = await fetch('./base64_rs_bg.wasm').then((res) =>
+        res.arrayBuffer(),
       );
     }
   }
@@ -341,7 +340,14 @@ export function init(
   __wbg_init_memory(imports);
 
   if (!(moduleToUse instanceof WebAssembly.Module)) {
-    moduleToUse = new WebAssembly.Module(moduleToUse as BufferSource);
+    // Ensure moduleToUse is an ArrayBuffer or ArrayBufferView before creating Module
+    if (
+      !(moduleToUse instanceof ArrayBuffer) &&
+      !ArrayBuffer.isView(moduleToUse)
+    ) {
+      throw new Error('Module must be an ArrayBuffer or ArrayBufferView');
+    }
+    moduleToUse = new WebAssembly.Module(moduleToUse);
   }
 
   const instance = new WebAssembly.Instance(

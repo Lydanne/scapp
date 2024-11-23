@@ -82,6 +82,28 @@ const config = {
         },
       },
     },
+    webpackChain(chain) {
+      chain.merge({
+        experiments: {
+          asyncWebAssembly: true,
+        },
+        ignoreWarnings: [/async\/await/], // 忽略警告
+        module: {
+          rules: [
+            {
+              test: /\.wasm$/,
+              type: 'webassembly/async',
+            },
+          ],
+        },
+        // 添加 wbg 别名解析
+        resolve: {
+          fallback: {
+            wbg: false,
+          },
+        },
+      });
+    },
   },
 };
 
