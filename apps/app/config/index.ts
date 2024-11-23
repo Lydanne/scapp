@@ -18,8 +18,12 @@ const config = {
   plugins: ['@tarojs/plugin-html'],
   defineConstants: {},
   copy: {
-    patterns: [],
-    options: {},
+    patterns: [
+      {
+        from: `../../libs/base64-rs/pkg/base64_rs_bg.wasm`,
+        to: `dist/${process.env.TARO_ENV}/base64_rs_bg.wasm`,
+      },
+    ],
   },
   framework: 'react',
   compiler: {

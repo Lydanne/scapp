@@ -1,2 +1,2 @@
 [workspace]
-members = ["apps/app/src-tauri"]
+members = ["apps/app/src-tauri", "libs/base64-rs"]

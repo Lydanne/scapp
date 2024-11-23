@@ -22,6 +22,17 @@ import {
 } from '../types';
 import { BLOCK_SIZE } from './LocalChannel';
 
+// (async () => {
+//   try {
+//     globalThis.WebAssembly = WXWebAssembly;
+//     await CryptoJSW.MD5.loadWasm();
+//     const rstMD5 = CryptoJSW.MD5('message').toString();
+//     console.log(rstMD5);
+//   } catch (error) {
+//     console.error('CryptoJSW', error);
+//   }
+// })();
+
 export class LocalConnection extends IConnection {
   detectAt: number = 0;
   detectErrorCount: number = 0;
