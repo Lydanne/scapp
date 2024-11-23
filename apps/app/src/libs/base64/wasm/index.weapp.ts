@@ -49,35 +49,10 @@ function passArray8ToWasm0(
   return ptr;
 }
 
-const cachedTextDecoder = {
-  decode: (bytes: Uint8Array): string => {
-    let str = '';
-    let i = 0;
-    while (i < bytes.length) {
-      let c = bytes[i];
-      if (c < 128) {
-        str += String.fromCharCode(c);
-        i++;
-      } else if (c > 191 && c < 224) {
-        str += String.fromCharCode(((c & 31) << 6) | (bytes[i + 1] & 63));
-        i += 2;
-      } else {
-        str += String.fromCharCode(
-          ((c & 15) << 12) | ((bytes[i + 1] & 63) << 6) | (bytes[i + 2] & 63),
-        );
-        i += 3;
-      }
-    }
-    return str;
-  },
-};
-
 function getStringFromWasm0(ptr: number, len: number): string {
   if (!g.wasm) throw new Error('WASM module not initialized');
   ptr = ptr >>> 0;
-  return cachedTextDecoder.decode(
-    getUint8ArrayMemory0().subarray(ptr, ptr + len),
-  );
+  return decodeUTF8(getUint8ArrayMemory0().subarray(ptr, ptr + len));
 }
 
 /**
@@ -132,6 +107,38 @@ function encodeUTF8(str: string): Uint8Array {
     }
   }
   return new Uint8Array(bytes);
+}
+
+// 简单的 TextDecoder polyfill
+function decodeUTF8(bytes: Uint8Array): string {
+  let str = '';
+  let i = 0;
+  while (i < bytes.length) {
+    const byte = bytes[i];
+    if (byte < 0x80) {
+      str += String.fromCharCode(byte);
+      i++;
+    } else if (byte < 0xe0) {
+      str += String.fromCharCode(((byte & 0x1f) << 6) | (bytes[i + 1] & 0x3f));
+      i += 2;
+    } else if (byte < 0xf0) {
+      str += String.fromCharCode(
+        ((byte & 0x0f) << 12) |
+          ((bytes[i + 1] & 0x3f) << 6) |
+          (bytes[i + 2] & 0x3f),
+      );
+      i += 3;
+    } else {
+      const codePoint =
+        ((byte & 0x07) << 18) |
+        ((bytes[i + 1] & 0x3f) << 12) |
+        ((bytes[i + 2] & 0x3f) << 6) |
+        (bytes[i + 3] & 0x3f);
+      str += String.fromCodePoint(codePoint);
+      i += 4;
+    }
+  }
+  return str;
 }
 
 interface EncodeStringResult {
