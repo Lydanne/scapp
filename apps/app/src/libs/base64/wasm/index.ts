@@ -329,33 +329,17 @@ export async function init(
     if (Object.getPrototypeOf(module) === Object.prototype) {
       moduleToUse = (module as { module: SyncInitInput }).module;
     } else {
-      moduleToUse = await fetch('./base64_rs_bg.wasm').then((res) =>
-        res.arrayBuffer(),
-      );
+      const response = await fetch('./base64_rs_bg.wasm');
+      const bytes = await response.arrayBuffer();
+      moduleToUse = await WebAssembly.compile(bytes);
     }
   }
 
   const imports = __wbg_get_imports();
-
   __wbg_init_memory(imports);
 
-  if (!(moduleToUse instanceof WebAssembly.Module)) {
-    // Ensure moduleToUse is an ArrayBuffer or ArrayBufferView before creating Module
-    if (
-      !(moduleToUse instanceof ArrayBuffer) &&
-      !ArrayBuffer.isView(moduleToUse)
-    ) {
-      throw new Error('Module must be an ArrayBuffer or ArrayBufferView');
-    }
-    moduleToUse = new WebAssembly.Module(moduleToUse);
-  }
-
-  const instance = new WebAssembly.Instance(
-    moduleToUse,
-    imports as any,
-  ) as unknown as WasmInstance;
-
-  return __wbg_finalize_init(instance, moduleToUse);
+  const instance = await WebAssembly.instantiate(moduleToUse, imports as any);
+  return __wbg_finalize_init(instance as unknown as WasmInstance, moduleToUse);
 }
 
 type InitInput =
