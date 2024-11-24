@@ -6,7 +6,7 @@ use tauri::{ipc::Channel, AppHandle};
 use tokio::net::{ToSocketAddrs, UdpSocket};
 
 static SOCKET: Mutex<Option<Arc<UdpSocket>>> = Mutex::new(None);
-static CHUNK_SIZE: usize = 1024;
+static CHUNK_SIZE: usize = 1300;
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -115,9 +115,10 @@ pub async fn send_packet<A: ToSocketAddrs>(socket: Arc<UdpSocket>, socket_ip: A,
 
 pub async fn receive_packet(socket: Arc<UdpSocket>, cb: impl Fn(OnReceived)) {
     let mut packets: HashMap<u32, Vec<Option<Vec<u8>>>> = HashMap::new();
-    let mut buffer = vec![0; 1400];
-
+    let mut buffer = vec![0; CHUNK_SIZE + 12];
+    
     loop {
+        // buffer.fill(0);
         let (amt, src) = socket
             .recv_from(&mut buffer)
             .await

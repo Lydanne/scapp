@@ -96,7 +96,7 @@ pub struct PipeData {
     pub head: SynReadySignalPipe,
     pub buffers: Vec<Vec<u8>>,
     pub received: u32,
-    pub received_bytes: u32,
+    pub received_bytes: u64,
     pub start_time: u64,
 }
 
@@ -158,20 +158,24 @@ pub struct OnData {
     pub head: SynReadySignalPipe,
     pub body: String,
 }
-
+    
 impl From<PipeData> for OnData {
     fn from(value: PipeData) -> Self {
-        let body = value.buffers.into_iter().flatten().collect::<Vec<u8>>();
-        let body = if let DataTypePipe::FILE = value.tp {
-            let temp_dir = std::env::temp_dir();
-            let file_name = format!("{}_{}", value.id, value.head.name);
-            let file_path = temp_dir.join(file_name);
-            std::fs::write(&file_path, &body).unwrap_or_default();
-            file_path.to_str().unwrap_or_default().to_string()
+        let body = if matches!(value.status, OnDataStatus::Done) {
+            let body = value.buffers.into_iter().flatten().collect::<Vec<u8>>();
+            let body = if let DataTypePipe::FILE = value.tp {
+                let temp_dir = std::env::temp_dir();
+                let file_name = format!("{}_{}", value.id, value.head.name);
+                let file_path: std::path::PathBuf = temp_dir.join(file_name);
+                std::fs::write(&file_path, &body).unwrap_or_default();
+                file_path.to_str().unwrap_or_default().to_string()
+            } else {
+                shared::base64::decode(body).unwrap_or_default()
+            };
+            body
         } else {
-            shared::base64::decode(body).unwrap_or_default()
+            String::new()
         };
-        
         Self {
             channel_id: value.channel_id,
             id: value.id,

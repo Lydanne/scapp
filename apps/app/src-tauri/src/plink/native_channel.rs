@@ -154,15 +154,16 @@ pub async fn native_channel_listen(app: AppHandle) -> u32 {
                                         let pipe = client.pipe_map.get_mut(&action.id);
                                         
                                         if let Some(pipe) = pipe {
+                                            let now = get_ts();
 
                                             pipe.buffers.push(action.body.clone());
                                             pipe.received += 1;
-                                            pipe.received_bytes += action.body.len() as u32;
+                                            pipe.received_bytes += (action.body.len() * 1024) as u64;
 
                                             let message = payload::Channel {
                                                 version: 1,
                                                 id: channel.id,
-                                                ts: get_ts(),
+                                                ts: now,
                                                 action: Some(payload::channel::Action::Sync(
                                                     payload::SyncAction {
                                                         id: action.id,
@@ -183,19 +184,16 @@ pub async fn native_channel_listen(app: AppHandle) -> u32 {
                                             if pipe.received == pipe.head.length {
                                                 pipe.status = OnDataStatus::Done;
                                                 pipe.progress = 100;
-                                                let now = get_ts();
-                                                let speed = if now > pipe.start_time { pipe.received_bytes as f64 / (now - pipe.start_time) as f64 } else { 0.0 };
-                                                pipe.speed = speed;
-                                                
-                                                let pipe_data = client.pipe_map.remove(&action.id).unwrap();
-                                                app.emit("on_data",  OnData::from(pipe_data)).unwrap();
+                                                let pipe_data = client.pipe_map.remove(&action.id);
+                                                if let Some(pipe_data) = pipe_data {
+                                                    let _ = app.emit("on_data",  OnData::from(pipe_data));
+                                                }
                                             }else{
-                                                let now = get_ts();
                                                 pipe.status = OnDataStatus::Sending;
                                                 pipe.progress = (pipe.received as f64 / pipe.head.length as f64 * 100.0) as u32;
                                                 let speed = if now > pipe.start_time { pipe.received_bytes as f64 / (now - pipe.start_time) as f64 } else { 0.0 };
                                                 pipe.speed = speed;
-                                                app.emit("on_data", OnData::from(pipe.clone())).unwrap();
+                                                let _ =app.emit("on_data", OnData::from(pipe.clone()));
                                             }
                                         }
                                     }
