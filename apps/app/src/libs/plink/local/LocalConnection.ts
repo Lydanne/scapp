@@ -62,7 +62,7 @@ export class LocalConnection extends IConnection {
     console.log('send', data);
     const { type, head, body, id } = data;
 
-    const name = encodeURIComponent(head.name ?? '');
+    const name = head.name ?? '';
     let size: number;
     let sign: string;
     let fd: FSOpen | undefined;
@@ -187,7 +187,7 @@ export class LocalConnection extends IConnection {
 
     this.syncMpsc.rx.on(async (data) => {
       if (data.signal.oneofKind === 'synReady') {
-        const filename = decodeURIComponent(data.signal.synReady.name);
+        const filename = data.signal.synReady.name;
         const head = {
           ...data.signal.synReady,
           name: filename,

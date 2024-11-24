@@ -63,7 +63,7 @@ pub async fn native_channel_listen(app: AppHandle) -> u32 {
                 receive_packet(socket.clone(), |on_received| {
                     let channel = payload::Channel::parse_from_bytes(&on_received.message);
                     if let Ok(ref channel) = channel {
-                        println!("{:?}", channel);
+                        // println!("{:?}", channel);
                         if let Some(action) = &channel.action {
                             let mut connections = CONNECTIONS.lock().unwrap();
                             // println!("connections {:?}", connections);
@@ -72,9 +72,9 @@ pub async fn native_channel_listen(app: AppHandle) -> u32 {
 
                             match action {
                                 payload::channel::Action::Connect(data) => {
-                                    println!("connect");
+                                    // println!("connect");
                                     if let Some(client) = client {
-                                        println!("connect client");
+                                        // println!("connect client");
                                         client.status = ChannelStatus::Connecting;
                                         if client.seq + 1 == data.ack {
                                             if client.status != ChannelStatus::Connecting {
@@ -118,7 +118,7 @@ pub async fn native_channel_listen(app: AppHandle) -> u32 {
                                             send_message(socket.clone(), &on_received.remote_info, message);
                                         }
                                     } else {
-                                        println!("connect client not found");
+                                        // println!("connect client not found");
                                         let seq = rand_u32();
                                         let mut client = NativeConnection::new(
                                             channel.id,
@@ -147,51 +147,61 @@ pub async fn native_channel_listen(app: AppHandle) -> u32 {
                                     println!("disconnect");
                                 }
                                 payload::channel::Action::Data(action) => {
-                                    println!("data");
                                     if let Some(client) = client {
                                         // client.lasts.push(on_received.message.to_vec());
+                                        // println!("data actionId: {}", action.id);
+                                        
+                                        let pipe = client.pipe_map.get_mut(&action.id);
+                                        
+                                        if let Some(pipe) = pipe {
 
-                                        let pipe = client.pipe_map.get_mut(&action.id).unwrap();
+                                            pipe.buffers.push(action.body.clone());
+                                            pipe.received += 1;
+                                            pipe.received_bytes += action.body.len() as u32;
 
-                                        pipe.buffers.push(action.body.clone());
-                                        pipe.received += 1;
-                                        pipe.received_bytes += action.body.len() as u32;
+                                            let message = payload::Channel {
+                                                version: 1,
+                                                id: channel.id,
+                                                ts: get_ts(),
+                                                action: Some(payload::channel::Action::Sync(
+                                                    payload::SyncAction {
+                                                        id: action.id,
+                                                        signal: Some(payload::sync_action::Signal::AckChunkFinish(
+                                                            payload::AckChunkFinish {
+                                                                index: action.index,
+                                                                status: EnumOrUnknown::new(payload::FinishStatus::Ok),
+                                                                special_fields: Default::default(),
+                                                            },
+                                                        )),
+                                                        special_fields: Default::default(),
+                                                    },
+                                                )),
+                                                special_fields: Default::default(),
+                                            };
+                                            send_message(socket.clone(), &on_received.remote_info, message);
 
-                                        let message = payload::Channel {
-                                            version: 1,
-                                            id: channel.id,
-                                            ts: get_ts(),
-                                            action: Some(payload::channel::Action::Sync(
-                                                payload::SyncAction {
-                                                    id: action.id,
-                                                    signal: Some(payload::sync_action::Signal::AckChunkFinish(
-                                                        payload::AckChunkFinish {
-                                                            index: action.index,
-                                                            status: EnumOrUnknown::new(payload::FinishStatus::Ok),
-                                                            special_fields: Default::default(),
-                                                        },
-                                                    )),
-                                                    special_fields: Default::default(),
-                                                },
-                                            )),
-                                            special_fields: Default::default(),
-                                        };
-                                        send_message(socket.clone(), &on_received.remote_info, message);
-
-                                        if pipe.received == pipe.head.length {
-                                            pipe.status = OnDataStatus::Done;
-                                            pipe.progress = 100;
-                                            let now = get_ts();
-                                            let speed = if now > pipe.start_time { pipe.received_bytes as f64 / (now - pipe.start_time) as f64 } else { 0.0 };
-                                            pipe.speed = speed;
-                                            let mut on_data = OnData::from(pipe.to_owned());
-                                            on_data.id = channel.id;
-                                            app.emit("on_data", on_data).unwrap();
+                                            if pipe.received == pipe.head.length {
+                                                pipe.status = OnDataStatus::Done;
+                                                pipe.progress = 100;
+                                                let now = get_ts();
+                                                let speed = if now > pipe.start_time { pipe.received_bytes as f64 / (now - pipe.start_time) as f64 } else { 0.0 };
+                                                pipe.speed = speed;
+                                                
+                                                let pipe_data = client.pipe_map.remove(&action.id).unwrap();
+                                                app.emit("on_data",  OnData::from(pipe_data)).unwrap();
+                                            }else{
+                                                let now = get_ts();
+                                                pipe.status = OnDataStatus::Sending;
+                                                pipe.progress = (pipe.received as f64 / pipe.head.length as f64 * 100.0) as u32;
+                                                let speed = if now > pipe.start_time { pipe.received_bytes as f64 / (now - pipe.start_time) as f64 } else { 0.0 };
+                                                pipe.speed = speed;
+                                                app.emit("on_data", OnData::from(pipe.clone())).unwrap();
+                                            }
                                         }
                                     }
                                 }
                                 payload::channel::Action::Sync(action) => {
-                                    println!("sync");
+                                    // println!("sync actionId: {}", action.id);
                                     if let Some(client) = client {
                                         if let Some(payload::sync_action::Signal::SynReady(ready)) = &action.signal {
                                             send_message(socket.clone(), &on_received.remote_info, payload::Channel {
@@ -215,6 +225,7 @@ pub async fn native_channel_listen(app: AppHandle) -> u32 {
                                                 special_fields: Default::default(),
                                             });
                                             let pipe = PipeData{
+                                                channel_id: channel.id,
                                                 id: action.id,
                                                 index: 0,
                                                 status: OnDataStatus::Ready,
@@ -232,9 +243,7 @@ pub async fn native_channel_listen(app: AppHandle) -> u32 {
                                                 received_bytes: 0,
                                                 start_time: channel.ts,
                                             };
-                                            let mut on_data = OnData::from(pipe.clone());
-                                            on_data.id = channel.id;
-                                            app.emit("on_data", on_data).unwrap();
+                                            app.emit("on_data", OnData::from(pipe.clone())).unwrap();
                                             client.pipe_map.insert(action.id, pipe);
                                         }
                                     }

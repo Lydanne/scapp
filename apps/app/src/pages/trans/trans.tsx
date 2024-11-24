@@ -39,7 +39,7 @@ export default function Trans() {
       console.log('connection', connection);
 
       connection.on((data) => {
-        console.log('connection data', data);
+        // console.log('connection data', data);
         if (data.status === OnDataStatus.READY) {
           appendMsg({
             id: data.id,

@@ -26,6 +26,7 @@ export type ConnectionProps<O extends AnyObject = {}> = {
 };
 
 export type OnData = {
+  channelId?: number; // 通道 id
   id: number; // 消息 id
   index: number; // 块序号
   status: OnDataStatus;
