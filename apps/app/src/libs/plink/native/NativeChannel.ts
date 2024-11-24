@@ -33,7 +33,7 @@ export class NativeChannel extends IChannel<NativeConnection> {
       this.emConnection.emitLifeCycle(connection);
     });
     listen<OnData>('on_data', (event) => {
-      console.log('on_data', event);
+      // console.log('on_data', event);
       const connection = this.connections.get(event.payload.channelId!);
       if (connection) {
         connection.emData.emit(event.payload);

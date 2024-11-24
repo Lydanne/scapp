@@ -13,7 +13,7 @@ import { LocalConnection } from './LocalConnection';
 
 export * from './LocalConnection';
 
-export const BLOCK_SIZE = 1024 * 64;
+export const BLOCK_SIZE = 1024 * 512;
 
 const socket = new SocketPipe();
 
@@ -54,7 +54,7 @@ export class LocalChannel extends IChannel<LocalConnection> {
         socket.receiver.on((ev) => {
           const data = fromBinary<Channel>(Channel, ev.message);
           const client = this.connectionClient.get(data.id);
-          console.log('[LocalChannel]', 'receiver', data, client);
+          // console.log('[LocalChannel]', 'receiver', data, client);
 
           switch (data.action.oneofKind) {
             case 'connect':
