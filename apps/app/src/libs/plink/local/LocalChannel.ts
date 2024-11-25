@@ -201,8 +201,6 @@ export class LocalChannel extends IChannel<LocalConnection> {
                       code: OnDisconnectCode.SUCCESS,
                     });
                     client.status = ChannelStatus.disconnected;
-                    client.close();
-                    this.connectionClient.delete(data.id);
                   } else {
                     client.status = ChannelStatus.connected;
                   }
@@ -226,74 +224,74 @@ export class LocalChannel extends IChannel<LocalConnection> {
         socket.errorEmitter.on((err) => {
           console.log('[LocalChannel]', 'onError', err);
         });
-        if (false)
-          setInterval(() => {
-            for (const connection of this.connectionClient.values()) {
-              if (
-                connection.status === ChannelStatus.connected &&
-                Date.now() - connection.detectAt > 5000
-              ) {
-                setTimeout(async () => {
-                  console.log('[LocalChannel]', 'detect', connection.id);
+        // if (false)
+        //   setInterval(() => {
+        //     for (const connection of this.connectionClient.values()) {
+        //       if (
+        //         connection.status === ChannelStatus.connected &&
+        //         Date.now() - connection.detectAt > 5000
+        //       ) {
+        //         setTimeout(async () => {
+        //           console.log('[LocalChannel]', 'detect', connection.id);
 
-                  const now = Date.now();
-                  connection.detectAt = now;
-                  connection.detectErrorCount = 0;
-                  const [ip, port] = connection.socketIP.split(':');
-                  const seq = rand(1, 100);
-                  socket.sender.emit({
-                    address: ip,
-                    port: parseInt(port),
-                    message: toBinary(Channel, {
-                      version: 1,
-                      id: connection.id,
-                      ts: BigInt(Date.now()),
-                      action: {
-                        oneofKind: 'detect',
-                        detect: {
-                          seq,
-                          ack: 0,
-                          rtt: 0,
-                        },
-                      },
-                    }),
-                  });
-                  while (true) {
-                    try {
-                      const [ev] = await socket.receiver.waitTimeout(1000);
-                      const data = fromBinary<Channel>(Channel, ev.message);
-                      if (
-                        data.action?.oneofKind === 'detect' &&
-                        data.action.detect.ack === seq + 1
-                      ) {
-                        break;
-                      }
-                    } catch (error) {
-                      connection.detectErrorCount++;
-                      console.log('[LocalChannel]', 'detect timeout', error);
-                      if (connection.detectErrorCount > 3) {
-                        connection.status = ChannelStatus.disconnected;
-                        connection.close();
-                        this.emDisconnect.emitLifeCycle({
-                          connection,
-                          code: OnDisconnectCode.DETECT_ERROR,
-                        });
-                        this.connectionClient.delete(connection.id);
-                        break;
-                      }
-                    }
-                  }
+        //           const now = Date.now();
+        //           connection.detectAt = now;
+        //           connection.detectErrorCount = 0;
+        //           const [ip, port] = connection.socketIP.split(':');
+        //           const seq = rand(1, 100);
+        //           socket.sender.emit({
+        //             address: ip,
+        //             port: parseInt(port),
+        //             message: toBinary(Channel, {
+        //               version: 1,
+        //               id: connection.id,
+        //               ts: BigInt(Date.now()),
+        //               action: {
+        //                 oneofKind: 'detect',
+        //                 detect: {
+        //                   seq,
+        //                   ack: 0,
+        //                   rtt: 0,
+        //                 },
+        //               },
+        //             }),
+        //           });
+        //           while (true) {
+        //             try {
+        //               const [ev] = await socket.receiver.waitTimeout(1000);
+        //               const data = fromBinary<Channel>(Channel, ev.message);
+        //               if (
+        //                 data.action?.oneofKind === 'detect' &&
+        //                 data.action.detect.ack === seq + 1
+        //               ) {
+        //                 break;
+        //               }
+        //             } catch (error) {
+        //               connection.detectErrorCount++;
+        //               console.log('[LocalChannel]', 'detect timeout', error);
+        //               if (connection.detectErrorCount > 3) {
+        //                 connection.status = ChannelStatus.disconnected;
+        //                 connection.close();
+        //                 this.emDisconnect.emitLifeCycle({
+        //                   connection,
+        //                   code: OnDisconnectCode.DETECT_ERROR,
+        //                 });
+        //                 this.connectionClient.delete(connection.id);
+        //                 break;
+        //               }
+        //             }
+        //           }
 
-                  console.log(
-                    '[LocalChannel]',
-                    'detect done',
-                    connection.id,
-                    Date.now() - now,
-                  );
-                });
-              }
-            }
-          }, 1000);
+        //           console.log(
+        //             '[LocalChannel]',
+        //             'detect done',
+        //             connection.id,
+        //             Date.now() - now,
+        //           );
+        //         });
+        //       }
+        //     }
+        //   }, 1000);
       });
     });
   }

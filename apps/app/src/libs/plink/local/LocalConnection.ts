@@ -321,16 +321,7 @@ export class LocalConnection extends IConnection {
     });
   }
 
-  about(id: number) {
-    // this.signalSender.emitSync({
-    //   id,
-    //   signal: {
-    //     oneofKind: 'about',
-    //   },
-    // });
-  }
-
-  close() {
-    this.about(0);
+  async about(sendId: number) {
+    return true;
   }
 }

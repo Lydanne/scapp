@@ -17,11 +17,11 @@ export default new (class ChannelManager {
     this.channels.set('local', new LocalChannel());
     this.channels.set('oss', new OssChannel());
     this.channels.set('native', new NativeChannel());
-    if (APP) {
-      this.load('native');
-    } else {
-      this.load('local');
-    }
+    // if (APP) {
+    //   this.load('native');
+    // } else {
+    this.load('local');
+    // }
   }
 
   async close(name: string) {

@@ -16,4 +16,10 @@ export class NativeConnection extends IConnection {
   on(cb: (data: OnData) => void): void {
     this.emData.on(cb);
   }
+  close(): Promise<boolean> {
+    throw new Error('Method not implemented.');
+  }
+  about(msgId: number): Promise<boolean> {
+    throw new Error('Method not implemented.');
+  }
 }

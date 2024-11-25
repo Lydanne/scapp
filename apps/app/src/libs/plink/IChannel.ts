@@ -33,6 +33,7 @@ export abstract class IConnection {
 
   abstract send(data: SendData, cb?: (onData: OnData) => any): Promise<void>;
   abstract on(cb: (data: OnData) => any): void;
+  abstract about(msgId: number): Promise<boolean>;
 }
 
 export abstract class IChannel<C extends IConnection> {
