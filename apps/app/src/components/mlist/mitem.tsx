@@ -4,7 +4,7 @@ import { Close } from '@nutui/icons-react-taro';
 import { Image, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 
-import { OnDataStatus } from 'src/libs/plink/types';
+import { AboutStatus, OnDataStatus } from 'src/libs/plink/types';
 
 import Style from './mitem.module.scss';
 
@@ -17,6 +17,7 @@ export type MitemProps = {
     type: string;
     content: any;
     status?: OnDataStatus;
+    about?: AboutStatus;
     progress?: number;
   }[];
   onAbout?: (id: number) => void;
@@ -77,10 +78,22 @@ export default function Mitem(props: MitemProps) {
                         ></Image>
                       </View>
                     </View>
-                    {Boolean(item.progress && item.progress < 100) && (
+                    {Boolean(
+                      item.progress &&
+                        item.progress < 100 &&
+                        item.about !== AboutStatus.STOP,
+                    ) && (
                       <View
-                        className={Style['file-progress']}
-                        style={{ '--progress': `${item.progress}%` } as any}
+                        className={`${Style['file-progress']} ${
+                          item.about === AboutStatus.STOP
+                            ? Style['about-status-stop']
+                            : ''
+                        }`}
+                        style={
+                          {
+                            '--progress': `${item.progress}%`,
+                          } as any
+                        }
                       ></View>
                     )}
                   </View>
