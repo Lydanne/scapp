@@ -25,10 +25,17 @@ export type ConnectionProps<O extends AnyObject = {}> = {
   options?: O;
 };
 
+export enum AboutStatus {
+  RESUME = 0, // 恢复
+  PAUSE = 1, // 暂停
+  STOP = 2, // 停止
+}
+
 export type OnData = {
   channelId?: number; // 通道 id
   id: number; // 消息 id
   index: number; // 块序号
+  about: AboutStatus; // 是否在暂停
   status: OnDataStatus;
   type: DataType;
   progress: number; // 0-100, 0 表示准备好，100 表示完成

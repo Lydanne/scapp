@@ -8,6 +8,7 @@ import Navbar from 'src/components/navbar/navbar';
 import Qrcode from 'src/components/qrcode/qrcode';
 import { getPlinkCode } from 'src/libs/plink';
 import ChannelManager from 'src/libs/plink/ChannelManager';
+import { OnDataStatus } from 'src/libs/plink/types';
 import { useRouter } from 'src/libs/tapi/router';
 
 import Style from './index-quick.module.scss';
@@ -48,6 +49,7 @@ export default function IndexQuick() {
                 {
                   type: 'text',
                   content: '这是一个示例消息',
+                  status: OnDataStatus.DONE,
                 },
                 {
                   type: 'file',
@@ -55,6 +57,7 @@ export default function IndexQuick() {
                     name: '示例文件',
                     size: '100KB',
                   },
+                  status: OnDataStatus.DONE,
                 },
               ],
             },

@@ -1,9 +1,10 @@
 import { getIcon } from 'omni-file';
 
+import { Close } from '@nutui/icons-react-taro';
 import { Image, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 
-import type { OnDataStatus } from 'src/libs/plink';
+import { OnDataStatus } from 'src/libs/plink/types';
 
 import Style from './mitem.module.scss';
 
@@ -18,6 +19,7 @@ export type MitemProps = {
     status?: OnDataStatus;
     progress?: number;
   }[];
+  onAbout?: (id: number) => void;
 };
 
 export default function Mitem(props: MitemProps) {
@@ -44,44 +46,56 @@ export default function Mitem(props: MitemProps) {
         <View className={Style['item-time']}>{props.createdAt}</View>
         <View className={Style['item-body']}>
           {props.msg.map((item, index) => (
-            <View key={index} className={Style['item-msg']}>
-              {item.type === 'text' && (
-                <View className={Style['text']}>{item.content}</View>
-              )}
-              {item.type === 'image' && (
-                <View className={Style['image']}></View>
-              )}
-              {item.type === 'file' && (
-                <View
-                  className={Style['file']}
-                  onClick={() => onOpenFile(item, index)}
-                >
-                  <View className={Style['file-content']}>
-                    <View className={Style['file-info']}>
-                      <View className={Style['file-name']}>
-                        {item.content.name}
+            <View className={Style['item-msg-wrapper']} key={index}>
+              <View className={Style['item-msg']}>
+                {item.type === 'text' && (
+                  <View className={Style['text']}>{item.content}</View>
+                )}
+                {item.type === 'image' && (
+                  <View className={Style['image']}></View>
+                )}
+                {item.type === 'file' && (
+                  <View
+                    className={Style['file']}
+                    onClick={() => onOpenFile(item, index)}
+                  >
+                    <View className={Style['file-content']}>
+                      <View className={Style['file-info']}>
+                        <View className={Style['file-name']}>
+                          {item.content.name}
+                        </View>
+                        <View className={Style['file-size']}>
+                          {item.content.size}
+                        </View>
                       </View>
-                      <View className={Style['file-size']}>
-                        {item.content.size}
+                      <View className={Style['file-icon']}>
+                        <Image
+                          className={Style['file-icon-img']}
+                          src={`https://codyadam.github.io/omni-file/icons/${getIcon(
+                            item.content.name,
+                          )}.svg`}
+                        ></Image>
                       </View>
                     </View>
-                    <View className={Style['file-icon']}>
-                      <Image
-                        className={Style['file-icon-img']}
-                        src={`https://codyadam.github.io/omni-file/icons/${getIcon(
-                          item.content.name,
-                        )}.svg`}
-                      ></Image>
-                    </View>
+                    {Boolean(item.progress && item.progress < 100) && (
+                      <View
+                        className={Style['file-progress']}
+                        style={{ '--progress': `${item.progress}%` } as any}
+                      ></View>
+                    )}
                   </View>
-                  {Boolean(item.progress && item.progress < 100) && (
-                    <View
-                      className={Style['file-progress']}
-                      style={{ '--progress': `${item.progress}%` } as any}
-                    ></View>
-                  )}
-                </View>
-              )}
+                )}
+              </View>
+              <View className={Style['item-about']}>
+                {item.status !== OnDataStatus.DONE && (
+                  <View
+                    className={Style['item-about-btn']}
+                    onClick={() => props.onAbout?.(props.id)}
+                  >
+                    <Close size={12} />
+                  </View>
+                )}
+              </View>
             </View>
           ))}
         </View>

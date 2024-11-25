@@ -1,5 +1,6 @@
 import { Emitter } from '../shared/emitter';
 import {
+  type AboutStatus,
   ChannelStatus,
   type ConnectionProps,
   type OnData,
@@ -33,7 +34,7 @@ export abstract class IConnection {
 
   abstract send(data: SendData, cb?: (onData: OnData) => any): Promise<void>;
   abstract on(cb: (data: OnData) => any): void;
-  abstract about(msgId: number): Promise<boolean>;
+  abstract about(sendId: number, about: AboutStatus): Promise<boolean>;
 }
 
 export abstract class IChannel<C extends IConnection> {

@@ -15,7 +15,7 @@ import ChannelManager from 'src/libs/plink/ChannelManager';
 import type { IConnection } from 'src/libs/plink/IChannel';
 import { Channel, DataType, type Plink } from 'src/libs/plink/payload';
 import { randId, toBinary } from 'src/libs/plink/shared';
-import { OnDataStatus } from 'src/libs/plink/types';
+import { AboutStatus, OnDataStatus } from 'src/libs/plink/types';
 import { formatFileSize } from 'src/libs/shared/format';
 import { useRouter } from 'src/libs/tapi/router';
 
@@ -31,12 +31,14 @@ export default function Trans() {
   const [inputMessage, setInputMessage] = useState('');
   const { props, back } = useRouter<TransProps>();
   const { msgList, setMsgById, appendMsg } = useMlist();
+  const connectionValue = useRef<IConnection>();
 
   useEffect(() => {
     let connection: IConnection;
     setTimeout(async () => {
       [connection] = await ChannelManager.channel.emConnection.wait();
       console.log('connection', connection);
+      connectionValue.current = connection;
 
       connection.on((data) => {
         // console.log('connection data', data);
@@ -205,6 +207,11 @@ export default function Trans() {
     });
   };
 
+  const onAbout = (id: number) => {
+    console.log('onAbout', id);
+    connectionValue.current?.about(id, AboutStatus.STOP);
+  };
+
   return (
     <Page footer footerHeight={60}>
       <Navbar>
@@ -231,7 +238,7 @@ export default function Trans() {
         </View>
       </Navbar>
       <Body>
-        <Mlist list={msgList}></Mlist>
+        <Mlist list={msgList} onAbout={onAbout}></Mlist>
       </Body>
       <Footer className={Style['footer']} fixedBottom>
         <View className={Style['footer-upload']} onClick={onSelectFile}>

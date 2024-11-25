@@ -15,6 +15,7 @@ import {
 } from '../payload';
 import { mergeArrayBuffer } from '../shared';
 import {
+  AboutStatus,
   ChannelStatus,
   type OnData,
   OnDataStatus,
@@ -23,16 +24,29 @@ import {
 } from '../types';
 import { BLOCK_SIZE } from './LocalChannel';
 
-// (async () => {
-//   try {
-//     globalThis.WebAssembly = WXWebAssembly;
-//     await CryptoJSW.MD5.loadWasm();
-//     const rstMD5 = CryptoJSW.MD5('message').toString();
-//     console.log(rstMD5);
-//   } catch (error) {
-//     console.error('CryptoJSW', error);
-//   }
-// })();
+type PipeData = {
+  buffers: Uint8Array[];
+  head: SynReadySignal;
+  received: number;
+  receivedBytes: number;
+  progress: number;
+  speed: number;
+  startTime: number;
+};
+
+export class MsgManager {
+  msgs: number[] = [];
+  maps: Map<number, OnData> = new Map();
+
+  push(msg: OnData) {
+    this.msgs.push(msg.id);
+    this.maps.set(msg.id, msg);
+  }
+
+  get(id: number) {
+    return this.maps.get(id);
+  }
+}
 
 export class LocalConnection extends IConnection {
   detectAt: number = 0;
@@ -41,6 +55,8 @@ export class LocalConnection extends IConnection {
   dataMpsc = new Mpsc<DataAction>();
   syncMpsc = new Mpsc<SyncAction>();
   detectMpsc = new Mpsc<DetectAction>();
+
+  msgs = new MsgManager();
 
   waitSignal(timeout: number, filter: (signal: SyncAction) => boolean) {
     return new Promise((resolve, reject) => {
@@ -109,6 +125,18 @@ export class LocalConnection extends IConnection {
       (signal) => signal.signal.oneofKind === 'ackReady' && signal.id === id,
     );
 
+    this.msgs.push({
+      id,
+      index: 0,
+      status: OnDataStatus.READY,
+      type,
+      progress: 0,
+      speed: 0,
+      head: head as SynReadySignal,
+      body: data.body,
+      about: AboutStatus.RESUME,
+    });
+
     let index = 0;
     while (1) {
       const offset = index * BLOCK_SIZE;
@@ -131,21 +159,33 @@ export class LocalConnection extends IConnection {
             signal.signal.ackChunkFinish.status === FinishStatus.Ok,
         );
         index++;
-        const speed = Math.floor(
-          ((offset + offsetLen) / (Date.now() - ts)) * 1000,
-        );
-        cb?.({
-          id,
-          index,
-          status: OnDataStatus.SENDING,
-          type,
-          progress: Math.floor((index / length) * 100),
-          speed,
-          head: head as SynReadySignal,
-          body: '',
-        });
+
+        const msg = this.msgs.get(id);
+        if (msg) {
+          const speed = Math.floor(
+            ((offset + offsetLen) / (Date.now() - ts)) * 1000,
+          );
+          msg.status = OnDataStatus.SENDING;
+          msg.index = index;
+          msg.progress = Math.floor((index / length) * 100);
+          msg.speed = speed;
+          cb?.(msg);
+          if (msg.about === AboutStatus.STOP) {
+            // 永久停止
+            // TODO: 发送停止信号
+            break;
+          } else if (msg.about === AboutStatus.PAUSE) {
+            // 临时暂停
+            await waitPromise(() => {
+              if (msg.about === AboutStatus.STOP) {
+                return true;
+              }
+              return msg.about === AboutStatus.RESUME;
+            });
+          }
+        }
       } catch (error) {
-        console.log('发送错误', error);
+        console.log('没有收到ackChunkFinish', error);
       }
 
       if (index === length) {
@@ -157,33 +197,19 @@ export class LocalConnection extends IConnection {
       await fd.close();
     }
 
-    cb?.({
-      id,
-      index: length,
-      status: OnDataStatus.DONE,
-      type,
-      progress: 100,
-      speed: 0,
-      head: head as SynReadySignal,
-      body: '',
-    });
+    const msg = this.msgs.get(id);
+    if (msg) {
+      msg.status = OnDataStatus.DONE;
+      msg.progress = 100;
+      msg.speed = 0;
+      cb?.(msg);
+    }
 
-    console.log('发送完成', [id, length], Date.now() - ts);
+    console.log('发送完成', msg);
   }
 
   on(cb: (data: OnData) => any) {
-    const pipeMap = new Map<
-      number,
-      {
-        buffers: Uint8Array[];
-        head: SynReadySignal;
-        received: number;
-        receivedBytes: number;
-        progress: number;
-        speed: number;
-        startTime: number;
-      }
-    >();
+    const pipeMap = new Map<number, PipeData>();
 
     this.syncMpsc.rx.on(async (data) => {
       if (data.signal.oneofKind === 'synReady') {
@@ -224,6 +250,7 @@ export class LocalConnection extends IConnection {
           speed: 0,
           head,
           body: '',
+          about: AboutStatus.RESUME,
         });
       }
     });
@@ -269,6 +296,7 @@ export class LocalConnection extends IConnection {
         speed: pipe.speed,
         head: pipe.head,
         body: '',
+        about: AboutStatus.PAUSE,
       });
 
       if (pipe.received === pipe.head.length) {
@@ -285,6 +313,7 @@ export class LocalConnection extends IConnection {
               speed: pipe.speed,
               head: pipe.head,
               body: body,
+              about: AboutStatus.PAUSE,
             });
           } else if (pipe.head.type === DataType.FILE) {
             const filename = pipe.head.name;
@@ -311,6 +340,7 @@ export class LocalConnection extends IConnection {
               speed: pipe.speed,
               head: pipe.head,
               body: fd.filePath,
+              about: AboutStatus.PAUSE,
             });
           }
           pipeMap.delete(data.id);
@@ -321,7 +351,20 @@ export class LocalConnection extends IConnection {
     });
   }
 
-  async about(sendId: number) {
+  async about(sendId: number, about: AboutStatus) {
+    const msg = this.msgs.get(sendId);
+    if (msg) {
+      msg.about = about;
+    }
     return true;
   }
+}
+
+async function waitPromise(cb: () => boolean) {
+  while (!cb()) {
+    await sleep(300);
+  }
+}
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
