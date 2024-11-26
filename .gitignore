@@ -6,6 +6,7 @@ node_modules
 .DS_Store
 .swc
 target
+pkg
 
 .yarn/*
 !.yarn/patches
