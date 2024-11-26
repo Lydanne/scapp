@@ -12,6 +12,12 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@alibs/base64-rs@workspace:libs/base64-rs":
+  version: 0.0.0-use.local
+  resolution: "@alibs/base64-rs@workspace:libs/base64-rs"
+  languageName: unknown
+  linkType: soft
+
 "@ampproject/remapping@npm:^2.2.0":
   version: 2.3.0
   resolution: "@ampproject/remapping@npm:2.3.0"
@@ -2585,12 +2591,6 @@ __metadata:
   checksum: 10c0/14a0112bd59615eef9e3446fea018045720cd3da85a98f801a685a818b0d96ef2a1f7227e8d271def546b2e2a0fe91ef915ba9dc912ab7967d2317b1a051d66b
   languageName: node
   linkType: hard
-
-"@libs/base64-rs@workspace:libs/base64-rs":
-  version: 0.0.0-use.local
-  resolution: "@libs/base64-rs@workspace:libs/base64-rs"
-  languageName: unknown
-  linkType: soft
 
 "@napi-rs/triples@npm:1.2.0":
   version: 1.2.0

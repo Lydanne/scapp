@@ -1,5 +1,5 @@
 {
-  "name": "@libs/base64-rs",
+  "name": "@alibs/base64-rs",
   "version": "1.0.0",
   "files": [
     "pkg/base64_rs_bg.wasm",
