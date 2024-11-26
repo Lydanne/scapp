@@ -6,3 +6,10 @@ node_modules
 .DS_Store
 .swc
 target
+
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
