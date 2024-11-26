@@ -17,6 +17,7 @@ import { mergeArrayBuffer } from '../shared';
 import {
   AboutStatus,
   ChannelStatus,
+  From,
   type OnData,
   OnDataStatus,
   type SendData,
@@ -135,6 +136,7 @@ export class LocalConnection extends IConnection {
       head: head as SynReadySignal,
       body: data.body,
       about: AboutStatus.RESUME,
+      from: From.LOCAL,
     });
 
     let index = 0;
@@ -241,7 +243,7 @@ export class LocalConnection extends IConnection {
         };
         this.syncMpsc.tx.emitSync(ackReady);
 
-        cb({
+        this.msgs.push({
           id: data.id,
           index: 0,
           status: OnDataStatus.READY,
@@ -251,7 +253,10 @@ export class LocalConnection extends IConnection {
           head,
           body: '',
           about: AboutStatus.RESUME,
+          from: From.REMOTE,
         });
+
+        cb(this.msgs.get(data.id)!);
       }
     });
 
@@ -287,34 +292,27 @@ export class LocalConnection extends IConnection {
       );
       pipe.buffers[data.index] = data.body;
 
-      cb({
-        id: data.id,
-        index: data.index,
-        status: OnDataStatus.SENDING,
-        type: pipe.head.type as DataType,
-        progress: pipe.progress,
-        speed: pipe.speed,
-        head: pipe.head,
-        body: '',
-        about: AboutStatus.PAUSE,
-      });
+      const msg = this.msgs.get(data.id);
+      if (msg) {
+        msg.index = data.index;
+        msg.status = OnDataStatus.SENDING;
+        msg.progress = pipe.progress;
+        msg.speed = pipe.speed;
+        cb(msg!);
+      }
 
       if (pipe.received === pipe.head.length) {
         try {
           const buffer = mergeArrayBuffer(pipe.buffers);
           if (pipe.head.type === DataType.TEXT) {
             const body = await Base64.decode(new Uint8Array(buffer));
-            cb({
-              id: data.id,
-              index: data.index,
-              status: OnDataStatus.DONE,
-              type: DataType.TEXT,
-              progress: 100,
-              speed: pipe.speed,
-              head: pipe.head,
-              body: body,
-              about: AboutStatus.PAUSE,
-            });
+            if (msg) {
+              msg.status = OnDataStatus.DONE;
+              msg.progress = 100;
+              msg.speed = 0;
+              msg.body = body;
+              cb(msg!);
+            }
           } else if (pipe.head.type === DataType.FILE) {
             const filename = pipe.head.name;
             await FS.remove(filename);
@@ -331,17 +329,15 @@ export class LocalConnection extends IConnection {
             }
 
             console.log('receive file done', data.id, filename);
-            cb({
-              id: data.id,
-              index: data.index,
-              status: OnDataStatus.DONE,
-              type: DataType.FILE,
-              progress: 100,
-              speed: pipe.speed,
-              head: pipe.head,
-              body: fd.filePath,
-              about: AboutStatus.PAUSE,
-            });
+            if (msg) {
+              msg.status = OnDataStatus.DONE;
+              msg.progress = 100;
+              msg.speed = 0;
+              msg.body = fd.filePath;
+              cb(msg!);
+            }
+
+            await fd.close();
           }
           pipeMap.delete(data.id);
         } catch (error) {

@@ -31,6 +31,11 @@ export enum AboutStatus {
   STOP = 2, // 停止
 }
 
+export enum From {
+  LOCAL = 'local',
+  REMOTE = 'remote',
+}
+
 export type OnData = {
   channelId?: number; // 通道 id
   id: number; // 消息 id
@@ -42,6 +47,7 @@ export type OnData = {
   speed: number; // 速度 字节/秒
   head: SynReadySignal;
   body: string;
+  from: From;
 };
 
 export type SendData = {
