@@ -20,7 +20,7 @@ const config = {
   copy: {
     patterns: [
       {
-        from: `../../libs/base64-rs/pkg/base64_rs_bg.wasm`,
+        from: `src/libs/base64/base64_rs_bg.wasm`,
         to: `dist/${process.env.TARO_ENV}/base64_rs_bg.wasm`,
       },
     ],

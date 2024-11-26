@@ -41,6 +41,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@alibs/base64-rs": "workspace:^",
     "@babel/runtime": "^7.7.7",
     "@nutui/icons-react-taro": "^1.0.5",
     "@nutui/nutui-react-taro": "^2.3.10",
@@ -81,7 +82,7 @@
     "@tarojs/webpack5-runner": "3.6.35",
     "@tauri-apps/cli": "^2.0.2",
     "@testing-library/jest-dom": "^6.4.2",
-    "@types/jest": "^29.5.12",
+    "@types/jest": "^29.5.14",
     "@types/node": "^18.15.11",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",

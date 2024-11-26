@@ -2,10 +2,17 @@
   "name": "@alibs/base64-rs",
   "version": "1.0.0",
   "files": [
-    "pkg/base64_rs_bg.wasm",
-    "pkg/base64_rs.js",
-    "pkg/base64_rs.d.ts"
+    "lib",
+    "dist"
   ],
-  "main": "pkg/base64_rs.js",
-  "types": "pkg/base64_rs.d.ts"
+  "main": "dist/base64-rs.cjs.js",
+  "types": "lib/index.ts",
+  "module": "dist/base64-rs.esm.js",
+  "miniprogram": "dist",
+  "scripts": {
+    "build": "yarn rolldown -c rolldown.config.mjs"
+  },
+  "devDependencies": {
+    "rolldown": "nightly"
+  }
 }

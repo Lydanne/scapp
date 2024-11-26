@@ -12,9 +12,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@alibs/base64-rs@workspace:libs/base64-rs":
+"@alibs/base64-rs@workspace:^, @alibs/base64-rs@workspace:libs/base64-rs":
   version: 0.0.0-use.local
   resolution: "@alibs/base64-rs@workspace:libs/base64-rs"
+  dependencies:
+    rolldown: "npm:nightly"
   languageName: unknown
   linkType: soft
 
@@ -1955,6 +1957,34 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@emnapi/core@npm:^1.1.0":
+  version: 1.3.1
+  resolution: "@emnapi/core@npm:1.3.1"
+  dependencies:
+    "@emnapi/wasi-threads": "npm:1.0.1"
+    tslib: "npm:^2.4.0"
+  checksum: 10c0/d3be1044ad704e2c486641bc18908523490f28c7d38bd12d9c1d4ce37d39dae6c4aecd2f2eaf44c6e3bd90eaf04e0591acc440b1b038cdf43cce078a355a0ea0
+  languageName: node
+  linkType: hard
+
+"@emnapi/runtime@npm:^1.1.0":
+  version: 1.3.1
+  resolution: "@emnapi/runtime@npm:1.3.1"
+  dependencies:
+    tslib: "npm:^2.4.0"
+  checksum: 10c0/060ffede50f1b619c15083312b80a9e62a5b0c87aa8c1b54854c49766c9d69f8d1d3d87bd963a647071263a320db41b25eaa50b74d6a80dcc763c23dbeaafd6c
+  languageName: node
+  linkType: hard
+
+"@emnapi/wasi-threads@npm:1.0.1":
+  version: 1.0.1
+  resolution: "@emnapi/wasi-threads@npm:1.0.1"
+  dependencies:
+    tslib: "npm:^2.4.0"
+  checksum: 10c0/1e0c8036b8d53e9b07cc9acf021705ef6c86ab6b13e1acda7fffaf541a2d3565072afb92597419173ced9ea14f6bf32fce149106e669b5902b825e8b499e5c6c
+  languageName: node
+  linkType: hard
+
 "@esbuild/aix-ppc64@npm:0.19.12":
   version: 0.19.12
   resolution: "@esbuild/aix-ppc64@npm:0.19.12"
@@ -2596,6 +2626,17 @@ __metadata:
   version: 1.2.0
   resolution: "@napi-rs/triples@npm:1.2.0"
   checksum: 10c0/e8294cc63d36fe0b062dc5293a0a2c72ae9318676dd76168e969a8f47b95180e7fe80a301fc0d9c6688399494744bfe21275b58f247f2981b558898743389e0f
+  languageName: node
+  linkType: hard
+
+"@napi-rs/wasm-runtime@npm:^0.2.4":
+  version: 0.2.5
+  resolution: "@napi-rs/wasm-runtime@npm:0.2.5"
+  dependencies:
+    "@emnapi/core": "npm:^1.1.0"
+    "@emnapi/runtime": "npm:^1.1.0"
+    "@tybys/wasm-util": "npm:^0.9.0"
+  checksum: 10c0/32ea8defd3cc380bcf0de6ffc39a3b9cbe746f6c64000e0f0996a96dc776a7e87df7efeba5ce94e53d8b0ff2cda42f5a54673bdfeedbe8f037426255aba853f7
   languageName: node
   linkType: hard
 
@@ -3248,6 +3289,92 @@ __metadata:
     react: ^16.8.0 || ^17.0.0 || ^18.0.0
     react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
   checksum: 10c0/228f464953a4abbc0dd84380035fef20cdf9aabd73ea00e0aca8e60f64cee0d2d64781ddf8fd3cfb2fd6a8f75114da51d56f47b0a84914c7a5f4f8abf58dc9bb
+  languageName: node
+  linkType: hard
+
+"@rolldown/binding-darwin-arm64@npm:0.14.0-snapshot-f1bd92f-20241126015006":
+  version: 0.14.0-snapshot-f1bd92f-20241126015006
+  resolution: "@rolldown/binding-darwin-arm64@npm:0.14.0-snapshot-f1bd92f-20241126015006"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@rolldown/binding-darwin-x64@npm:0.14.0-snapshot-f1bd92f-20241126015006":
+  version: 0.14.0-snapshot-f1bd92f-20241126015006
+  resolution: "@rolldown/binding-darwin-x64@npm:0.14.0-snapshot-f1bd92f-20241126015006"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@rolldown/binding-freebsd-x64@npm:0.14.0-snapshot-f1bd92f-20241126015006":
+  version: 0.14.0-snapshot-f1bd92f-20241126015006
+  resolution: "@rolldown/binding-freebsd-x64@npm:0.14.0-snapshot-f1bd92f-20241126015006"
+  conditions: os=freebsd & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@rolldown/binding-linux-arm-gnueabihf@npm:0.14.0-snapshot-f1bd92f-20241126015006":
+  version: 0.14.0-snapshot-f1bd92f-20241126015006
+  resolution: "@rolldown/binding-linux-arm-gnueabihf@npm:0.14.0-snapshot-f1bd92f-20241126015006"
+  conditions: os=linux & cpu=arm
+  languageName: node
+  linkType: hard
+
+"@rolldown/binding-linux-arm64-gnu@npm:0.14.0-snapshot-f1bd92f-20241126015006":
+  version: 0.14.0-snapshot-f1bd92f-20241126015006
+  resolution: "@rolldown/binding-linux-arm64-gnu@npm:0.14.0-snapshot-f1bd92f-20241126015006"
+  conditions: os=linux & cpu=arm64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@rolldown/binding-linux-arm64-musl@npm:0.14.0-snapshot-f1bd92f-20241126015006":
+  version: 0.14.0-snapshot-f1bd92f-20241126015006
+  resolution: "@rolldown/binding-linux-arm64-musl@npm:0.14.0-snapshot-f1bd92f-20241126015006"
+  conditions: os=linux & cpu=arm64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@rolldown/binding-linux-x64-gnu@npm:0.14.0-snapshot-f1bd92f-20241126015006":
+  version: 0.14.0-snapshot-f1bd92f-20241126015006
+  resolution: "@rolldown/binding-linux-x64-gnu@npm:0.14.0-snapshot-f1bd92f-20241126015006"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@rolldown/binding-linux-x64-musl@npm:0.14.0-snapshot-f1bd92f-20241126015006":
+  version: 0.14.0-snapshot-f1bd92f-20241126015006
+  resolution: "@rolldown/binding-linux-x64-musl@npm:0.14.0-snapshot-f1bd92f-20241126015006"
+  conditions: os=linux & cpu=x64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@rolldown/binding-wasm32-wasi@npm:0.14.0-snapshot-f1bd92f-20241126015006":
+  version: 0.14.0-snapshot-f1bd92f-20241126015006
+  resolution: "@rolldown/binding-wasm32-wasi@npm:0.14.0-snapshot-f1bd92f-20241126015006"
+  dependencies:
+    "@napi-rs/wasm-runtime": "npm:^0.2.4"
+  conditions: cpu=wasm32
+  languageName: node
+  linkType: hard
+
+"@rolldown/binding-win32-arm64-msvc@npm:0.14.0-snapshot-f1bd92f-20241126015006":
+  version: 0.14.0-snapshot-f1bd92f-20241126015006
+  resolution: "@rolldown/binding-win32-arm64-msvc@npm:0.14.0-snapshot-f1bd92f-20241126015006"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@rolldown/binding-win32-ia32-msvc@npm:0.14.0-snapshot-f1bd92f-20241126015006":
+  version: 0.14.0-snapshot-f1bd92f-20241126015006
+  resolution: "@rolldown/binding-win32-ia32-msvc@npm:0.14.0-snapshot-f1bd92f-20241126015006"
+  conditions: os=win32 & cpu=ia32
+  languageName: node
+  linkType: hard
+
+"@rolldown/binding-win32-x64-msvc@npm:0.14.0-snapshot-f1bd92f-20241126015006":
+  version: 0.14.0-snapshot-f1bd92f-20241126015006
+  resolution: "@rolldown/binding-win32-x64-msvc@npm:0.14.0-snapshot-f1bd92f-20241126015006"
+  conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
@@ -4369,6 +4496,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tybys/wasm-util@npm:^0.9.0":
+  version: 0.9.0
+  resolution: "@tybys/wasm-util@npm:0.9.0"
+  dependencies:
+    tslib: "npm:^2.4.0"
+  checksum: 10c0/f9fde5c554455019f33af6c8215f1a1435028803dc2a2825b077d812bed4209a1a64444a4ca0ce2ea7e1175c8d88e2f9173a36a33c199e8a5c671aa31de8242d
+  languageName: node
+  linkType: hard
+
 "@types/archy@npm:^0.0.31":
   version: 0.0.31
   resolution: "@types/archy@npm:0.0.31"
@@ -4631,7 +4767,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/jest@npm:^29.5.12":
+"@types/jest@npm:^29.5.14":
   version: 29.5.14
   resolution: "@types/jest@npm:29.5.14"
   dependencies:
@@ -5785,6 +5921,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "app@workspace:apps/app"
   dependencies:
+    "@alibs/base64-rs": "workspace:^"
     "@babel/core": "npm:^7.8.0"
     "@babel/runtime": "npm:^7.7.7"
     "@nutui/icons-react-taro": "npm:^1.0.5"
@@ -5817,7 +5954,7 @@ __metadata:
     "@tauri-apps/plugin-log": "npm:^2.0.0"
     "@tauri-apps/plugin-os": "npm:^2.0.0"
     "@testing-library/jest-dom": "npm:^6.4.2"
-    "@types/jest": "npm:^29.5.12"
+    "@types/jest": "npm:^29.5.14"
     "@types/node": "npm:^18.15.11"
     "@types/react": "npm:^18.0.0"
     "@types/react-dom": "npm:^18.0.0"
@@ -17561,6 +17698,54 @@ __metadata:
   languageName: node
   linkType: hard
 
+"rolldown@npm:nightly":
+  version: 0.14.0-snapshot-f1bd92f-20241126015006
+  resolution: "rolldown@npm:0.14.0-snapshot-f1bd92f-20241126015006"
+  dependencies:
+    "@rolldown/binding-darwin-arm64": "npm:0.14.0-snapshot-f1bd92f-20241126015006"
+    "@rolldown/binding-darwin-x64": "npm:0.14.0-snapshot-f1bd92f-20241126015006"
+    "@rolldown/binding-freebsd-x64": "npm:0.14.0-snapshot-f1bd92f-20241126015006"
+    "@rolldown/binding-linux-arm-gnueabihf": "npm:0.14.0-snapshot-f1bd92f-20241126015006"
+    "@rolldown/binding-linux-arm64-gnu": "npm:0.14.0-snapshot-f1bd92f-20241126015006"
+    "@rolldown/binding-linux-arm64-musl": "npm:0.14.0-snapshot-f1bd92f-20241126015006"
+    "@rolldown/binding-linux-x64-gnu": "npm:0.14.0-snapshot-f1bd92f-20241126015006"
+    "@rolldown/binding-linux-x64-musl": "npm:0.14.0-snapshot-f1bd92f-20241126015006"
+    "@rolldown/binding-wasm32-wasi": "npm:0.14.0-snapshot-f1bd92f-20241126015006"
+    "@rolldown/binding-win32-arm64-msvc": "npm:0.14.0-snapshot-f1bd92f-20241126015006"
+    "@rolldown/binding-win32-ia32-msvc": "npm:0.14.0-snapshot-f1bd92f-20241126015006"
+    "@rolldown/binding-win32-x64-msvc": "npm:0.14.0-snapshot-f1bd92f-20241126015006"
+    zod: "npm:^3.23.8"
+  dependenciesMeta:
+    "@rolldown/binding-darwin-arm64":
+      optional: true
+    "@rolldown/binding-darwin-x64":
+      optional: true
+    "@rolldown/binding-freebsd-x64":
+      optional: true
+    "@rolldown/binding-linux-arm-gnueabihf":
+      optional: true
+    "@rolldown/binding-linux-arm64-gnu":
+      optional: true
+    "@rolldown/binding-linux-arm64-musl":
+      optional: true
+    "@rolldown/binding-linux-x64-gnu":
+      optional: true
+    "@rolldown/binding-linux-x64-musl":
+      optional: true
+    "@rolldown/binding-wasm32-wasi":
+      optional: true
+    "@rolldown/binding-win32-arm64-msvc":
+      optional: true
+    "@rolldown/binding-win32-ia32-msvc":
+      optional: true
+    "@rolldown/binding-win32-x64-msvc":
+      optional: true
+  bin:
+    rolldown: bin/cli.js
+  checksum: 10c0/23059f0d4714595f4899e5a287e5755e88ebf156db74e29152e6604fdffa32507e7ba24f1efa07554f20b20bc28e63029e17d807cf712313c28e832824642613
+  languageName: node
+  linkType: hard
+
 "rrweb-cssom@npm:^0.6.0":
   version: 0.6.0
   resolution: "rrweb-cssom@npm:0.6.0"
@@ -19418,7 +19603,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:^2.0.1, tslib@npm:^2.0.3, tslib@npm:^2.1.0, tslib@npm:^2.3.0, tslib@npm:^2.6.2, tslib@npm:^2.8.0":
+"tslib@npm:^2.0.1, tslib@npm:^2.0.3, tslib@npm:^2.1.0, tslib@npm:^2.3.0, tslib@npm:^2.4.0, tslib@npm:^2.6.2, tslib@npm:^2.8.0":
   version: 2.8.1
   resolution: "tslib@npm:2.8.1"
   checksum: 10c0/9c4759110a19c53f992d9aae23aac5ced636e99887b51b9e61def52611732872ff7668757d4e4c61f19691e36f4da981cd9485e869b4a7408d689f6bf1f14e62
@@ -20861,5 +21046,12 @@ __metadata:
     toposort: "npm:^2.0.2"
     type-fest: "npm:^2.19.0"
   checksum: 10c0/fe142141365eed0f78fb2e18bdd2f10bf101385dae12a5f9de14884448067bdca16a54b547fc0bffec04a098dd70b4519ff366422f3da006fd11a0717a7863ac
+  languageName: node
+  linkType: hard
+
+"zod@npm:^3.23.8":
+  version: 3.23.8
+  resolution: "zod@npm:3.23.8"
+  checksum: 10c0/8f14c87d6b1b53c944c25ce7a28616896319d95bc46a9660fe441adc0ed0a81253b02b5abdaeffedbeb23bdd25a0bf1c29d2c12dd919aef6447652dd295e3e69
   languageName: node
   linkType: hard
