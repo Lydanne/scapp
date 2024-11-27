@@ -192,7 +192,6 @@ export class LocalConnection extends IConnection {
           msg.index = index;
           msg.progress = Math.floor((index / length) * 100);
           msg.speed = speed;
-          msg.about = AboutStatus.Resume;
           cb?.(msg);
         }
       } catch (error) {
@@ -270,6 +269,8 @@ export class LocalConnection extends IConnection {
         const msg = this.msgs.get(data.id);
         if (msg) {
           msg.about = data.signal.aboutSend.status;
+          msg.progress = 100;
+          msg.speed = 0;
           cb(msg);
         }
       }
