@@ -43,7 +43,19 @@ message SyncAction{
         SynReadySignal synReady = 2;
         AckReadySignal ackReady = 3;
         AckChunkFinish ackChunkFinish = 4;
+        AboutSendSignal aboutSend = 5;
     }
+}
+
+message AboutSendSignal{
+    uint32 id = 1;
+    AboutStatus status = 2;
+}
+
+enum AboutStatus{
+    Resume = 0;
+    Pause = 1;
+    Stop = 2;
 }
 
 message DetectAction{

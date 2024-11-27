@@ -168,8 +168,28 @@ export interface SyncAction {
         ackChunkFinish: AckChunkFinish;
       }
     | {
+        oneofKind: 'aboutSend';
+        /**
+         * @generated from protobuf field: AboutSendSignal aboutSend = 5;
+         */
+        aboutSend: AboutSendSignal;
+      }
+    | {
         oneofKind: undefined;
       };
+}
+/**
+ * @generated from protobuf message AboutSendSignal
+ */
+export interface AboutSendSignal {
+  /**
+   * @generated from protobuf field: uint32 id = 1;
+   */
+  id: number;
+  /**
+   * @generated from protobuf field: AboutStatus status = 2;
+   */
+  status: AboutStatus;
 }
 /**
  * @generated from protobuf message DetectAction
@@ -242,6 +262,23 @@ export interface AckChunkFinish {
    * @generated from protobuf field: FinishStatus status = 2;
    */
   status: FinishStatus;
+}
+/**
+ * @generated from protobuf enum AboutStatus
+ */
+export enum AboutStatus {
+  /**
+   * @generated from protobuf enum value: Resume = 0;
+   */
+  Resume = 0,
+  /**
+   * @generated from protobuf enum value: Pause = 1;
+   */
+  Pause = 1,
+  /**
+   * @generated from protobuf enum value: Stop = 2;
+   */
+  Stop = 2,
 }
 /**
  * @generated from protobuf enum DataType
@@ -842,6 +879,13 @@ class SyncAction$Type extends MessageType<SyncAction> {
         oneof: 'signal',
         T: () => AckChunkFinish,
       },
+      {
+        no: 5,
+        name: 'aboutSend',
+        kind: 'message',
+        oneof: 'signal',
+        T: () => AboutSendSignal,
+      },
     ]);
   }
   create(value?: PartialMessage<SyncAction>): SyncAction {
@@ -899,6 +943,17 @@ class SyncAction$Type extends MessageType<SyncAction> {
             ),
           };
           break;
+        case /* AboutSendSignal aboutSend */ 5:
+          message.signal = {
+            oneofKind: 'aboutSend',
+            aboutSend: AboutSendSignal.internalBinaryRead(
+              reader,
+              reader.uint32(),
+              options,
+              (message.signal as any).aboutSend,
+            ),
+          };
+          break;
         default:
           let u = options.readUnknownField;
           if (u === 'throw')
@@ -946,6 +1001,13 @@ class SyncAction$Type extends MessageType<SyncAction> {
         writer.tag(4, WireType.LengthDelimited).fork(),
         options,
       ).join();
+    /* AboutSendSignal aboutSend = 5; */
+    if (message.signal.oneofKind === 'aboutSend')
+      AboutSendSignal.internalBinaryWrite(
+        message.signal.aboutSend,
+        writer.tag(5, WireType.LengthDelimited).fork(),
+        options,
+      ).join();
     let u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
@@ -960,6 +1022,87 @@ class SyncAction$Type extends MessageType<SyncAction> {
  * @generated MessageType for protobuf message SyncAction
  */
 export const SyncAction = new SyncAction$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AboutSendSignal$Type extends MessageType<AboutSendSignal> {
+  constructor() {
+    super('AboutSendSignal', [
+      { no: 1, name: 'id', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
+      {
+        no: 2,
+        name: 'status',
+        kind: 'enum',
+        T: () => ['AboutStatus', AboutStatus],
+      },
+    ]);
+  }
+  create(value?: PartialMessage<AboutSendSignal>): AboutSendSignal {
+    const message = globalThis.Object.create(this.messagePrototype!);
+    message.id = 0;
+    message.status = 0;
+    if (value !== undefined)
+      reflectionMergePartial<AboutSendSignal>(this, message, value);
+    return message;
+  }
+  internalBinaryRead(
+    reader: IBinaryReader,
+    length: number,
+    options: BinaryReadOptions,
+    target?: AboutSendSignal,
+  ): AboutSendSignal {
+    let message = target ?? this.create(),
+      end = reader.pos + length;
+    while (reader.pos < end) {
+      let [fieldNo, wireType] = reader.tag();
+      switch (fieldNo) {
+        case /* uint32 id */ 1:
+          message.id = reader.uint32();
+          break;
+        case /* AboutStatus status */ 2:
+          message.status = reader.int32();
+          break;
+        default:
+          let u = options.readUnknownField;
+          if (u === 'throw')
+            throw new globalThis.Error(
+              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
+            );
+          let d = reader.skip(wireType);
+          if (u !== false)
+            (u === true ? UnknownFieldHandler.onRead : u)(
+              this.typeName,
+              message,
+              fieldNo,
+              wireType,
+              d,
+            );
+      }
+    }
+    return message;
+  }
+  internalBinaryWrite(
+    message: AboutSendSignal,
+    writer: IBinaryWriter,
+    options: BinaryWriteOptions,
+  ): IBinaryWriter {
+    /* uint32 id = 1; */
+    if (message.id !== 0) writer.tag(1, WireType.Varint).uint32(message.id);
+    /* AboutStatus status = 2; */
+    if (message.status !== 0)
+      writer.tag(2, WireType.Varint).int32(message.status);
+    let u = options.writeUnknownFields;
+    if (u !== false)
+      (u == true ? UnknownFieldHandler.onWrite : u)(
+        this.typeName,
+        message,
+        writer,
+      );
+    return writer;
+  }
+}
+/**
+ * @generated MessageType for protobuf message AboutSendSignal
+ */
+export const AboutSendSignal = new AboutSendSignal$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class DetectAction$Type extends MessageType<DetectAction> {
   constructor() {
