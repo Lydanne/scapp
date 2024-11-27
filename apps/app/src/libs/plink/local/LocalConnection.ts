@@ -6,6 +6,7 @@ import { FS, type FSOpen } from '../../tapi/fs';
 import { IConnection } from '../IChannel';
 import { Mpsc } from '../Mpsc';
 import {
+  AboutStatus,
   type DataAction,
   DataType,
   type DetectAction,
@@ -15,8 +16,6 @@ import {
 } from '../payload';
 import { mergeArrayBuffer } from '../shared';
 import {
-  AboutStatus,
-  ChannelStatus,
   From,
   type OnData,
   OnDataStatus,
@@ -46,6 +45,12 @@ export class MsgManager {
 
   get(id: number) {
     return this.maps.get(id);
+  }
+
+  filter(filter: (msg: OnData) => boolean) {
+    return this.msgs
+      .filter((id) => filter(this.maps.get(id)!))
+      .map((id) => this.maps.get(id)!);
   }
 }
 
@@ -135,12 +140,29 @@ export class LocalConnection extends IConnection {
       speed: 0,
       head: head as SynReadySignal,
       body: data.body,
-      about: AboutStatus.RESUME,
+      about: AboutStatus.Resume,
       from: From.LOCAL,
     });
 
     let index = 0;
     while (1) {
+      const msg = this.msgs.get(id);
+      if (!msg) {
+        console.log('msg not found', id);
+        break;
+      }
+      if (msg.about === AboutStatus.Stop) {
+        // 永久停止
+        break;
+      } else if (msg.about === AboutStatus.Pause) {
+        // 临时暂停
+        await waitPromise(() => {
+          if (msg.about === AboutStatus.Stop) {
+            return true;
+          }
+          return msg.about === AboutStatus.Resume;
+        });
+      }
       const offset = index * BLOCK_SIZE;
       const offsetLen = Math.min(size - offset, BLOCK_SIZE);
       const buffer = await getDataChunk(offset, offsetLen);
@@ -162,7 +184,6 @@ export class LocalConnection extends IConnection {
         );
         index++;
 
-        const msg = this.msgs.get(id);
         if (msg) {
           const speed = Math.floor(
             ((offset + offsetLen) / (Date.now() - ts)) * 1000,
@@ -171,20 +192,8 @@ export class LocalConnection extends IConnection {
           msg.index = index;
           msg.progress = Math.floor((index / length) * 100);
           msg.speed = speed;
+          msg.about = AboutStatus.Resume;
           cb?.(msg);
-          if (msg.about === AboutStatus.STOP) {
-            // 永久停止
-            // TODO: 发送停止信号
-            break;
-          } else if (msg.about === AboutStatus.PAUSE) {
-            // 临时暂停
-            await waitPromise(() => {
-              if (msg.about === AboutStatus.STOP) {
-                return true;
-              }
-              return msg.about === AboutStatus.RESUME;
-            });
-          }
         }
       } catch (error) {
         console.log('没有收到ackChunkFinish', error);
@@ -252,11 +261,17 @@ export class LocalConnection extends IConnection {
           speed: 0,
           head,
           body: '',
-          about: AboutStatus.RESUME,
+          about: AboutStatus.Resume,
           from: From.REMOTE,
         });
 
         cb(this.msgs.get(data.id)!);
+      } else if (data.signal.oneofKind === 'aboutSend') {
+        const msg = this.msgs.get(data.id);
+        if (msg) {
+          msg.about = data.signal.aboutSend.status;
+          cb(msg);
+        }
       }
     });
 
@@ -348,9 +363,39 @@ export class LocalConnection extends IConnection {
   }
 
   async about(sendId: number, about: AboutStatus) {
-    const msg = this.msgs.get(sendId);
-    if (msg) {
-      msg.about = about;
+    if (sendId === 0) {
+      // 关闭所有发送中的消息
+      const sendMsgs = this.msgs.filter(
+        (msg) => msg.status === OnDataStatus.SENDING,
+      );
+      sendMsgs.forEach((msg) => {
+        const data: SyncAction = {
+          id: msg.id,
+          signal: {
+            oneofKind: 'aboutSend',
+            aboutSend: {
+              status: about,
+            },
+          },
+        };
+        this.syncMpsc.rx.emitSync(data);
+        this.syncMpsc.tx.emitSync(data);
+      });
+    } else {
+      const msg = this.msgs.get(sendId);
+      if (msg) {
+        const data: SyncAction = {
+          id: sendId,
+          signal: {
+            oneofKind: 'aboutSend',
+            aboutSend: {
+              status: about,
+            },
+          },
+        };
+        this.syncMpsc.rx.emitSync(data);
+        this.syncMpsc.tx.emitSync(data);
+      }
     }
     return true;
   }

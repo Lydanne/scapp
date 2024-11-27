@@ -1,5 +1,5 @@
 import type { AnyObject } from '../shared/type-tools';
-import type { DataType, SynReadySignal } from './payload';
+import type { AboutStatus, DataType, SynReadySignal } from './payload';
 
 export type SocketIP = `${string}:${number}`;
 
@@ -24,12 +24,6 @@ export type ConnectionProps<O extends AnyObject = {}> = {
   seq: number;
   options?: O;
 };
-
-export enum AboutStatus {
-  RESUME = 0, // 恢复
-  PAUSE = 1, // 暂停
-  STOP = 2, // 停止
-}
 
 export enum From {
   LOCAL = 'local',

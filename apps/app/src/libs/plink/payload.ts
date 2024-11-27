@@ -183,11 +183,7 @@ export interface SyncAction {
  */
 export interface AboutSendSignal {
   /**
-   * @generated from protobuf field: uint32 id = 1;
-   */
-  id: number;
-  /**
-   * @generated from protobuf field: AboutStatus status = 2;
+   * @generated from protobuf field: AboutStatus status = 1;
    */
   status: AboutStatus;
 }
@@ -1026,9 +1022,8 @@ export const SyncAction = new SyncAction$Type();
 class AboutSendSignal$Type extends MessageType<AboutSendSignal> {
   constructor() {
     super('AboutSendSignal', [
-      { no: 1, name: 'id', kind: 'scalar', T: 13 /*ScalarType.UINT32*/ },
       {
-        no: 2,
+        no: 1,
         name: 'status',
         kind: 'enum',
         T: () => ['AboutStatus', AboutStatus],
@@ -1037,7 +1032,6 @@ class AboutSendSignal$Type extends MessageType<AboutSendSignal> {
   }
   create(value?: PartialMessage<AboutSendSignal>): AboutSendSignal {
     const message = globalThis.Object.create(this.messagePrototype!);
-    message.id = 0;
     message.status = 0;
     if (value !== undefined)
       reflectionMergePartial<AboutSendSignal>(this, message, value);
@@ -1054,10 +1048,7 @@ class AboutSendSignal$Type extends MessageType<AboutSendSignal> {
     while (reader.pos < end) {
       let [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
-        case /* uint32 id */ 1:
-          message.id = reader.uint32();
-          break;
-        case /* AboutStatus status */ 2:
+        case /* AboutStatus status */ 1:
           message.status = reader.int32();
           break;
         default:
@@ -1084,11 +1075,9 @@ class AboutSendSignal$Type extends MessageType<AboutSendSignal> {
     writer: IBinaryWriter,
     options: BinaryWriteOptions,
   ): IBinaryWriter {
-    /* uint32 id = 1; */
-    if (message.id !== 0) writer.tag(1, WireType.Varint).uint32(message.id);
-    /* AboutStatus status = 2; */
+    /* AboutStatus status = 1; */
     if (message.status !== 0)
-      writer.tag(2, WireType.Varint).int32(message.status);
+      writer.tag(1, WireType.Varint).int32(message.status);
     let u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(

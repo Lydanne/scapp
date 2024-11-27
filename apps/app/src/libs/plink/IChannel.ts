@@ -1,6 +1,6 @@
 import { Emitter } from '../shared/emitter';
+import type { AboutStatus } from './payload';
 import {
-  type AboutStatus,
   ChannelStatus,
   type ConnectionProps,
   type OnData,

@@ -48,8 +48,7 @@ message SyncAction{
 }
 
 message AboutSendSignal{
-    uint32 id = 1;
-    AboutStatus status = 2;
+    AboutStatus status = 1;
 }
 
 enum AboutStatus{

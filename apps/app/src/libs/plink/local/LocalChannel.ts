@@ -2,6 +2,7 @@ import { Emitter } from '../../shared/emitter';
 import { IChannel } from '../IChannel';
 import { SocketPipe } from '../SocketPipe';
 import {
+  AboutStatus,
   Channel,
   type ConnectAction,
   DataType,
@@ -37,6 +38,10 @@ export class LocalChannel extends IChannel<LocalConnection> {
     super();
     this.emConnection.on((data) => {
       console.log('[LocalChannel]', 'connectionEmitter', data);
+    });
+    this.emDisconnect.on((data) => {
+      console.log('[LocalChannel]', 'disconnectEmitter', data);
+      data.connection.about(0, AboutStatus.Stop);
     });
   }
 

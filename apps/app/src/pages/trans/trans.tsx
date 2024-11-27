@@ -13,9 +13,14 @@ import Navbar from 'src/components/navbar/navbar';
 import Page from 'src/components/page/page';
 import ChannelManager from 'src/libs/plink/ChannelManager';
 import type { IConnection } from 'src/libs/plink/IChannel';
-import { Channel, DataType, type Plink } from 'src/libs/plink/payload';
+import {
+  AboutStatus,
+  Channel,
+  DataType,
+  type Plink,
+} from 'src/libs/plink/payload';
 import { randId, toBinary } from 'src/libs/plink/shared';
-import { AboutStatus, OnDataStatus } from 'src/libs/plink/types';
+import { OnDataStatus } from 'src/libs/plink/types';
 import { formatFileSize } from 'src/libs/shared/format';
 import { useRouter } from 'src/libs/tapi/router';
 
@@ -73,6 +78,7 @@ export default function Trans() {
               return null;
             msg.updatedAt = Date.now();
             msg.msg[0].status = OnDataStatus.SENDING;
+            msg.msg[0].about = data.about;
             msg.msg[0].progress = data.progress;
             if (data.speed && data.type === DataType.FILE) {
               msg.msg[0].content.size = `${formatFileSize(data.speed)}/s`;
@@ -87,12 +93,14 @@ export default function Trans() {
                     type: 'text',
                     status: OnDataStatus.DONE,
                     progress: data.progress,
+                    about: data.about,
                     content: data.body,
                   }
                 : {
                     type: 'file',
                     status: OnDataStatus.DONE,
                     progress: data.progress,
+                    about: data.about,
                     content: {
                       name: data.head.name,
                       size: `${formatFileSize(data.head.size)}`,
@@ -175,12 +183,14 @@ export default function Trans() {
             msg.updatedAt = Date.now();
             msg.msg[0].status = onData.status;
             msg.msg[0].progress = onData.progress;
+            msg.msg[0].about = onData.about;
             if (onData.speed && onData.type === DataType.FILE) {
               msg.msg[0].content.size = `${formatFileSize(onData.speed)}/s`;
             }
           } else {
             msg.msg[0].status = onData.status;
             msg.msg[0].progress = onData.progress;
+            msg.msg[0].about = onData.about;
             if (onData.head.size && onData.type === DataType.FILE) {
               msg.msg[0].content.size = `${formatFileSize(onData.head.size)}`;
             }
@@ -209,7 +219,7 @@ export default function Trans() {
 
   const onAbout = (id: number) => {
     console.log('onAbout', id);
-    connectionValue.current?.about(id, AboutStatus.STOP);
+    connectionValue.current?.about(id, AboutStatus.Stop);
   };
 
   return (
