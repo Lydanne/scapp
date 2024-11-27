@@ -271,6 +271,7 @@ export class LocalConnection extends IConnection {
           msg.about = data.signal.aboutSend.status;
           msg.progress = 100;
           msg.speed = 0;
+          msg.status = OnDataStatus.DONE;
           cb(msg);
         }
       }
