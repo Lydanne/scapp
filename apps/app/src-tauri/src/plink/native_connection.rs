@@ -98,6 +98,7 @@ pub struct PipeData {
     pub received: u32,
     pub received_bytes: u64,
     pub start_time: u64,
+    pub body: String,
 }
 
 #[derive(Clone, Serialize, Debug)]
@@ -124,12 +125,6 @@ impl NativeConnection {
     }
 }
 
-pub struct SendData {
-    pub id: u32,
-    pub tp: DataTypePipe,
-    pub head: SynReadySignalPipe,
-    pub body: String,
-}
 
 #[derive(Clone, Serialize, Debug)]
 #[serde(into = "i32")]
@@ -188,4 +183,14 @@ impl From<PipeData> for OnData {
             body,
         }
     }
+}
+
+
+#[derive(Clone, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SendData {
+    pub id: u32,
+    pub r#type: DataTypePipe,
+    pub head: SynReadySignalPipe,
+    pub body: String,
 }

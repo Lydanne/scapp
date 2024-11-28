@@ -6,12 +6,15 @@ import type { OnData, SendData } from '../types';
 
 export class NativeConnection extends IConnection {
   emData = new Emitter<(onData: OnData) => void>();
-  emSend = new Emitter<(sendData: SendData) => void>();
+  emSend = new Emitter<
+    (sendData: SendData, cb?: (onData: OnData) => void) => void
+  >();
   constructor(data: any) {
     super(data);
   }
   send(data: SendData, cb?: (onData: OnData) => void): Promise<void> {
-    throw new Error('Method not implemented.');
+    this.emSend.emit(data, cb);
+    return Promise.resolve();
   }
   on(cb: (data: OnData) => void): void {
     this.emData.on(cb);

@@ -5,40 +5,44 @@ use serde::Serialize;
 use tauri::Emitter;
 use tauri::{ipc::Channel, AppHandle};
 use std::collections::HashMap;
+use std::fs;
+use std::io::Read;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex, RwLock};
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc;
 
+use crate::file::file_sign;
 use crate::native_connection::{ChannelStatus, OnData, OnDataStatus, PipeData, SynReadySignalPipe};
 use crate::send_packet;
+use crate::string::string_sign;
 use crate::{proto::payload, receive_packet, Udp};
 
-use super::native_connection::NativeConnection;
+use super::native_connection::{DataTypePipe, NativeConnection, SendData};
 
 static SOCKETS: Lazy<RwLock<HashMap<String, Udp>>> = Lazy::new(|| RwLock::new(HashMap::new()));
 static CONNECTIONS: Lazy<Mutex<HashMap<u32, NativeConnection>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
-static CHUNK_SIZE: usize = 1024;
+pub const BLOCK_SIZE: usize = 1024 * 512;
 
-#[tauri::command]
-pub async fn native_channel_connect(socket_ip: String) -> bool {
-    let socket_guard = SOCKETS.read().unwrap();
-    if let Some(socket) = socket_guard.get(&socket_ip) {
-        let socket_addr = socket_ip.parse::<std::net::SocketAddr>().unwrap();
-        match socket.sock.connect(socket_addr).await {
-            Ok(_) => return true,
-            Err(e) => {
-                log::error!("连接到 {} 失败: {}", socket_ip, e);
-                return false;
-            }
-        }
-    } else {
-        log::error!("套接字尚未初始化");
-        return false;
-    }
-}
+// #[tauri::command]
+// pub async fn native_channel_connect(socket_id: String, channel_id: u32) -> bool {
+//     let socket_guard = SOCKETS.read().unwrap();
+//     if let Some(socket) = socket_guard.get(&socket_id) {
+//         let socket_addr = socket_id.parse::<std::net::SocketAddr>().unwrap();
+//         match socket.sock.connect(socket_addr).await {
+//             Ok(_) => return true,
+//             Err(e) => {
+//                 log::error!("连接到 {} 失败: {}", socket_id, e);
+//                 return false;
+//             }
+//         }
+//     } else {
+//         log::error!("套接字尚未初始化");
+//         return false;
+//     }
+// }
 
 #[tauri::command]
 pub async fn native_channel_disconnect() -> bool {
@@ -46,7 +50,7 @@ pub async fn native_channel_disconnect() -> bool {
 }
 
 #[tauri::command]
-pub async fn native_channel_listen(app: AppHandle) -> u32 {
+pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
     // 开始生成代码
     let socket = UdpSocket::bind("0.0.0.0:0")
         .await
@@ -56,7 +60,7 @@ pub async fn native_channel_listen(app: AppHandle) -> u32 {
     let port = local_addr.port();
     // let (tx, rx) = mpsc::channel::<OnReceived>(1024);
     SOCKETS.write().unwrap().insert(
-        local_addr.to_string(),
+        socket_id,
         Udp {
             sock: socket.clone(),
             task: tokio::spawn(async move {
@@ -240,9 +244,68 @@ pub async fn native_channel_listen(app: AppHandle) -> u32 {
                                                 received: 0,
                                                 received_bytes: 0,
                                                 start_time: channel.ts,
+                                                body: "".to_string(),
                                             };
                                             app.emit("on_data", OnData::from(pipe.clone())).unwrap();
                                             client.pipe_map.insert(action.id, pipe);
+                                        }else if let Some(payload::sync_action::Signal::AckReady(finish)) = &action.signal {
+                                            let pipe = client.pipe_map.remove(&action.id);
+                                            if let Some(pipe) = pipe {
+                                                match pipe.tp {
+                                                    DataTypePipe::FILE => {
+                                                        // 发送文件
+                                                        let path = pipe.body.clone();
+                                                        let mut file = fs::File::open(path.as_str()).unwrap();
+                                                        let mut buffer = vec![0u8; BLOCK_SIZE]; // 使用 BLOCK_SIZE 作为缓冲区大小
+                                                        let mut offset = 0;
+                                                        
+                                                        loop {
+                                                            match file.read(&mut buffer) {
+                                                                Ok(n) if n == 0 => break, // 文件读取完成
+                                                                Ok(n) => {
+                                                                    let data = payload::Channel {
+                                                                        version: 1,
+                                                                        id: channel.id,
+                                                                        ts: get_ts(),
+                                                                        action: Some(payload::channel::Action::Data(
+                                                                            payload::DataAction {
+                                                                                id: pipe.id,
+                                                                                index: offset,
+                                                                                body: buffer[..n].to_vec(),
+                                                                                special_fields: Default::default(),
+                                                                            }
+                                                                        )),
+                                                                        special_fields: Default::default(),
+                                                                    };
+                                                                    offset += 1;
+                                                                    
+                                                                    // 发送后需要等客户端通过 socket 返回 ack
+                                                                    // 如果客户端没有返回 ack，则需要重发
+                                                                    let mut ack_received = false;
+                                                                    while !ack_received {
+                                                                        send_message(socket.clone(), &on_received.remote_info, data.clone());
+                                                                        // match socket.recv_from(&mut buffer).await {
+                                                                        //     Ok(_) => {
+                                                                        //         ack_received = true;
+                                                                        //     }
+                                                                        //     Err(_) => {
+                                                                        //         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                                                                        //     }
+                                                                        // }
+                                                                    }
+                                                                }
+                                                                Err(e) => {
+                                                                    println!("读取文件错误: {}", e);
+                                                                    break;
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    DataTypePipe::TEXT => {
+                                                        
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -260,6 +323,73 @@ pub async fn native_channel_listen(app: AppHandle) -> u32 {
     );
 
     port as u32
+}
+
+#[tauri::command]
+pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendData, cb: Channel<OnData>) -> bool {
+    let mut connections = CONNECTIONS.lock().unwrap();
+    if let Some(client) = connections.get_mut(&channel_id) {
+        let socket = {
+            let sockets = SOCKETS.read().unwrap();
+            let udp = sockets.get(&socket_id).unwrap();
+            udp.sock.clone()
+        };
+        let mut syn_ready = payload::SynReadySignal::new();
+        syn_ready.name = data.head.name.clone();
+        if let DataTypePipe::TEXT = data.r#type {
+            syn_ready.type_ = payload::DataType::TEXT.into();
+            syn_ready.sign = string_sign(&data.body);
+            syn_ready.size = data.body.len() as u32;
+            syn_ready.name = data.head.name.clone();
+        } else {
+            let path = data.body.clone();
+            let mut file = fs::File::open(path.as_str()).unwrap();
+            let metadata = file.metadata().unwrap();
+            syn_ready.type_ = payload::DataType::FILE.into();
+            syn_ready.size = metadata.len() as u32;
+            syn_ready.name = path.split("/").last().unwrap().to_string();
+            syn_ready.sign = file_sign(&mut file);
+        }
+
+        syn_ready.length = (syn_ready.size / BLOCK_SIZE as u32) as u32;
+
+        let remote_info = client.socket_ip.parse::<std::net::SocketAddr>().unwrap();
+
+        send_message(socket, &remote_info, payload::Channel {
+            version: 1,
+            id: channel_id,
+            ts: get_ts(),
+            action: Some(payload::channel::Action::Sync(
+                payload::SyncAction {   
+                    id: data.id,
+                    signal: Some(payload::sync_action::Signal::SynReady(syn_ready.clone())),
+                    special_fields: Default::default(),
+                },
+            )),
+            special_fields: Default::default(),
+        });
+        client.pipe_map.insert(data.id, PipeData{
+            channel_id: channel_id,
+            id: data.id,
+            index: 0,
+            status: OnDataStatus::Ready,
+            tp: data.r#type,
+            progress: 0,
+            speed: 0.0,
+            head: SynReadySignalPipe{
+                length: syn_ready.length,
+                size: syn_ready.size,
+                sign: syn_ready.sign.clone(),
+                name: syn_ready.name.clone(),
+            },
+            buffers: vec![],
+            received: 0,
+            received_bytes: 0,
+            start_time: get_ts(),
+            body: data.body.clone(),
+        });
+    }
+    true
 }
 
 #[tauri::command]
