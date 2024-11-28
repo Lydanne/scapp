@@ -69,7 +69,7 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                     if let Ok(ref channel) = channel {
                         // println!("{:?}", channel);
                         if let Some(action) = &channel.action {
-                            let mut connections = CONNECTIONS.lock().unwrap();
+                            let mut connections = { CONNECTIONS.lock().unwrap() };
                             // println!("connections {:?}", connections);
 
                             let client = connections.get_mut(&channel.id);
@@ -327,7 +327,7 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
 
 #[tauri::command]
 pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendData, cb: Channel<OnData>) -> bool {
-    let mut connections = CONNECTIONS.lock().unwrap();
+    let mut connections = { CONNECTIONS.lock().unwrap() };
     if let Some(client) = connections.get_mut(&channel_id) {
         let socket = {
             let sockets = SOCKETS.read().unwrap();
