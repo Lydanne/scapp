@@ -28,6 +28,8 @@
     "dev:qq": "npm run build:qq -- --watch",
     "dev:jd": "npm run build:jd -- --watch",
     "dev:quickapp": "npm run build:quickapp -- --watch",
+    "build:tauri": "yarn tauri build",
+    "dev:tauri": "yarn tauri dev",
     "build:proto": "npx protoc --ts_out ./src/libs/plink/ --proto_path protos protos/payload.proto",
     "build:proto:rs": "npx protoc --rs_out ./src-tauri/src/plink/proto --proto_path protos protos/payload.proto",
     "test": "jest",
