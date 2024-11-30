@@ -82,7 +82,7 @@ pub async fn channel_socket_receive(on_event: Channel<OnReceived>) {
     };
 
     tokio::spawn(async move {
-        receive_packet(socket, |on_received| {
+        receive_packet(socket, |on_received| async {
             on_event.send(on_received).unwrap();
         })
         .await;
@@ -113,7 +113,11 @@ pub async fn send_packet<A: ToSocketAddrs>(socket: Arc<UdpSocket>, socket_ip: A,
         }
 }
 
-pub async fn receive_packet(socket: Arc<UdpSocket>, cb: impl Fn(OnReceived)) {
+pub async fn receive_packet<F, Fut>(socket: Arc<UdpSocket>, cb: F)
+where
+    F: Fn(OnReceived) -> Fut,
+    Fut: std::future::Future<Output = ()> + Send,
+{
     let mut packets: HashMap<u32, Vec<Option<Vec<u8>>>> = HashMap::new();
     let mut buffer = vec![0; CHUNK_SIZE + 12];
     
