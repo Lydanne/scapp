@@ -148,7 +148,7 @@ where
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
                     .as_millis() as u64,
-            });
+            }).await;
 
             packets.remove(&packet.id);
         }

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use base64::Engine;
 use protobuf::EnumOrUnknown;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::shared;
 
@@ -24,7 +24,7 @@ impl Into<i32> for ChannelStatus {
     }
 }
 
-#[derive(Clone, Serialize, Debug, Default)]
+#[derive(Clone, Serialize, Deserialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct SynReadySignalPipe {
     pub length: u32,
@@ -45,7 +45,7 @@ impl From<SynReadySignal> for SynReadySignalPipe {
     }
 }
 
-#[derive(Clone, Serialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(into = "i32")]
 pub enum DataTypePipe {
     TEXT = 0,
@@ -126,7 +126,7 @@ impl NativeConnection {
 }
 
 
-#[derive(Clone, Serialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(into = "i32")]
 pub enum OnDataStatus {
     Ready = 0,
@@ -140,7 +140,7 @@ impl Into<i32> for OnDataStatus {
     }
 }
 
-#[derive(Clone, Serialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct OnData {
     pub channel_id: u32,
@@ -186,7 +186,7 @@ impl From<PipeData> for OnData {
 }
 
 
-#[derive(Clone, Serialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct SendData {
     pub id: u32,

@@ -436,7 +436,49 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
                     }
                 }
                 DataTypePipe::TEXT => {
+                    let text = pipe_data.body.clone();
+                    let text_bytes = text.as_bytes();
+                    let mut offset = 0;
+                    let mut start = 0;
                     
+                    loop {
+                        let end = std::cmp::min(start + BLOCK_SIZE, text_bytes.len());
+                        if start >= text_bytes.len() {
+                            break;
+                        }
+                        
+                        let chunk = &text_bytes[start..end];
+                        let data = payload::Channel {
+                            version: 1,
+                            id: pipe_data.channel_id,
+                            ts: get_ts(),
+                            action: Some(payload::channel::Action::Data(
+                                payload::DataAction {
+                                    id: pipe_data.id,
+                                    index: offset,
+                                    body: chunk.to_vec(),
+                                    special_fields: Default::default(),
+                                }
+                            )),
+                            special_fields: Default::default(),
+                        };
+                        offset += 1;
+                        start = end;
+                        
+                        let mut ack_received = false;
+                        while !ack_received {
+                            send_message(socket.clone(), &remote_info, data.clone());
+                            let sync_action = tokio::time::timeout(
+                                std::time::Duration::from_secs(3),
+                                sync_rx.recv()
+                            ).await;
+                            if let Ok(Some(sync_action)) = sync_action {
+                                if sync_action.id == pipe_data.id {
+                                    ack_received = true;
+                                }
+                            }
+                        }
+                    }
                 }
             
             }
