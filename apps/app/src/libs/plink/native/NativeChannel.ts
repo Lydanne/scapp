@@ -50,7 +50,6 @@ export class NativeChannel extends IChannel<NativeConnection> {
               size: data.head.size ?? 0,
               sign: data.head.sign ?? '',
               name: data.head.name ?? '',
-              type: data.head.type ?? data.type,
             },
             body: data.body,
           },

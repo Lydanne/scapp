@@ -1,6 +1,6 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
-use tokio::{net::UdpSocket, sync::mpsc, task::JoinHandle};
+use tokio::{net::UdpSocket, sync::{mpsc, Mutex}, task::JoinHandle};
 
 use crate::proto::payload::SyncAction;
 

@@ -8,7 +8,8 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::Read;
 use std::net::SocketAddr;
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::Arc;
+use tokio::sync::{Mutex, RwLock};
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc;
 
@@ -22,8 +23,7 @@ use super::native_connection::{DataTypePipe, NativeConnection, SendData};
 use super::proto::payload::{sync_action, SyncAction};
 
 static SOCKETS: Lazy<RwLock<HashMap<String, Udp>>> = Lazy::new(|| RwLock::new(HashMap::new()));
-static CONNECTIONS: Lazy<Mutex<HashMap<u32, NativeConnection>>> =
-    Lazy::new(|| Mutex::new(HashMap::new()));
+static CONNECTIONS: Lazy<Mutex<HashMap<u32, NativeConnection>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 pub const BLOCK_SIZE: usize = 1024 * 512;
 
@@ -61,7 +61,7 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
     let port = local_addr.port();
     let (sync_tx, sync_rx) = mpsc::channel::<SyncAction>(1024);
     let sync_rx = Arc::new(Mutex::new(sync_rx));
-    SOCKETS.write().unwrap().insert(
+    SOCKETS.write().await.insert(
         socket_id,
         Udp {
             sync_rx,
@@ -79,11 +79,10 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                             if let Some(action) = &channel.action {
                                 match action {
                                     payload::channel::Action::Connect(data) => {
-                                        let mut connections = { CONNECTIONS.lock().unwrap() };
+                                        let mut connections = CONNECTIONS.lock().await;
                                         // println!("connections {:?}", connections);
         
                                         let client = connections.get_mut(&channel.id);
-        
                                         // println!("connect");
                                         if let Some(client) = client {
                                             // println!("connect client");
@@ -159,7 +158,7 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                                         println!("disconnect");
                                     }
                                     payload::channel::Action::Data(action) => {
-                                        let mut connections = { CONNECTIONS.lock().unwrap() };
+                                        let mut connections = CONNECTIONS.lock().await;
                                         // println!("connections {:?}", connections);
         
                                         let client = connections.get_mut(&channel.id);
@@ -218,7 +217,7 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                                     payload::channel::Action::Sync(action) => {
                                         match &action.signal {
                                             Some(payload::sync_action::Signal::SynReady(ready)) => {
-                                                let mut connections = { CONNECTIONS.lock().unwrap() };
+                                                let mut connections = CONNECTIONS.lock().await;
                                                 // println!("connections {:?}", connections);
                 
                                                 let client = connections.get_mut(&channel.id);
@@ -291,15 +290,15 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
 }
 
 #[tauri::command]
-pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendData, cb: Channel<OnData>) -> bool {
-    let mut connections = { CONNECTIONS.lock().unwrap() };
+pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendData, cb_event: Channel<OnData>) -> bool {
+    let mut connections = CONNECTIONS.lock().await;
     if let Some(client) = connections.get_mut(&channel_id) {
         let (socket, sync_rx) = {
-            let sockets = SOCKETS.read().unwrap();
+            let sockets = SOCKETS.read().await;
             let udp = sockets.get(&socket_id).unwrap();
             (udp.sock.clone(), udp.sync_rx.clone())
         };
-        let mut sync_rx = sync_rx.lock().unwrap();
+        let mut sync_rx = sync_rx.lock().await;
         let mut syn_ready = payload::SynReadySignal::new();
         syn_ready.name = data.head.name.clone();
         if let DataTypePipe::TEXT = data.r#type {
@@ -389,7 +388,7 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
                     // 发送文件
                     let path = pipe_data.body.clone();
                     let mut file = fs::File::open(path.as_str()).unwrap();
-                    let mut buffer = vec![0u8; BLOCK_SIZE]; // 使用 BLOCK_SIZE 作为缓冲区大小
+                    let mut buffer = vec![0u8; BLOCK_SIZE]; // 使�� BLOCK_SIZE 作为缓冲区大小
                     let mut offset = 0;
                     
                     loop {
@@ -412,7 +411,7 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
                                 };
                                 offset += 1;
                                 
-                                // 发送后需要等客户端通过 socket 返回 ack
+                                // 发送后需要等客户端通过 socket 返 ack
                                 // 如果客户端没有返回 ack，则需要重发
                                 let mut ack_received = false;
                                 while !ack_received {

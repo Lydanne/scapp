@@ -50,7 +50,8 @@ pub fn run() {
             channel_socket_send,
             channel_socket_receive,
             net_local_ip,
-            native_channel_listen
+            native_channel_listen,
+            native_channel_send,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

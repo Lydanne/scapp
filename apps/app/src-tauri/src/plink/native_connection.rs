@@ -9,7 +9,7 @@ use crate::shared;
 use super::proto::payload::{self, DataType, SynReadySignal};
 
 #[derive(PartialEq, Debug, Clone, Serialize)]
-#[serde(into = "i32")]
+#[serde(into = "i32", from = "i32")]
 pub enum ChannelStatus {
     Init = 0,
     Connecting = 1,
@@ -46,7 +46,7 @@ impl From<SynReadySignal> for SynReadySignalPipe {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-#[serde(into = "i32")]
+#[serde(into = "i32", from = "i32")]
 pub enum DataTypePipe {
     TEXT = 0,
     FILE = 1,
@@ -127,7 +127,7 @@ impl NativeConnection {
 
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-#[serde(into = "i32")]
+#[serde(into = "i32", from = "i32")]
 pub enum OnDataStatus {
     Ready = 0,
     Sending = 1,
@@ -137,6 +137,17 @@ pub enum OnDataStatus {
 impl Into<i32> for OnDataStatus {
     fn into(self) -> i32 {
         self as i32
+    }
+}
+
+impl From<i32> for OnDataStatus {
+    fn from(value: i32) -> Self {
+        match value {
+            0 => OnDataStatus::Ready,
+            1 => OnDataStatus::Sending,
+            2 => OnDataStatus::Done,
+            _ => OnDataStatus::Ready, // 默认返回 Ready 状态
+        }
     }
 }
 
