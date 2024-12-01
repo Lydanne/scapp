@@ -143,15 +143,29 @@ export default function Trans() {
     });
 
     const [connection] = await ChannelManager.channel.emConnection.wait();
-    connection.send({
-      id,
-      type: DataType.TEXT,
-      head: {
-        name: 'message',
-        size: inputMessage.length,
+    connection.send(
+      {
+        id,
+        type: DataType.TEXT,
+        head: {
+          name: 'message',
+          size: inputMessage.length,
+        },
+        body: inputMessage,
       },
-      body: inputMessage,
-    });
+      (onData) => {
+        setMsgById(id, (msg) => {
+          if (onData.status === OnDataStatus.SENDING) {
+            msg.msg[0].status = onData.status;
+            msg.msg[0].progress = onData.progress;
+          } else {
+            msg.msg[0].status = onData.status;
+            msg.msg[0].progress = onData.progress;
+          }
+          return msg;
+        });
+      },
+    );
 
     setInputMessage('');
   };

@@ -14,7 +14,7 @@ import {
   type SynReadySignal,
   type SyncAction,
 } from '../payload';
-import { mergeArrayBuffer } from '../shared';
+import { decodeUTF8, mergeArrayBuffer } from '../shared';
 import {
   From,
   type OnData,
@@ -322,7 +322,7 @@ export class LocalConnection extends IConnection {
         try {
           const buffer = mergeArrayBuffer(pipe.buffers);
           if (pipe.head.type === DataType.TEXT) {
-            const body = await Base64.decode(new Uint8Array(buffer));
+            const body = decodeUTF8(await new Uint8Array(buffer));
             if (msg) {
               msg.status = OnDataStatus.DONE;
               msg.progress = 100;

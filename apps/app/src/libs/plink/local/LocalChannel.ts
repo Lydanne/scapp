@@ -95,6 +95,8 @@ export class LocalChannel extends IChannel<LocalConnection> {
                   this.emConnection.emitLifeCycle(client);
 
                   client.dataMpsc.tx.on((data) => {
+                    // console.log('[LocalChannel]', 'emit dataMpsc', data);
+
                     socket.sender.emit({
                       address: ev.remoteInfo.address,
                       port: ev.remoteInfo.port,
@@ -110,6 +112,8 @@ export class LocalChannel extends IChannel<LocalConnection> {
                     });
                   });
                   client.syncMpsc.tx.on((data) => {
+                    // console.log('[LocalChannel]', 'emit syncMpsc', data);
+
                     socket.sender.emit({
                       address: ev.remoteInfo.address,
                       port: ev.remoteInfo.port,

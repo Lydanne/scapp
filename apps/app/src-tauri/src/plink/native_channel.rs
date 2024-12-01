@@ -316,7 +316,7 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
             syn_ready.sign = file_sign(&mut file);
         }
 
-        syn_ready.length = (syn_ready.size / BLOCK_SIZE as u32) as u32;
+        syn_ready.length = (syn_ready.size as f32 / BLOCK_SIZE as f32).ceil() as u32;
 
         let remote_info = client.socket_ip.parse::<std::net::SocketAddr>().unwrap();
 
