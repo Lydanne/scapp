@@ -11,15 +11,27 @@ use md5::{Md5, Digest};
 pub fn file_sign(file: &mut File) -> String {
     let mut hasher = Md5::new();
     
-    // 使用 8MB 的缓冲区，可以根据实际需求调整
-    let mut buffer = [0; 8 * 1024 * 1024];
-
-    loop {
-        let bytes_read = file.read(&mut buffer).unwrap_or_default();
-        if bytes_read == 0 {
-            break;
+    // 使用较小的缓冲区以避免内存问题
+    let mut buffer = [0; 1024 * 1024]; // 1MB 缓冲区
+    
+    // 使用 Result 处理读取错误
+    let result = loop {
+        match file.read(&mut buffer) {
+            Ok(bytes_read) => {
+                if bytes_read == 0 {
+                    break Ok(());
+                }
+                hasher.update(&buffer[..bytes_read]);
+            }
+            Err(e) => {
+                break Err(e);
+            }
         }
-        hasher.update(&buffer[..bytes_read]);
+    };
+
+    // 如果读取出错则返回空字符串
+    if result.is_err() {
+        return String::new();
     }
 
     hex::encode(hasher.finalize())

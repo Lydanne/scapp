@@ -22,6 +22,7 @@ import {
 import { randId, toBinary } from 'src/libs/plink/shared';
 import { OnDataStatus } from 'src/libs/plink/types';
 import { formatFileSize } from 'src/libs/shared/format';
+import { chooseFile } from 'src/libs/tapi/chooseFile';
 import { useRouter } from 'src/libs/tapi/router';
 
 import Style from './trans.module.scss';
@@ -173,10 +174,7 @@ export default function Trans() {
   const onSelectFile = async () => {
     // 微信小程序中读取文件并发送
     const id = randId();
-    const res = await Taro.chooseMessageFile({
-      count: 1,
-      type: 'file',
-    });
+    const res = await chooseFile();
     console.log('res', res);
     const [connection] = await ChannelManager.channel.emConnection.wait();
     connection.send(

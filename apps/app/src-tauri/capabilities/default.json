@@ -3,5 +3,18 @@
   "identifier": "default",
   "description": "enables the default permissions",
   "windows": ["main"],
-  "permissions": ["core:default", "os:default"]
+  "permissions": [
+    "core:default",
+    "os:default",
+    "dialog:default",
+    {
+      "identifier": "fs:allow-stat",
+      "allow": [
+        { "path": "$APPDATA" },
+        { "path": "$APPDATA/**" },
+        { "path": "$LOCALDATA" },
+        { "path": "$LOCALDATA/**" }
+      ]
+    }
+  ]
 }

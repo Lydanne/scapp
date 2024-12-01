@@ -54,6 +54,8 @@ export class NativeChannel extends IChannel<NativeConnection> {
             body: data.body,
           },
           cbEvent,
+        }).then((res) => {
+          console.log('native_channel_send success', res);
         });
       });
     });

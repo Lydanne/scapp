@@ -4401,6 +4401,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tauri-apps/plugin-dialog@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "@tauri-apps/plugin-dialog@npm:2.0.1"
+  dependencies:
+    "@tauri-apps/api": "npm:^2.0.0"
+  checksum: 10c0/66b078d7ca9f19b646b977e7e552a831cc09f18f47db46f1e1b32e0758d589a1b39dbcbc4eb0fb682f8bc12d1f83e981a3e4dec1dac9a926fe6cc4dc08119731
+  languageName: node
+  linkType: hard
+
+"@tauri-apps/plugin-fs@npm:^2.0.2":
+  version: 2.0.2
+  resolution: "@tauri-apps/plugin-fs@npm:2.0.2"
+  dependencies:
+    "@tauri-apps/api": "npm:^2.0.0"
+  checksum: 10c0/07d60d8649e5a5d7875c405f2c2d7d060ef8af00834ca4edb0c24ae4ec5ce3e8d3ffd4d0f70fcafbe4757a5a241a4ab4b9a8bbd5b6de6f972c9134b153b63285
+  languageName: node
+  linkType: hard
+
 "@tauri-apps/plugin-log@npm:^2.0.0":
   version: 2.0.0
   resolution: "@tauri-apps/plugin-log@npm:2.0.0"
@@ -5951,6 +5969,8 @@ __metadata:
     "@tarojs/webpack5-runner": "npm:3.6.35"
     "@tauri-apps/api": "npm:^2.0.2"
     "@tauri-apps/cli": "npm:^2.0.2"
+    "@tauri-apps/plugin-dialog": "npm:^2.0.1"
+    "@tauri-apps/plugin-fs": "npm:^2.0.2"
     "@tauri-apps/plugin-log": "npm:^2.0.0"
     "@tauri-apps/plugin-os": "npm:^2.0.0"
     "@testing-library/jest-dom": "npm:^6.4.2"

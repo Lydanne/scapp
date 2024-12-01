@@ -20,6 +20,7 @@ use crate::string::string_sign;
 use crate::{proto::payload, receive_packet, Udp};
 
 use super::native_connection::{DataTypePipe, NativeConnection, SendData};
+use super::proto::payload::sync_action::Signal;
 use super::proto::payload::{sync_action, SyncAction};
 
 static SOCKETS: Lazy<RwLock<HashMap<String, Udp>>> = Lazy::new(|| RwLock::new(HashMap::new()));
@@ -267,7 +268,17 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                                                 }
                                             }
                                             _ => {
-                                                sync_tx.send(action.clone()).await.unwrap();
+                                                if let Some(Signal::AckChunkFinish(signal)) = &action.signal {
+                                                    println!("[Info] sync_action signal ack_chunk_finish {}", signal.index);
+                                                }
+                                                loop {
+                                                    let r = sync_tx.send(action.clone()).await;
+                                                    if let Err(e) = r {
+                                                        println!("[Err] sync_tx send error: {}", e);
+                                                    } else {
+                                                        break;
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -298,28 +309,29 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
             let udp = sockets.get(&socket_id).unwrap();
             (udp.sock.clone(), udp.sync_rx.clone())
         };
+
         let mut sync_rx = sync_rx.lock().await;
         let mut syn_ready = payload::SynReadySignal::new();
         syn_ready.name = data.head.name.clone();
-        if let DataTypePipe::TEXT = data.r#type {
-            syn_ready.type_ = payload::DataType::TEXT.into();
-            syn_ready.sign = string_sign(&data.body);
-            syn_ready.size = data.body.len() as u32;
-            syn_ready.name = data.head.name.clone();
-        } else {
-            let path = data.body.clone();
-            let mut file = fs::File::open(path.as_str()).unwrap();
-            let metadata = file.metadata().unwrap();
-            syn_ready.type_ = payload::DataType::FILE.into();
-            syn_ready.size = metadata.len() as u32;
-            syn_ready.name = path.split("/").last().unwrap().to_string();
-            syn_ready.sign = file_sign(&mut file);
+
+        match data.r#type {
+            DataTypePipe::TEXT => {
+                syn_ready.type_ = payload::DataType::TEXT.into();
+                syn_ready.sign = string_sign(&data.body);
+                syn_ready.size = data.body.len() as u32;
+            }
+            DataTypePipe::FILE => {
+                let path = data.body.clone();
+                let mut file = fs::File::open(path.as_str()).unwrap();
+                syn_ready.type_ = payload::DataType::FILE.into();
+                syn_ready.size = data.head.size;
+                syn_ready.sign = file_sign(&mut file);
+            }
         }
 
         syn_ready.length = (syn_ready.size as f32 / BLOCK_SIZE as f32).ceil() as u32;
-
+        
         let remote_info = client.socket_ip.parse::<std::net::SocketAddr>().unwrap();
-
         send_message(socket.clone(), &remote_info, payload::Channel {
             version: 1,
             id: channel_id,
@@ -359,39 +371,39 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
             sync_rx.recv()
         ).await;
         if let Err(_) = sync_action {
-            println!("sync_action timeout");
+            println!("[Err] sync_action timeout");
             return false;
         }
         let sync_action = sync_action.unwrap();
-
+        
         if let None = sync_action {
-            println!("sync_action is none");
+            println!("[Err] sync_action is none");
             return false;
         }
         let sync_action = sync_action.unwrap();
 
         if sync_action.id != data.id {
-            println!("sync_action id not match");
+            println!("[Err] sync_action id not match {:?}", sync_action);
             return false;
         }
 
         if let None = &sync_action.signal {
-            println!("sync_action ack_ready");
+            println!("[Err] sync_action ack_ready {:?}", sync_action);
             return false;
         }
         let signal = sync_action.signal.unwrap();
         
         if let payload::sync_action::Signal::AckReady(finish) = &signal {
-            println!("sync_action ack_ready");
+            println!("[Ok] sync_action ack_ready");
             match pipe_data.tp {
                 DataTypePipe::FILE => {
                     // 发送文件
                     let path = pipe_data.body.clone();
                     let mut file = fs::File::open(path.as_str()).unwrap();
-                    let mut buffer = vec![0u8; BLOCK_SIZE]; // 使�� BLOCK_SIZE 作为缓冲区大小
-                    let mut offset = 0;
+                    let mut index = 0;
                     
                     loop {
+                        let mut buffer = vec![0u8; BLOCK_SIZE]; // 使 BLOCK_SIZE 作为缓冲区大小
                         match file.read(&mut buffer) {
                             Ok(n) if n == 0 => break, // 文件读取完成
                             Ok(n) => {
@@ -402,28 +414,31 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
                                     action: Some(payload::channel::Action::Data(
                                         payload::DataAction {
                                             id: pipe_data.id,
-                                            index: offset,
+                                            index,
                                             body: buffer[..n].to_vec(),
                                             special_fields: Default::default(),
                                         }
                                     )),
                                     special_fields: Default::default(),
                                 };
-                                offset += 1;
-                                
+                                index += 1;
+                                println!("[Ok] send_message index: {} ts: {}", index, get_ts());
                                 // 发送后需要等客户端通过 socket 返 ack
                                 // 如果客户端没有返回 ack，则需要重发
                                 let mut ack_received = false;
                                 while !ack_received {
-                                    send_message(socket.clone(), &remote_info, data.clone());
+                                    let recv = sync_rx.recv();
+                                    send_message2(socket.clone(), &remote_info, data.clone()).await;
                                     let sync_action = tokio::time::timeout(
                                         std::time::Duration::from_secs(3), 
-                                        sync_rx.recv()
+                                        recv
                                     ).await;
                                     if let Ok(Some(sync_action)) = sync_action {
                                         if sync_action.id == pipe_data.id {
                                             ack_received = true;
                                         }
+                                    }else{
+                                        println!("[Err] sync_action recv timeout {}", index);
                                     }
                                 }
                             }
@@ -466,7 +481,7 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
                         
                         let mut ack_received = false;
                         while !ack_received {
-                            send_message(socket.clone(), &remote_info, data.clone());
+                            send_message2(socket.clone(), &remote_info, data.clone()).await;
                             let sync_action = tokio::time::timeout(
                                 std::time::Duration::from_secs(3),
                                 sync_rx.recv()
@@ -505,6 +520,11 @@ pub fn send_message(socket: Arc<UdpSocket>, remote_info: &SocketAddr, message: p
     tokio::spawn(async move {
         send_packet(socket, &remote, message_bytes).await;
     });
+}
+
+pub async fn send_message2(socket: Arc<UdpSocket>, remote_info: &SocketAddr, message: payload::Channel) {
+    let message_bytes = message.write_to_bytes().unwrap().to_vec();
+    send_packet(socket, &remote_info, message_bytes).await;
 }
 
 pub fn get_ts() -> u64 {
