@@ -112,7 +112,7 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                                                         ),
                                                         special_fields: Default::default(),
                                                     };
-                                                    send_message(socket.clone(), &on_received.remote_info, message);
+                                                    send_message2(socket.clone(), &on_received.remote_info, message).await;
                                                 }
                                                 client.status = ChannelStatus::Connected;
                                                 app.emit("on_connection", client.clone()).unwrap();
@@ -127,7 +127,7 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                                                     )),
                                                     special_fields: Default::default(),
                                                 };
-                                                send_message(socket.clone(), &on_received.remote_info, message);
+                                                send_message2(socket.clone(), &on_received.remote_info, message).await;
                                             }
                                         } else {
                                             // println!("connect client not found");
@@ -152,7 +152,7 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                                                 )),
                                                 special_fields: Default::default(),
                                             };
-                                            send_message(socket.clone(), &on_received.remote_info, message);
+                                            send_message2(socket.clone(), &on_received.remote_info, message).await;
                                         }
                                     }
                                     payload::channel::Action::Disconnect(_) => {
@@ -196,7 +196,7 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                                                     )),
                                                     special_fields: Default::default(),
                                                 };
-                                                send_message(socket.clone(), &on_received.remote_info, message);
+                                                send_message2(socket.clone(), &on_received.remote_info, message).await;
 
                                                 if pipe.received == pipe.head.length {
                                                     pipe.status = OnDataStatus::Done;
@@ -223,7 +223,7 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                 
                                                 let client = connections.get_mut(&channel.id);
                                                 if let Some(client) = client {
-                                                    send_message(socket.clone(), &on_received.remote_info, payload::Channel {
+                                                    send_message2(socket.clone(), &on_received.remote_info, payload::Channel {
                                                         version: 1,
                                                         id: channel.id,
                                                         ts: get_ts(),
@@ -242,7 +242,7 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                                                             },
                                                         )),
                                                         special_fields: Default::default(),
-                                                    });
+                                                    }).await;
                                                     let pipe = PipeData{
                                                         channel_id: channel.id,
                                                         id: action.id,
@@ -332,7 +332,7 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
         syn_ready.length = (syn_ready.size as f32 / BLOCK_SIZE as f32).ceil() as u32;
         
         let remote_info = client.socket_ip.parse::<std::net::SocketAddr>().unwrap();
-        send_message(socket.clone(), &remote_info, payload::Channel {
+        send_message2(socket.clone(), &remote_info, payload::Channel {
             version: 1,
             id: channel_id,
             ts: get_ts(),
@@ -344,7 +344,7 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
                 },
             )),
             special_fields: Default::default(),
-        });
+        }).await;
         let pipe_data = PipeData{
             channel_id: channel_id,
             id: data.id,
@@ -394,7 +394,7 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
         let signal = sync_action.signal.unwrap();
         
         if let payload::sync_action::Signal::AckReady(finish) = &signal {
-            println!("[Ok] sync_action ack_ready");
+            println!("[Ok] sync_action ack_ready {}", finish.length);
             match pipe_data.tp {
                 DataTypePipe::FILE => {
                     // 发送文件
@@ -421,7 +421,6 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
                                     )),
                                     special_fields: Default::default(),
                                 };
-                                index += 1;
                                 println!("[Ok] send_message index: {} ts: {}", index, get_ts());
                                 // 发送后需要等客户端通过 socket 返 ack
                                 // 如果客户端没有返回 ack，则需要重发
@@ -430,7 +429,7 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
                                     let recv = sync_rx.recv();
                                     send_message2(socket.clone(), &remote_info, data.clone()).await;
                                     let sync_action = tokio::time::timeout(
-                                        std::time::Duration::from_secs(3), 
+                                        std::time::Duration::from_secs(1), 
                                         recv
                                     ).await;
                                     if let Ok(Some(sync_action)) = sync_action {
@@ -441,6 +440,7 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
                                         println!("[Err] sync_action recv timeout {}", index);
                                     }
                                 }
+                                index += 1;
                             }
                             Err(e) => {
                                 println!("读取文件错误: {}", e);
@@ -452,7 +452,7 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
                 DataTypePipe::TEXT => {
                     let text = pipe_data.body.clone();
                     let text_bytes = text.as_bytes();
-                    let mut offset = 0;
+                    let mut index = 0;
                     let mut start = 0;
                     
                     loop {
@@ -469,14 +469,14 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
                             action: Some(payload::channel::Action::Data(
                                 payload::DataAction {
                                     id: pipe_data.id,
-                                    index: offset,
+                                    index,
                                     body: chunk.to_vec(),
                                     special_fields: Default::default(),
                                 }
                             )),
                             special_fields: Default::default(),
                         };
-                        offset += 1;
+                        index += 1;
                         start = end;
                         
                         let mut ack_received = false;

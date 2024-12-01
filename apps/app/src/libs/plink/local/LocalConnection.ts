@@ -182,7 +182,6 @@ export class LocalConnection extends IConnection {
             signal.signal.ackChunkFinish.index === index &&
             signal.signal.ackChunkFinish.status === FinishStatus.Ok,
         );
-        index++;
 
         if (msg) {
           const speed = Math.floor(
@@ -198,6 +197,7 @@ export class LocalConnection extends IConnection {
         console.log('没有收到ackChunkFinish', error);
       }
 
+      index++;
       if (index === length) {
         break;
       }

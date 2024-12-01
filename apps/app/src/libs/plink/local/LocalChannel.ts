@@ -59,7 +59,7 @@ export class LocalChannel extends IChannel<LocalConnection> {
         socket.receiver.on((ev) => {
           const data = fromBinary<Channel>(Channel, ev.message);
           const client = this.connectionClient.get(data.id);
-          // console.log('[LocalChannel]', 'receiver', data, client);
+          console.log('[LocalChannel]', 'receiver', data);
 
           switch (data.action.oneofKind) {
             case 'connect':
@@ -112,7 +112,7 @@ export class LocalChannel extends IChannel<LocalConnection> {
                     });
                   });
                   client.syncMpsc.tx.on((data) => {
-                    // console.log('[LocalChannel]', 'emit syncMpsc', data);
+                    console.log('[LocalChannel]', 'emit syncMpsc', data);
 
                     socket.sender.emit({
                       address: ev.remoteInfo.address,
