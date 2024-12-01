@@ -119,10 +119,9 @@ where
     Fut: std::future::Future<Output = ()> + Send,
 {
     let mut packets: HashMap<u32, Vec<Option<Vec<u8>>>> = HashMap::new();
-    let mut buffer = vec![0; CHUNK_SIZE + 12];
     
     loop {
-        // buffer.fill(0);
+        let mut buffer = vec![0; CHUNK_SIZE + 24];
         let (amt, src) = socket
             .recv_from(&mut buffer)
             .await
