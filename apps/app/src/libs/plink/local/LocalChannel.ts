@@ -14,7 +14,7 @@ import { LocalConnection } from './LocalConnection';
 
 export * from './LocalConnection';
 
-export const BLOCK_SIZE = 1024 * 512;
+export const BLOCK_SIZE = 1024 * 256;
 
 const socket = new SocketPipe();
 

@@ -26,7 +26,7 @@ use super::proto::payload::{sync_action, SyncAction};
 static SOCKETS: Lazy<RwLock<HashMap<String, Udp>>> = Lazy::new(|| RwLock::new(HashMap::new()));
 static CONNECTIONS: Lazy<Mutex<HashMap<u32, NativeConnection>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
-pub const BLOCK_SIZE: usize = 1024 * 512;
+pub const BLOCK_SIZE: usize = 1024 * 256;
 
 // #[tauri::command]
 // pub async fn native_channel_connect(socket_id: String, channel_id: u32) -> bool {
