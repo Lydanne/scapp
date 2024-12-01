@@ -59,29 +59,31 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
     let socket = Arc::new(socket);
     let local_addr = socket.local_addr().unwrap();
     let port = local_addr.port();
-    let (tx, rx) = mpsc::channel::<SyncAction>(1024);
+    let (sync_tx, sync_rx) = mpsc::channel::<SyncAction>(1024);
+    let sync_rx = Arc::new(Mutex::new(sync_rx));
     SOCKETS.write().unwrap().insert(
         socket_id,
         Udp {
-            sync_rx: rx,
+            sync_rx,
             sock: socket.clone(),
             task: tokio::spawn(async move {
                 receive_packet(socket.clone(), |on_received| {
                     let message = on_received.message.clone();
                     let socket = socket.clone();
                     let app = app.clone();
+                    let sync_tx = sync_tx.clone();
                     async move {
                         let channel = payload::Channel::parse_from_bytes(&message);
                         if let Ok(ref channel) = channel {
                             // println!("{:?}", channel);
                             if let Some(action) = &channel.action {
-                                let mut connections = { CONNECTIONS.lock().unwrap() };
-                                // println!("connections {:?}", connections);
-
-                                let client = connections.get_mut(&channel.id);
-
                                 match action {
                                     payload::channel::Action::Connect(data) => {
+                                        let mut connections = { CONNECTIONS.lock().unwrap() };
+                                        // println!("connections {:?}", connections);
+        
+                                        let client = connections.get_mut(&channel.id);
+        
                                         // println!("connect");
                                         if let Some(client) = client {
                                             // println!("connect client");
@@ -157,6 +159,11 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                                         println!("disconnect");
                                     }
                                     payload::channel::Action::Data(action) => {
+                                        let mut connections = { CONNECTIONS.lock().unwrap() };
+                                        // println!("connections {:?}", connections);
+        
+                                        let client = connections.get_mut(&channel.id);
+        
                                         if let Some(client) = client {
                                             // client.lasts.push(on_received.message.to_vec());
                                             // println!("data actionId: {}", action.id);
@@ -209,109 +216,59 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                                         }
                                     }
                                     payload::channel::Action::Sync(action) => {
-                                        // println!("sync actionId: {}", action.id);
-                                        if let Some(client) = client {
-                                            if let Some(payload::sync_action::Signal::SynReady(ready)) = &action.signal {
-                                                send_message(socket.clone(), &on_received.remote_info, payload::Channel {
-                                                    version: 1,
-                                                    id: channel.id,
-                                                    ts: get_ts(),
-                                                    action: Some(payload::channel::Action::Sync(
-                                                        payload::SyncAction {   
-                                                            id: action.id,
-                                                            signal: Some(payload::sync_action::Signal::AckReady(
-                                                                payload::AckReadySignal {
-                                                                    length: ready.length,
-                                                                    size: ready.size,
-                                                                    sign: ready.sign.clone(),
-                                                                    special_fields: Default::default(),
-                                                                },
-                                                            )),
-                                                            special_fields: Default::default(),
+                                        match &action.signal {
+                                            Some(payload::sync_action::Signal::SynReady(ready)) => {
+                                                let mut connections = { CONNECTIONS.lock().unwrap() };
+                                                // println!("connections {:?}", connections);
+                
+                                                let client = connections.get_mut(&channel.id);
+                                                if let Some(client) = client {
+                                                    send_message(socket.clone(), &on_received.remote_info, payload::Channel {
+                                                        version: 1,
+                                                        id: channel.id,
+                                                        ts: get_ts(),
+                                                        action: Some(payload::channel::Action::Sync(
+                                                            payload::SyncAction {   
+                                                                id: action.id,
+                                                                signal: Some(payload::sync_action::Signal::AckReady(
+                                                                    payload::AckReadySignal {
+                                                                        length: ready.length,
+                                                                        size: ready.size,
+                                                                        sign: ready.sign.clone(),
+                                                                        special_fields: Default::default(),
+                                                                    },
+                                                                )),
+                                                                special_fields: Default::default(),
+                                                            },
+                                                        )),
+                                                        special_fields: Default::default(),
+                                                    });
+                                                    let pipe = PipeData{
+                                                        channel_id: channel.id,
+                                                        id: action.id,
+                                                        index: 0,
+                                                        status: OnDataStatus::Ready,
+                                                        tp: ready.type_.into(),
+                                                        progress: 0,
+                                                        speed: 0.0,
+                                                        head: SynReadySignalPipe{
+                                                            length: ready.length,
+                                                            size: ready.size,
+                                                            sign: ready.sign.clone(),
+                                                            name: ready.name.clone(),
                                                         },
-                                                    )),
-                                                    special_fields: Default::default(),
-                                                });
-                                                let pipe = PipeData{
-                                                    channel_id: channel.id,
-                                                    id: action.id,
-                                                    index: 0,
-                                                    status: OnDataStatus::Ready,
-                                                    tp: ready.type_.into(),
-                                                    progress: 0,
-                                                    speed: 0.0,
-                                                    head: SynReadySignalPipe{
-                                                        length: ready.length,
-                                                        size: ready.size,
-                                                        sign: ready.sign.clone(),
-                                                        name: ready.name.clone(),
-                                                    },
-                                                    buffers: vec![],
-                                                    received: 0,
-                                                    received_bytes: 0,
-                                                    start_time: channel.ts,
-                                                    body: "".to_string(),
-                                                };
-                                                app.emit("on_data", OnData::from(pipe.clone())).unwrap();
-                                                client.pipe_map.insert(action.id, pipe);
-                                            } else if let Some(payload::sync_action::Signal::AckReady(finish)) = &action.signal {
-                                                let pipe = client.pipe_map.remove(&action.id);
-                                                if let Some(pipe) = pipe {
-                                                    match pipe.tp {
-                                                        DataTypePipe::FILE => {
-                                                            // 发送文件
-                                                            let path = pipe.body.clone();
-                                                            let mut file = fs::File::open(path.as_str()).unwrap();
-                                                            let mut buffer = vec![0u8; BLOCK_SIZE]; // 使用 BLOCK_SIZE 作为缓冲区大小
-                                                            let mut offset = 0;
-                                                            
-                                                            loop {
-                                                                match file.read(&mut buffer) {
-                                                                    Ok(n) if n == 0 => break, // 文件读取完成
-                                                                    Ok(n) => {
-                                                                        let data = payload::Channel {
-                                                                            version: 1,
-                                                                            id: channel.id,
-                                                                            ts: get_ts(),
-                                                                            action: Some(payload::channel::Action::Data(
-                                                                                payload::DataAction {
-                                                                                    id: pipe.id,
-                                                                                    index: offset,
-                                                                                    body: buffer[..n].to_vec(),
-                                                                                    special_fields: Default::default(),
-                                                                                }
-                                                                            )),
-                                                                            special_fields: Default::default(),
-                                                                        };
-                                                                        offset += 1;
-                                                                        
-                                                                        // 发送后需要等客户端通过 socket 返回 ack
-                                                                        // 如果客户端没有返回 ack，则需要重发
-                                                                        let mut ack_received = false;
-                                                                        while !ack_received {
-                                                                            send_message(socket.clone(), &on_received.remote_info, data.clone());
-                                                                            // match socket.recv_from(&mut buffer).await {
-                                                                            //     Ok(_) => {
-                                                                            //         ack_received = true;
-                                                                            //     }
-                                                                            //     Err(_) => {
-                                                                            //         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-                                                                            //     }
-                                                                            // }
-                                                                        }
-                                                                    }
-                                                                    Err(e) => {
-                                                                        println!("读取文件错误: {}", e);
-                                                                        break;
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                        DataTypePipe::TEXT => {
-                                                            
-                                                        }
-                                                    }
+                                                        buffers: vec![],
+                                                        received: 0,
+                                                        received_bytes: 0,
+                                                        start_time: channel.ts,
+                                                        body: "".to_string(),
+                                                    };
+                                                    app.emit("on_data", OnData::from(pipe.clone())).unwrap();
+                                                    client.pipe_map.insert(action.id, pipe);
                                                 }
+                                            }
+                                            _ => {
+                                                sync_tx.send(action.clone()).await.unwrap();
                                             }
                                         }
                                     }
@@ -337,11 +294,12 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
 pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendData, cb: Channel<OnData>) -> bool {
     let mut connections = { CONNECTIONS.lock().unwrap() };
     if let Some(client) = connections.get_mut(&channel_id) {
-        let socket = {
+        let (socket, sync_rx) = {
             let sockets = SOCKETS.read().unwrap();
             let udp = sockets.get(&socket_id).unwrap();
-            udp.sock.clone()
+            (udp.sock.clone(), udp.sync_rx.clone())
         };
+        let mut sync_rx = sync_rx.lock().unwrap();
         let mut syn_ready = payload::SynReadySignal::new();
         syn_ready.name = data.head.name.clone();
         if let DataTypePipe::TEXT = data.r#type {
@@ -363,7 +321,7 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
 
         let remote_info = client.socket_ip.parse::<std::net::SocketAddr>().unwrap();
 
-        send_message(socket, &remote_info, payload::Channel {
+        send_message(socket.clone(), &remote_info, payload::Channel {
             version: 1,
             id: channel_id,
             ts: get_ts(),
@@ -376,7 +334,7 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
             )),
             special_fields: Default::default(),
         });
-        client.pipe_map.insert(data.id, PipeData{
+        let pipe_data = PipeData{
             channel_id: channel_id,
             id: data.id,
             index: 0,
@@ -395,7 +353,97 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
             received_bytes: 0,
             start_time: get_ts(),
             body: data.body.clone(),
-        });
+        };
+        // client.pipe_map.insert(data.id, pipe_data);
+        let sync_action = tokio::time::timeout(
+            std::time::Duration::from_secs(3), 
+            sync_rx.recv()
+        ).await;
+        if let Err(_) = sync_action {
+            println!("sync_action timeout");
+            return false;
+        }
+        let sync_action = sync_action.unwrap();
+
+        if let None = sync_action {
+            println!("sync_action is none");
+            return false;
+        }
+        let sync_action = sync_action.unwrap();
+
+        if sync_action.id != data.id {
+            println!("sync_action id not match");
+            return false;
+        }
+
+        if let None = &sync_action.signal {
+            println!("sync_action ack_ready");
+            return false;
+        }
+        let signal = sync_action.signal.unwrap();
+        
+        if let payload::sync_action::Signal::AckReady(finish) = &signal {
+            println!("sync_action ack_ready");
+            match pipe_data.tp {
+                DataTypePipe::FILE => {
+                    // 发送文件
+                    let path = pipe_data.body.clone();
+                    let mut file = fs::File::open(path.as_str()).unwrap();
+                    let mut buffer = vec![0u8; BLOCK_SIZE]; // 使用 BLOCK_SIZE 作为缓冲区大小
+                    let mut offset = 0;
+                    
+                    loop {
+                        match file.read(&mut buffer) {
+                            Ok(n) if n == 0 => break, // 文件读取完成
+                            Ok(n) => {
+                                let data = payload::Channel {
+                                    version: 1,
+                                    id: pipe_data.channel_id,
+                                    ts: get_ts(),
+                                    action: Some(payload::channel::Action::Data(
+                                        payload::DataAction {
+                                            id: pipe_data.id,
+                                            index: offset,
+                                            body: buffer[..n].to_vec(),
+                                            special_fields: Default::default(),
+                                        }
+                                    )),
+                                    special_fields: Default::default(),
+                                };
+                                offset += 1;
+                                
+                                // 发送后需要等客户端通过 socket 返回 ack
+                                // 如果客户端没有返回 ack，则需要重发
+                                let mut ack_received = false;
+                                while !ack_received {
+                                    send_message(socket.clone(), &remote_info, data.clone());
+                                    let sync_action = tokio::time::timeout(
+                                        std::time::Duration::from_secs(3), 
+                                        sync_rx.recv()
+                                    ).await;
+                                    if let Ok(Some(sync_action)) = sync_action {
+                                        if sync_action.id == pipe_data.id {
+                                            ack_received = true;
+                                        }
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                println!("读取文件错误: {}", e);
+                                break;
+                            }
+                        }
+                    }
+                }
+                DataTypePipe::TEXT => {
+                    
+                }
+            
+            }
+        } else {
+            println!("sync_action not ack_ready");
+            return false;
+        }
     }
     true
 }

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use tokio::{net::UdpSocket, sync::mpsc, task::JoinHandle};
 
@@ -11,5 +11,5 @@ pub mod file;
 pub(crate) struct Udp {
   pub task: JoinHandle<()>,
   pub sock: Arc<UdpSocket>,
-  pub sync_rx: mpsc::Receiver<SyncAction>,
+  pub sync_rx: Arc<Mutex<mpsc::Receiver<SyncAction>>>,
 }
