@@ -37,7 +37,7 @@ export class NativeChannel extends IChannel<NativeConnection> {
         const cbEvent = new Channel<any>();
         cbEvent.onmessage = (event) => {
           console.log('cbEvent', event);
-          cb?.(event.payload);
+          cb?.(event);
         };
         invoke('native_channel_send', {
           socketId: 'default',

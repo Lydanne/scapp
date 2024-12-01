@@ -345,7 +345,7 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
             )),
             special_fields: Default::default(),
         }).await;
-        let pipe_data = PipeData{
+        let mut pipe_data = PipeData{
             channel_id: channel_id,
             id: data.id,
             index: 0,
@@ -440,6 +440,13 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
                                         println!("[Err] sync_action recv timeout {}", index);
                                     }
                                 }
+                                pipe_data.index = index;
+                                pipe_data.received = index;
+                                pipe_data.received_bytes = pipe_data.received_bytes + (buffer.len() * 1024) as u64;
+                                pipe_data.progress = (pipe_data.received as f64 / pipe_data.head.length as f64 * 100.0) as u32;
+                                pipe_data.speed = if pipe_data.start_time > 0 { pipe_data.received_bytes as f64 / (get_ts() - pipe_data.start_time) as f64 } else { 0.0 };
+                                pipe_data.status = if pipe_data.received + 1 >= pipe_data.head.length { OnDataStatus::Done } else { OnDataStatus::Sending };
+                                let _ = cb_event.send(OnData::from(pipe_data.clone()));
                                 index += 1;
                             }
                             Err(e) => {
