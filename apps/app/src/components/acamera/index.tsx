@@ -71,7 +71,7 @@ export default function Acamera(props: AcameraProps) {
           setTimeout(captureFrame, 1000);
         }
       } catch (err) {
-        console.error('相机启动失败:', err);
+        console.error('相机启动失败:', String(err));
       }
     };
 

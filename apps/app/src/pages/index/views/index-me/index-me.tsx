@@ -6,6 +6,7 @@ import { invoke } from '@tauri-apps/api/core';
 
 import Body from 'src/components/body/body';
 import Navbar from 'src/components/navbar/navbar';
+import { Base64 } from 'src/libs/base64';
 import { APP } from 'src/libs/tapi/platform';
 
 import Style from './index-me.module.scss';
@@ -23,20 +24,12 @@ export default function IndexMe() {
     });
     setTimeout(async () => {
       setClickQiafan(false);
-      if (APP) {
-        const res = await invoke('test2', {
-          value: 'client',
-        });
+      Base64.encode('🤣').then((res) => {
         console.log(res);
-      } else {
-        // udp
-        const udp = Taro.createUDPSocket();
-        const port = udp.bind(12305);
-        console.log('port', port);
-        udp.onMessage((res) => {
-          console.log('onMessage', res);
+        Base64.decode(res).then((res) => {
+          console.log(res);
         });
-      }
+      });
     }, 1000);
   };
 
