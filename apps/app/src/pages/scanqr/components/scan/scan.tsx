@@ -9,6 +9,7 @@ import {
 } from '@tarojs/components';
 import { useDidShow } from '@tarojs/taro';
 
+import Acamera from 'src/components/acamera';
 import ViewBody from 'src/components/body/ViewBody';
 import { PageCtx } from 'src/components/page/page-ctx';
 
@@ -16,7 +17,7 @@ import { PageCtx } from 'src/components/page/page-ctx';
 import Style from './scan.module.scss';
 
 type ScanProps = {
-  onScan(data: string, e: BaseEventOrig): void;
+  onScan(data: string): void;
 } & StandardProps;
 
 export default function Scan(props: ScanProps) {
@@ -39,16 +40,16 @@ export default function Scan(props: ScanProps) {
           <View className={Style['mark-bottom']}></View>
         </View>
         {showScan && (
-          <Camera
+          <Acamera
             className={Style['scan-img']}
             device-position="back"
             flash="off"
             mode="scanCode"
             onScanCode={(e) => {
               // console.log('onScanCode', e, decode(e.detail.result));
-              props.onScan(e.detail.result, e);
+              props.onScan(e.detail.result);
             }}
-          ></Camera>
+          ></Acamera>
         )}
       </View>
     </ViewBody>
