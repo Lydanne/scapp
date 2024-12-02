@@ -14,7 +14,7 @@ import {
   type SynReadySignal,
   type SyncAction,
 } from '../payload';
-import { decodeUTF8, mergeArrayBuffer } from '../shared';
+import { decodeUTF8, encodeUTF8, mergeArrayBuffer } from '../shared';
 import {
   From,
   type OnData,
@@ -101,7 +101,7 @@ export class LocalConnection extends IConnection {
       getDataChunk = async (offset, length) => await fd!.read(offset, length);
     } else {
       const text = body;
-      const buffer = await Base64.encode(text);
+      const buffer = await encodeUTF8(text);
       size = buffer.byteLength;
       sign = bufferMd5(buffer);
       getDataChunk = async (offset, length) => {
