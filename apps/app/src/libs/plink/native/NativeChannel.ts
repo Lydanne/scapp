@@ -1,26 +1,39 @@
 import { Channel, invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 
-import { IChannel } from '../IChannel';
+import { IChannel, type OnDisconnect } from '../IChannel';
 import { DataType } from '../payload';
-import { randId } from '../shared';
+import { rand, randId } from '../shared';
 import { ChannelStatus, type OnData, type SocketIP } from '../types';
 import { NativeConnection } from './NativeConnection';
 
 export class NativeChannel extends IChannel<NativeConnection> {
   static listened: number = 0;
   private connections: Map<number, NativeConnection> = new Map();
-  async connect(socketIP: SocketIP): Promise<NativeConnection> {
+  async connect(socketIp: SocketIP): Promise<NativeConnection> {
     const id = randId();
-    const connection = new NativeConnection({
-      id: 0,
-      status: ChannelStatus.init,
-      socketIP,
-      seq: 0,
+    // const seq = rand(1, 100);
+    // const connection = new NativeConnection({
+    //   id,
+    //   status: ChannelStatus.init,
+    //   socketIP,
+    //   seq,
+    // });
+    // this.connections.set(id, connection);
+    // this.emConnection.emitLifeCycle(connection);
+    invoke('native_channel_connect', {
+      socketId: 'default',
+      channelId: id,
+      socketIp,
     });
-    return connection;
+    const [conn] = await this.emConnection.waitTimeout(5000);
+    return conn;
   }
   async disconnect(connection: NativeConnection): Promise<boolean> {
+    invoke('native_channel_disconnect', {
+      socketId: 'default',
+      channelId: connection.id,
+    });
     return Promise.resolve(true);
   }
   async listen(): Promise<number> {
@@ -64,6 +77,14 @@ export class NativeChannel extends IChannel<NativeConnection> {
       const connection = this.connections.get(event.payload.channelId!);
       if (connection) {
         connection.emData.emit(event.payload);
+      }
+    });
+    listen<OnDisconnect<NativeConnection>>('on_disconnect', (event) => {
+      console.log('on_disconnect', event);
+      const connection = this.connections.get(event.payload.connection.id!);
+      if (connection) {
+        connection.status = ChannelStatus.disconnected;
+        this.emDisconnect.emitLifeCycle(event.payload);
       }
     });
     let port = await invoke('native_channel_listen', { socketId: 'default' });

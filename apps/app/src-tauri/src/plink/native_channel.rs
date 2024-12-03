@@ -19,7 +19,7 @@ use crate::send_packet;
 use crate::string::string_sign;
 use crate::{proto::payload, receive_packet, Udp};
 
-use super::native_connection::{DataTypePipe, NativeConnection, SendData};
+use super::native_connection::{DataTypePipe, NativeConnection, OnDisconnect, OnDisconnectCode, SendData};
 use super::proto::payload::sync_action::Signal;
 use super::proto::payload::{sync_action, SyncAction};
 
@@ -28,27 +28,60 @@ static CONNECTIONS: Lazy<Mutex<HashMap<u32, NativeConnection>>> = Lazy::new(|| M
 
 pub const BLOCK_SIZE: usize = 1024 * 256;
 
-// #[tauri::command]
-// pub async fn native_channel_connect(socket_id: String, channel_id: u32) -> bool {
-//     let socket_guard = SOCKETS.read().unwrap();
-//     if let Some(socket) = socket_guard.get(&socket_id) {
-//         let socket_addr = socket_id.parse::<std::net::SocketAddr>().unwrap();
-//         match socket.sock.connect(socket_addr).await {
-//             Ok(_) => return true,
-//             Err(e) => {
-//                 log::error!("连接到 {} 失败: {}", socket_id, e);
-//                 return false;
-//             }
-//         }
-//     } else {
-//         log::error!("套接字尚未初始化");
-//         return false;
-//     }
-// }
+#[tauri::command]
+pub async fn native_channel_connect(socket_id: String, channel_id: u32, socket_ip: String) -> bool {
+    let socket_guard = SOCKETS.read().await;
+    if let Some(socket) = socket_guard.get(&socket_id) {
+        let seq = rand_u32();
+        send_message2(socket.sock.clone(), &socket_ip.parse::<std::net::SocketAddr>().unwrap(), payload::Channel {
+            version: 1,
+            id: channel_id,
+            ts: get_ts(),
+            action: Some(payload::channel::Action::Connect(
+                payload::ConnectAction {
+                    seq,
+                    ack: 0,
+                    special_fields: Default::default(),
+                },
+            )),
+            special_fields: Default::default(),
+        }).await;
+        return true;
+    } else {
+        log::error!("套接字尚未初始化");
+        return false;
+    }
+}
 
 #[tauri::command]
-pub async fn native_channel_disconnect() -> bool {
-    true
+pub async fn native_channel_disconnect(socket_id: String, channel_id: u32) -> bool {
+    let socket_guard = SOCKETS.read().await;
+    if let Some(socket) = socket_guard.get(&socket_id) {
+        let connections = CONNECTIONS.lock().await;
+        if let Some(channel) = connections.get(&channel_id) {    
+            let seq = rand_u32();
+            send_message2(socket.sock.clone(), &channel.socket_ip.parse::<std::net::SocketAddr>().unwrap(), payload::Channel {
+                version: 1,
+                id: channel_id,
+                ts: get_ts(),
+                action: Some(payload::channel::Action::Disconnect(
+                payload::DisconnectAction {
+                    seq,
+                    ack: 0,
+                    special_fields: Default::default(),
+                },
+            )),
+            special_fields: Default::default(),
+            }).await;
+            return true;
+        } else {
+            log::error!("通道尚未初始化");
+            return false;
+        }
+    } else {
+        log::error!("套接字尚未初始化");
+        return false;
+    }
 }
 
 #[tauri::command]
@@ -155,8 +188,39 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                                             send_message2(socket.clone(), &on_received.remote_info, message).await;
                                         }
                                     }
-                                    payload::channel::Action::Disconnect(_) => {
-                                        println!("disconnect");
+                                    payload::channel::Action::Disconnect(data) => {
+                                        let mut connections = CONNECTIONS.lock().await;
+                                        let client = connections.get_mut(&channel.id);
+                                        if let Some(client) = client {
+                                            if client.status == ChannelStatus::Connected {
+                                                // 客户端请求断开连接
+                                                let message = payload::Channel {
+                                                    version: 1,
+                                                    id: channel.id,
+                                                    ts: get_ts(),
+                                                    action: Some(payload::channel::Action::Disconnect(
+                                                        payload::DisconnectAction {
+                                                            seq: client.seq,
+                                                            ack: data.seq + 1,
+                                                            special_fields: Default::default(),
+                                                        },
+                                                    )),
+                                                    special_fields: Default::default(),
+                                                };
+                                                send_message2(socket.clone(), &on_received.remote_info, message).await;
+                                                client.status = ChannelStatus::Disconnecting;
+                                            } else if client.status == ChannelStatus::Disconnecting {
+                                                if client.seq + 1 == data.seq {
+                                                    client.status = ChannelStatus::Disconnected;
+                                                    let _ = app.emit("on_disconnect", OnDisconnect {
+                                                        connection: client.clone(),
+                                                        code: OnDisconnectCode::Success,
+                                                    });
+                                                } else {
+                                                    client.status = ChannelStatus::Connected;
+                                                }
+                                            }
+                                        }
                                     }
                                     payload::channel::Action::Data(action) => {
                                         let mut connections = CONNECTIONS.lock().await;

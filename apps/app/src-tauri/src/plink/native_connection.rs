@@ -8,7 +8,7 @@ use crate::shared;
 
 use super::proto::payload::{self, DataType, SynReadySignal};
 
-#[derive(PartialEq, Debug, Clone, Serialize)]
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 #[serde(into = "i32", from = "i32")]
 pub enum ChannelStatus {
     Init = 0,
@@ -21,6 +21,14 @@ pub enum ChannelStatus {
 impl Into<i32> for ChannelStatus {
     fn into(self) -> i32 {
         self as i32
+    }
+}
+
+impl From<i32> for ChannelStatus {
+    fn from(value: i32) -> Self {
+        match value {
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -83,7 +91,7 @@ impl From<EnumOrUnknown<DataType>> for DataTypePipe {
     }
 }
 
-#[derive(Clone, Serialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct PipeData {
     pub channel_id: u32,
@@ -101,7 +109,7 @@ pub struct PipeData {
     pub body: String,
 }
 
-#[derive(Clone, Serialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct NativeConnection {
     pub id: u32,
@@ -204,4 +212,36 @@ pub struct SendData {
     pub r#type: DataTypePipe,
     pub head: SynReadySignalPipe,
     pub body: String,
+}
+
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct OnDisconnect {
+    pub connection: NativeConnection,
+    pub code: OnDisconnectCode,
+}
+
+#[derive(Clone, Copy, Serialize, Deserialize, Debug)]
+#[serde(into = "i32", from = "i32")]
+pub enum OnDisconnectCode {
+    Success = 0,
+    Error = 1,
+    DetectError = 2,
+}
+
+impl Into<i32> for OnDisconnectCode {
+    fn into(self) -> i32 {
+        self as i32
+    }
+}
+
+impl From<i32> for OnDisconnectCode {
+    fn from(value: i32) -> Self {
+        match value {
+            0 => OnDisconnectCode::Success,
+            1 => OnDisconnectCode::Error,
+            2 => OnDisconnectCode::DetectError,
+            _ => OnDisconnectCode::Success,
+        }
+    }
 }

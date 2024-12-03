@@ -52,6 +52,8 @@ pub fn run() {
             channel_socket_send,
             channel_socket_receive,
             net_local_ip,
+            native_channel_connect,
+            native_channel_disconnect,
             native_channel_listen,
             native_channel_send,
         ])
