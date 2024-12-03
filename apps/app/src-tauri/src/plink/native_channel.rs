@@ -55,6 +55,7 @@ pub async fn native_channel_connect(socket_id: String, channel_id: u32, socket_i
 
 #[tauri::command]
 pub async fn native_channel_disconnect(socket_id: String, channel_id: u32) -> bool {
+    log::info!("native_channel_disconnect");
     let socket_guard = SOCKETS.read().await;
     if let Some(socket) = socket_guard.get(&socket_id) {
         let connections = CONNECTIONS.lock().await;
@@ -192,6 +193,7 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                                         let mut connections = CONNECTIONS.lock().await;
                                         let client = connections.get_mut(&channel.id);
                                         if let Some(client) = client {
+                                            // log::info!("disconnect client {:?}", client.status);
                                             if client.status == ChannelStatus::Connected {
                                                 // 客户端请求断开连接
                                                 let message = payload::Channel {
@@ -210,7 +212,7 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                                                 send_message2(socket.clone(), &on_received.remote_info, message).await;
                                                 client.status = ChannelStatus::Disconnecting;
                                             } else if client.status == ChannelStatus::Disconnecting {
-                                                if client.seq + 1 == data.seq {
+                                                if client.seq + 1 == data.ack {
                                                     client.status = ChannelStatus::Disconnected;
                                                     let _ = app.emit("on_disconnect", OnDisconnect {
                                                         connection: client.clone(),
@@ -502,6 +504,9 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
                                         }
                                     }else{
                                         println!("[Err] sync_action recv timeout {}", index);
+                                        if client.status == ChannelStatus::Disconnected {
+                                            return false;
+                                        }
                                     }
                                 }
                                 pipe_data.index = index;
