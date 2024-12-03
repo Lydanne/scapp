@@ -111,7 +111,6 @@ export default function Acamera(props: AcameraProps) {
           width: size.width,
           height: size.height,
           objectFit: 'cover',
-          transform: 'scaleX(-1)',
         }}
       />
     </View>
