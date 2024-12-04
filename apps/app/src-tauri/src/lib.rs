@@ -9,6 +9,9 @@ pub use channel_socket::*;
 mod net;
 pub use net::*;
 
+mod xsocket;
+pub use xsocket::*;
+
 mod plink;
 pub use plink::*;
 pub use plink::native_channel::*;
