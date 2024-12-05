@@ -3,6 +3,8 @@ use std::{collections::HashMap, error::Error, net::{SocketAddr, ToSocketAddrs}, 
 use once_cell::sync::Lazy;
 use tokio::{net::UdpSocket, sync::mpsc, sync::broadcast, task::JoinHandle};
 
+pub mod export;
+
 static SOCKETS: Lazy<RwLock<HashMap<String, XSocket>>> = Lazy::new(|| RwLock::new(HashMap::new()));
 
 pub async fn listen<T: ToSocketAddrs>(addr: T) -> Result<(), Box<dyn Error>> {
@@ -19,7 +21,7 @@ pub fn sender<T: ToSocketAddrs>(addr: T) -> Option<mpsc::Sender<(Vec<u8>, Socket
 }
 
 pub fn receiver<T: ToSocketAddrs>(addr: T) -> Option<broadcast::Receiver<(Vec<u8>, SocketAddr)>> {
-    let addr = addr.to_socket_addrs().unwrap().next().unwrap();
+    let addr: SocketAddr = addr.to_socket_addrs().unwrap().next().unwrap();
     SOCKETS.read().unwrap().get(addr.to_string().as_str()).map(|socket| socket.receiver_bind.subscribe())
 }
 
