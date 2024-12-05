@@ -1,6 +1,32 @@
-use std::{error::Error, net::SocketAddr, sync::Arc};
+use std::{collections::HashMap, error::Error, net::{SocketAddr, ToSocketAddrs}, sync::{Arc, RwLock}};
 
-use tokio::{net::UdpSocket, sync::mpsc, task::JoinHandle};
+use once_cell::sync::Lazy;
+use tokio::{net::UdpSocket, sync::mpsc, sync::broadcast, task::JoinHandle};
+
+static SOCKETS: Lazy<RwLock<HashMap<String, XSocket>>> = Lazy::new(|| RwLock::new(HashMap::new()));
+
+pub async fn listen<T: ToSocketAddrs>(addr: T) -> Result<(), Box<dyn Error>> {
+    let addr = addr.to_socket_addrs()?.next().unwrap();
+    let mut socket = XSocket::new(1024);
+    socket.listen(&addr).await?;
+    SOCKETS.write().unwrap().insert(addr.to_string(), socket);
+    Ok(())
+}
+
+pub fn sender<T: ToSocketAddrs>(addr: T) -> Option<mpsc::Sender<(Vec<u8>, SocketAddr)>> {
+    let addr = addr.to_socket_addrs().unwrap().next().unwrap();
+    SOCKETS.read().unwrap().get(addr.to_string().as_str()).map(|socket| socket.sender.clone())
+}
+
+pub fn receiver<T: ToSocketAddrs>(addr: T) -> Option<broadcast::Receiver<(Vec<u8>, SocketAddr)>> {
+    let addr = addr.to_socket_addrs().unwrap().next().unwrap();
+    SOCKETS.read().unwrap().get(addr.to_string().as_str()).map(|socket| socket.receiver_bind.subscribe())
+}
+
+pub fn close<T: ToSocketAddrs>(addr: T) {
+    let addr = addr.to_socket_addrs().unwrap().next().unwrap();
+    SOCKETS.write().unwrap().remove(addr.to_string().as_str()).map(|mut socket| socket.close());
+}
 
 pub struct XSocket {
     size: usize,
@@ -8,17 +34,17 @@ pub struct XSocket {
     sender_task: Option<JoinHandle<()>>,
 
     sender_bind: Option<mpsc::Receiver<(Vec<u8>, SocketAddr)>>,
-    receiver_bind: mpsc::Sender<Vec<u8>>,
+    receiver_bind: broadcast::Sender<(Vec<u8>, SocketAddr)>,
 
     pub sender: mpsc::Sender<(Vec<u8>, SocketAddr)>,
-    pub receiver: mpsc::Receiver<Vec<u8>>,
+    pub receiver: broadcast::Receiver<(Vec<u8>, SocketAddr)>,
     pub socket: Option<Arc<UdpSocket>>,
 }
 
 impl XSocket {
     pub fn new(size: usize) -> Self {
         let (sender, sender_bind) = mpsc::channel(size);
-        let (receiver_bind, receiver) = mpsc::channel(size);
+        let (receiver_bind, receiver) = broadcast::channel(size);
         Self {
             size,
             receiver_task: None,
@@ -42,8 +68,8 @@ impl XSocket {
             async move {
                 loop {
                     let mut buffer = vec![0; size];
-                    if let Ok((amt, _)) = socket.recv_from(&mut buffer).await {
-                        if receiver_bind.send(buffer[..amt].to_vec()).await.is_err() {
+                    if let Ok((amt, target_addr)) = socket.recv_from(&mut buffer).await {
+                        if receiver_bind.send((buffer[..amt].to_vec(), target_addr)).is_err() {
                             // 如果接收方已关闭,则退出循环
                             break;
                         }
@@ -95,7 +121,7 @@ impl XSocket {
         self.sender = sender;
         self.sender_bind = Some(sender_bind);
         
-        let (receiver_bind, receiver) = mpsc::channel(self.size);
+        let (receiver_bind, receiver) = broadcast::channel(self.size);
         self.receiver_bind = receiver_bind;
         self.receiver = receiver;
     }
