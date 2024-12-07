@@ -59,6 +59,10 @@ pub fn run() {
             native_channel_disconnect,
             native_channel_listen,
             native_channel_send,
+            stop_listen_speed_test,
+            listen_speed_test,
+            start_speed_test,
+            stop_speed_test,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

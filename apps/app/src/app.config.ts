@@ -1,5 +1,6 @@
 export default defineAppConfig({
   pages: [
+    'pages/speed-test/speed-test',
     'pages/start/start',
     'pages/index/index',
     'pages/scanqr/scanqr',
@@ -8,7 +9,7 @@ export default defineAppConfig({
   window: {
     backgroundTextStyle: 'light',
     navigationBarBackgroundColor: '#fff',
-    navigationBarTitleText: 'KCP Test',
+    navigationBarTitleText: 'SCAPP',
     navigationBarTextStyle: 'black',
   },
 });

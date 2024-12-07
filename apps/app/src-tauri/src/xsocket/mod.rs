@@ -4,6 +4,9 @@ use once_cell::sync::Lazy;
 use tokio::{net::UdpSocket, sync::mpsc, sync::broadcast, task::JoinHandle};
 
 pub mod export;
+pub mod speed_test;
+
+pub use export::*;
 
 static SOCKETS: Lazy<RwLock<HashMap<String, XSocket>>> = Lazy::new(|| RwLock::new(HashMap::new()));
 
@@ -128,3 +131,4 @@ impl XSocket {
         self.receiver = receiver;
     }
 }
+
