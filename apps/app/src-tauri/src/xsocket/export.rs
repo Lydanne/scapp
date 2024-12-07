@@ -26,8 +26,8 @@ pub async fn xsocket_close(listen_addr: &str) -> Result<(), String>{
 }
 
 #[tauri::command]
-pub async fn start_speed_test(target: String) -> Result<super::speed_test::SpeedTestResult, String> {
-    super::speed_test::start_speed_test(target).await.map_err(|e| e.to_string())
+pub async fn start_speed_test(target: String, on_stats: ipc::Channel<super::speed_test::SpeedTestResult>) -> Result<super::speed_test::SpeedTestResult, String> {
+    super::speed_test::start_speed_test(target, on_stats).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]

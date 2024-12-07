@@ -11,7 +11,7 @@ const TEST_DURATION: Duration = Duration::from_secs(5);
 static mut SPEED_TEST_STOP: bool = false;
 static mut SPEED_TEST_LISTEN_STOP: bool = false;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SpeedTestResult {
     pub download_speed: f64,
@@ -28,7 +28,7 @@ enum TestPhase {
     Complete,
 }
 
-pub async fn start_speed_test(target: String) -> Result<SpeedTestResult, Box<dyn std::error::Error>> {
+pub async fn start_speed_test(target: String, on_stats: ipc::Channel<SpeedTestResult>) -> Result<SpeedTestResult, Box<dyn std::error::Error>> {
     let mut stream = TcpStream::connect(&target).await?;
     // stream.set_nodelay(true)?;
 
@@ -54,21 +54,40 @@ pub async fn start_speed_test(target: String) -> Result<SpeedTestResult, Box<dyn
     let test_data = vec![1u8; BUFFER_SIZE];
     let mut total_bytes = 0;
     let start = Instant::now();
+    let mut last_update = Instant::now();
     
-    // 上传测试
+    // 上传测��
     while start.elapsed() < TEST_DURATION {
         match stream.write_all(&test_data).await {
             Ok(_) => total_bytes += BUFFER_SIZE,
             Err(_) => break,
         }
         if unsafe { SPEED_TEST_STOP } {
-          break;
+            break;
         }
         stream.flush().await?;
+        
+        // 每秒更新一次状态
+        if last_update.elapsed() >= Duration::from_secs(1) {
+            let current_speed = (total_bytes as f64 / 1024.0 / 1024.0) / start.elapsed().as_secs_f64();
+            let _ = on_stats.send(SpeedTestResult {
+                download_speed: 0.0,
+                upload_speed: current_speed,
+                latency,
+            });
+            last_update = Instant::now();
+        }
     }
     stream.flush().await?;
     let upload_speed = (total_bytes as f64 / 1024.0 / 1024.0) / start.elapsed().as_secs_f64();
     println!("上传测试结束, 上传速度: {} MB/s", upload_speed);
+
+    // 发送实时数据
+    let _ = on_stats.send(SpeedTestResult {
+        download_speed: 0.0,
+        upload_speed,
+        latency,
+    });
 
     // 发送上传结束标记
     stream.write_all(b"ENDU").await?;
@@ -85,6 +104,7 @@ pub async fn start_speed_test(target: String) -> Result<SpeedTestResult, Box<dyn
     let mut buffer = vec![0u8; BUFFER_SIZE];
     let mut total_bytes = 0;
     let start = Instant::now();
+    let mut last_update = Instant::now();
     
     // 等待服务器确认，添加超时处理
     println!("客户端: 等待服务器确认");
@@ -118,6 +138,17 @@ pub async fn start_speed_test(target: String) -> Result<SpeedTestResult, Box<dyn
         if unsafe { SPEED_TEST_STOP } {
             break;
         }
+        
+        // 每秒更新一次状态
+        if last_update.elapsed() >= Duration::from_secs(1) {
+            let current_speed = (total_bytes as f64 / 1024.0 / 1024.0) / start.elapsed().as_secs_f64();
+            let _ = on_stats.send(SpeedTestResult {
+                download_speed: current_speed,
+                upload_speed,
+                latency,
+            });
+            last_update = Instant::now();
+        }
     }
 
     // 发送停止下载的信号
@@ -125,6 +156,13 @@ pub async fn start_speed_test(target: String) -> Result<SpeedTestResult, Box<dyn
     stream.flush().await?;
     let download_speed = (total_bytes as f64 / 1024.0 / 1024.0) / start.elapsed().as_secs_f64();
     println!("下载测试结束, 下载速度: {} MB/s", download_speed);
+
+    // 发送实时数据
+    let _ = on_stats.send(SpeedTestResult {
+        download_speed,
+        upload_speed,
+        latency,
+    });
 
     // 发送测试完成命令
     stream.write_all(b"DONE").await?;

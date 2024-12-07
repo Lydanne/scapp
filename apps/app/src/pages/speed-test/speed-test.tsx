@@ -15,34 +15,68 @@ export default function SpeedTest() {
     uploadSpeed: number;
     latency: number;
   } | null>(null);
+  const [realtimeStats, setRealtimeStats] = useState<{
+    currentDownloadSpeed: number;
+    currentUploadSpeed: number;
+    currentLatency: number;
+  } | null>(null);
+  const [historyStats, setHistoryStats] = useState<
+    Array<{
+      downloadSpeed: number;
+      uploadSpeed: number;
+      latency: number;
+      timestamp: number;
+    }>
+  >([]);
 
   const startTest = async () => {
     try {
       setTesting(true);
       setProgress(0);
       setResult(null);
+      setRealtimeStats(null);
 
-      const progressInterval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 95) {
-            clearInterval(progressInterval);
-            return prev;
-          }
-          return prev + 5;
+      // 清空历史记录
+      setHistoryStats([]);
+
+      const startTime = Date.now();
+
+      let onStats = new Channel<{
+        downloadSpeed: number;
+        uploadSpeed: number;
+        latency: number;
+      }>();
+
+      onStats.onmessage = (stats) => {
+        setRealtimeStats({
+          currentDownloadSpeed: stats.downloadSpeed,
+          currentUploadSpeed: stats.uploadSpeed,
+          currentLatency: stats.latency,
         });
-      }, 200);
+        // 添加到历史记录
+        setHistoryStats((prev) => [
+          ...prev,
+          {
+            ...stats,
+            timestamp: Date.now() - startTime,
+          },
+        ]);
+        setProgress((prev) => Math.min(prev + 2, 95));
+      };
 
       const testResult = await invoke('start_speed_test', {
         target: targetAddress,
+        onStats,
       });
+
       console.log('testResult', testResult);
-      clearInterval(progressInterval);
       setProgress(100);
       setResult(testResult as any);
     } catch (error) {
       console.error('Speed test failed:', error);
     } finally {
       setTesting(false);
+      setRealtimeStats(null);
     }
   };
   const stopTest = async () => {
@@ -158,6 +192,62 @@ export default function SpeedTest() {
                 }}
               >
                 正在测速中...
+              </div>
+            </div>
+          )}
+
+          {testing && realtimeStats && (
+            <div
+              style={{
+                marginBottom: '20px',
+                backgroundColor: '#F7FAFC',
+                padding: '16px',
+                borderRadius: '12px',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '16px',
+                  marginBottom: '12px',
+                  color: '#4A5568',
+                }}
+              >
+                实时数据
+              </div>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr 1fr',
+                  gap: '12px',
+                }}
+              >
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '14px', color: '#718096' }}>
+                    当前延迟
+                  </div>
+                  <div style={{ fontSize: '18px', color: '#2B6CB0' }}>
+                    {realtimeStats.currentLatency}
+                    <span style={{ fontSize: '12px' }}> ms</span>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '14px', color: '#718096' }}>
+                    当前下载
+                  </div>
+                  <div style={{ fontSize: '18px', color: '#2F855A' }}>
+                    {formatSpeed(realtimeStats.currentDownloadSpeed)}
+                    <span style={{ fontSize: '12px' }}> MB/s</span>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '14px', color: '#718096' }}>
+                    当前上传
+                  </div>
+                  <div style={{ fontSize: '18px', color: '#C05621' }}>
+                    {formatSpeed(realtimeStats.currentUploadSpeed)}
+                    <span style={{ fontSize: '12px' }}> MB/s</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -284,6 +374,114 @@ export default function SpeedTest() {
           )}
         </div>
       </div>
+
+      {historyStats.length > 0 && (
+        <div
+          style={{
+            marginTop: '20px',
+            backgroundColor: '#fff',
+            borderRadius: '16px',
+            padding: '16px',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          }}
+        >
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  <th
+                    style={{
+                      padding: '6px',
+                      textAlign: 'left',
+                      fontSize: '12px',
+                    }}
+                  >
+                    时间 (秒)
+                  </th>
+                  <th
+                    style={{
+                      padding: '6px',
+                      textAlign: 'right',
+                      fontSize: '12px',
+                    }}
+                  >
+                    下载 (MB/s)
+                  </th>
+                  <th
+                    style={{
+                      padding: '6px',
+                      textAlign: 'right',
+                      fontSize: '12px',
+                    }}
+                  >
+                    上传 (MB/s)
+                  </th>
+                  <th
+                    style={{
+                      padding: '6px',
+                      textAlign: 'right',
+                      fontSize: '12px',
+                    }}
+                  >
+                    延迟 (ms)
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {historyStats.map((stat, index) => (
+                  <tr
+                    key={index}
+                    style={{
+                      borderBottom: '1px solid #e2e8f0',
+                      backgroundColor: index % 2 === 0 ? '#f8fafc' : 'white',
+                    }}
+                  >
+                    <td
+                      style={{
+                        padding: '6px',
+                        textAlign: 'left',
+                        fontSize: '12px',
+                      }}
+                    >
+                      {(stat.timestamp / 1000).toFixed(0)}
+                    </td>
+                    <td
+                      style={{
+                        padding: '6px',
+                        textAlign: 'right',
+                        color: '#2F855A',
+                        fontSize: '12px',
+                      }}
+                    >
+                      {formatSpeed(stat.downloadSpeed)}
+                    </td>
+                    <td
+                      style={{
+                        padding: '6px',
+                        textAlign: 'right',
+                        color: '#C05621',
+                        fontSize: '12px',
+                      }}
+                    >
+                      {formatSpeed(stat.uploadSpeed)}
+                    </td>
+                    <td
+                      style={{
+                        padding: '6px',
+                        textAlign: 'right',
+                        color: '#2B6CB0',
+                        fontSize: '12px',
+                      }}
+                    >
+                      {stat.latency}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
