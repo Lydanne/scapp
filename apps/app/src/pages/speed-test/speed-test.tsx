@@ -239,7 +239,7 @@ export default function SpeedTest() {
                       marginLeft: '2px',
                     }}
                   >
-                    Mbps
+                    MB
                   </span>
                 </div>
               </div>
@@ -276,7 +276,7 @@ export default function SpeedTest() {
                       marginLeft: '2px',
                     }}
                   >
-                    Mbps
+                    MB
                   </span>
                 </div>
               </div>
