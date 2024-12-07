@@ -85,9 +85,6 @@ export default function SpeedTest() {
 
   const listenServer = async () => {
     if (listening) {
-      invoke('stop_listen_speed_test', {
-        addr: serverAddress,
-      });
       return;
     }
     setListening(true);
@@ -103,6 +100,12 @@ export default function SpeedTest() {
       setServerAddress('');
       setTargetAddress('');
       console.log('listen_speed_test stop');
+    });
+  };
+
+  const stopListen = async () => {
+    invoke('stop_listen_speed_test', {
+      addr: serverAddress,
     });
   };
 
@@ -159,6 +162,7 @@ export default function SpeedTest() {
             {testing && (
               <Button
                 type="primary"
+                fill="outline"
                 onClick={stopTest}
                 style={{
                   height: '44px',
@@ -171,14 +175,40 @@ export default function SpeedTest() {
               ></Button>
             )}
           </div>
-          <Button
-            block
-            type="info"
-            onClick={listenServer}
-            style={{ height: '44px', marginBottom: '20px' }}
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr auto',
+              marginBottom: '10px',
+            }}
           >
-            {listening ? `监听中（${serverAddress}）` : '监听服务'}
-          </Button>
+            <Button
+              block
+              type="info"
+              disabled={listening}
+              onClick={listenServer}
+              style={{ height: '44px', marginBottom: '20px' }}
+            >
+              {listening ? `监听中（${serverAddress}）` : '监听服务'}
+            </Button>
+
+            {listening && (
+              <Button
+                type="info"
+                fill="outline"
+                onClick={stopListen}
+                style={{
+                  height: '44px',
+                  width: '44px',
+                  lineHeight: '44px',
+                  padding: '0',
+                  marginLeft: '5px',
+                }}
+                icon={<Close size={16}></Close>}
+              ></Button>
+            )}
+          </div>
 
           {testing && (
             <div style={{ marginBottom: '20px' }}>
