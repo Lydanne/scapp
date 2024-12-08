@@ -184,7 +184,7 @@ impl From<PipeData> for OnData {
                 std::fs::write(&file_path, &body).unwrap_or_default();
                 file_path.to_str().unwrap_or_default().to_string()
             } else {
-                shared::base64::decode(body).unwrap_or_default()
+                String::from_utf8(body).unwrap_or_default()
             };
             body
         } else {

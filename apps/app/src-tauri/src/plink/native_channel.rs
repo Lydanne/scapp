@@ -4,10 +4,12 @@ use rand::Rng;
 use serde::Serialize;
 use tauri::Emitter;
 use tauri::{ipc::Channel, AppHandle};
+use tauri_plugin_fs::{SafeFilePath, OpenOptions,FsExt};
 use std::collections::HashMap;
 use std::fs;
 use std::io::Read;
 use std::net::SocketAddr;
+use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
 use tokio::net::UdpSocket;
@@ -110,17 +112,17 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                     async move {
                         let channel = payload::Channel::parse_from_bytes(&message);
                         if let Ok(ref channel) = channel {
-                            // println!("{:?}", channel);
+                            // log::info!("{:?}", channel);
                             if let Some(action) = &channel.action {
                                 match action {
                                     payload::channel::Action::Connect(data) => {
                                         let mut connections = CONNECTIONS.lock().await;
-                                        // println!("connections {:?}", connections);
+                                        // log::info!("connections {:?}", connections);
         
                                         let client = connections.get_mut(&channel.id);
-                                        // println!("connect");
+                                        // log::info!("connect");
                                         if let Some(client) = client {
-                                            // println!("connect client");
+                                            // log::info!("connect client");
                                             client.status = ChannelStatus::Connecting;
                                             if client.seq + 1 == data.ack {
                                                 if client.status != ChannelStatus::Connecting {
@@ -164,7 +166,7 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                                                 send_message2(socket.clone(), &on_received.remote_info, message).await;
                                             }
                                         } else {
-                                            // println!("connect client not found");
+                                            // log::info!("connect client not found");
                                             let seq = rand_u32();
                                             let mut client = NativeConnection::new(
                                                 channel.id,
@@ -226,13 +228,13 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                                     }
                                     payload::channel::Action::Data(action) => {
                                         let mut connections = CONNECTIONS.lock().await;
-                                        // println!("connections {:?}", connections);
+                                        // log::info!("connections {:?}", connections);
         
                                         let client = connections.get_mut(&channel.id);
         
                                         if let Some(client) = client {
                                             // client.lasts.push(on_received.message.to_vec());
-                                            // println!("data actionId: {}", action.id);
+                                            // log::info!("data actionId: {}", action.id);
                                             
                                             let pipe = client.pipe_map.get_mut(&action.id);
                                             
@@ -285,7 +287,7 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                                         match &action.signal {
                                             Some(payload::sync_action::Signal::SynReady(ready)) => {
                                                 let mut connections = CONNECTIONS.lock().await;
-                                                // println!("connections {:?}", connections);
+                                                // log::info!("connections {:?}", connections);
                 
                                                 let client = connections.get_mut(&channel.id);
                                                 if let Some(client) = client {
@@ -335,12 +337,12 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                                             }
                                             _ => {
                                                 if let Some(Signal::AckChunkFinish(signal)) = &action.signal {
-                                                    println!("[Info] sync_action signal ack_chunk_finish {}", signal.index);
+                                                    log::info!("[Info] sync_action signal ack_chunk_finish {}", signal.index);
                                                 }
                                                 loop {
                                                     let r = sync_tx.send(action.clone()).await;
                                                     if let Err(e) = r {
-                                                        println!("[Err] sync_tx send error: {}", e);
+                                                        log::info!("[Err] sync_tx send error: {}", e);
                                                     } else {
                                                         break;
                                                     }
@@ -349,7 +351,7 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                                         }
                                     }
                                     payload::channel::Action::Detect(_) => {
-                                        println!("detect");
+                                        log::info!("detect");
                                     }
                                     _ => {}
                                 }
@@ -367,7 +369,7 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
 }
 
 #[tauri::command]
-pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendData, cb_event: Channel<OnData>) -> bool {
+pub async fn native_channel_send(app: AppHandle, socket_id: String, channel_id: u32, data: SendData, cb_event: Channel<OnData>) -> bool {
     let mut connections = CONNECTIONS.lock().await;
     if let Some(client) = connections.get_mut(&channel_id) {
         let (socket, sync_rx) = {
@@ -375,11 +377,9 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
             let udp = sockets.get(&socket_id).unwrap();
             (udp.sock.clone(), udp.sync_rx.clone())
         };
-
         let mut sync_rx = sync_rx.lock().await;
         let mut syn_ready = payload::SynReadySignal::new();
         syn_ready.name = data.head.name.clone();
-
         match data.r#type {
             DataTypePipe::TEXT => {
                 syn_ready.type_ = payload::DataType::TEXT.into();
@@ -387,14 +387,18 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
                 syn_ready.size = data.body.len() as u32;
             }
             DataTypePipe::FILE => {
-                let path = data.body.clone();
-                let mut file = fs::File::open(path.as_str()).unwrap();
+                let safe_path = SafeFilePath::from_str(&data.body).unwrap();
+                let file = app.fs().open(safe_path, OpenOptions::new().read(true).write(false).to_owned());
+                if let Err(e) = &file {
+                    log::info!("[Err] open file error: {}", e);
+                    return false;
+                }
+                let mut file = file.unwrap();
                 syn_ready.type_ = payload::DataType::FILE.into();
                 syn_ready.size = data.head.size;
                 syn_ready.sign = file_sign(&mut file);
             }
         }
-
         syn_ready.length = (syn_ready.size as f32 / BLOCK_SIZE as f32).ceil() as u32;
         
         let remote_info = client.socket_ip.parse::<std::net::SocketAddr>().unwrap();
@@ -437,35 +441,35 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
             sync_rx.recv()
         ).await;
         if let Err(_) = sync_action {
-            println!("[Err] sync_action timeout");
+            log::info!("[Err] sync_action timeout");
             return false;
         }
         let sync_action = sync_action.unwrap();
         
         if let None = sync_action {
-            println!("[Err] sync_action is none");
+            log::info!("[Err] sync_action is none");
             return false;
         }
         let sync_action = sync_action.unwrap();
 
         if sync_action.id != data.id {
-            println!("[Err] sync_action id not match {:?}", sync_action);
+            log::info!("[Err] sync_action id not match {:?}", sync_action);
             return false;
         }
 
         if let None = &sync_action.signal {
-            println!("[Err] sync_action ack_ready {:?}", sync_action);
+            log::info!("[Err] sync_action ack_ready {:?}", sync_action);
             return false;
         }
         let signal = sync_action.signal.unwrap();
         
         if let payload::sync_action::Signal::AckReady(finish) = &signal {
-            println!("[Ok] sync_action ack_ready {}", finish.length);
+            log::info!("[Ok] sync_action ack_ready {}", finish.length);
             match pipe_data.tp {
                 DataTypePipe::FILE => {
                     // 发送文件
-                    let path = pipe_data.body.clone();
-                    let mut file = fs::File::open(path.as_str()).unwrap();
+                    let safe_path = SafeFilePath::from_str(&pipe_data.body).unwrap();
+                    let mut file = app.fs().open(safe_path, OpenOptions::new().read(true).write(false).to_owned()).unwrap();
                     let mut index = 0;
                     
                     loop {
@@ -487,7 +491,6 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
                                     )),
                                     special_fields: Default::default(),
                                 };
-                                println!("[Ok] send_message index: {} ts: {}", index, get_ts());
                                 // 发送后需要等客户端通过 socket 返 ack
                                 // 如果客户端没有返回 ack，则需要重发
                                 let mut ack_received = false;
@@ -503,7 +506,7 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
                                             ack_received = true;
                                         }
                                     }else{
-                                        println!("[Err] sync_action recv timeout {}", index);
+                                        log::info!("[Err] sync_action recv timeout {}", index);
                                         if client.status == ChannelStatus::Disconnected {
                                             return false;
                                         }
@@ -524,7 +527,7 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
                                 index += 1;
                             }
                             Err(e) => {
-                                println!("读取文件错误: {}", e);
+                                log::info!("读取文件错误: {}", e);
                                 break;
                             }
                         }
@@ -578,7 +581,7 @@ pub async fn native_channel_send(socket_id: String, channel_id: u32, data: SendD
             
             }
         } else {
-            println!("sync_action not ack_ready");
+            log::info!("sync_action not ack_ready");
             return false;
         }
     }
