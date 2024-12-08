@@ -93,7 +93,7 @@ pub async fn start_speed_test(target: String, on_stats: ipc::Channel<SpeedTestRe
     stream.write_all(b"ENDU").await?;
     stream.flush().await?;
 
-    sleep(Duration::from_secs(5)).await;
+    sleep(Duration::from_secs(1)).await;
 
     // 开始下载测试
     println!("客户端: 等待服务器下载测试准备就绪");
