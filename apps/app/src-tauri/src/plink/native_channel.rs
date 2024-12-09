@@ -235,6 +235,11 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
                                         if let Some(client) = client {
                                             // client.lasts.push(on_received.message.to_vec());
                                             // log::info!("data actionId: {}", action.id);
+
+                                            if client.status == ChannelStatus::Disconnected {
+                                                log::info!("client status is disconnected");
+                                                return;
+                                            }
                                             
                                             let pipe = client.pipe_map.get_mut(&action.id);
                                             
@@ -495,6 +500,9 @@ pub async fn native_channel_send(app: AppHandle, socket_id: String, channel_id: 
                                 // 如果客户端没有返回 ack，则需要重发
                                 let mut ack_received = false;
                                 while !ack_received {
+                                    if client.status == ChannelStatus::Disconnected {
+                                        return false;
+                                    }
                                     let recv = sync_rx.recv();
                                     send_message2(socket.clone(), &remote_info, data.clone()).await;
                                     let sync_action = tokio::time::timeout(
@@ -507,9 +515,6 @@ pub async fn native_channel_send(app: AppHandle, socket_id: String, channel_id: 
                                         }
                                     }else{
                                         log::info!("[Err] sync_action recv timeout {}", index);
-                                        if client.status == ChannelStatus::Disconnected {
-                                            return false;
-                                        }
                                     }
                                 }
                                 pipe_data.index = index;

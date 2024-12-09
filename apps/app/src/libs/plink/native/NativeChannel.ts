@@ -85,6 +85,7 @@ export class NativeChannel extends IChannel<NativeConnection> {
       if (connection) {
         connection.status = ChannelStatus.disconnected;
         this.emDisconnect.emitLifeCycle(event.payload);
+        this.emConnection.destroy();
       }
     });
     let port = await invoke('native_channel_listen', { socketId: 'default' });
