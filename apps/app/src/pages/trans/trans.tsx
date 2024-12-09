@@ -38,6 +38,7 @@ export default function Trans() {
   const { props, back } = useRouter<TransProps>();
   const { msgList, setMsgById, appendMsg } = useMlist();
   const connectionValue = useRef<IConnection>();
+  const [online, setOnline] = useState(true);
 
   useEffect(() => {
     let connection: IConnection;
@@ -118,6 +119,7 @@ export default function Trans() {
             title: '提示',
             content: '连接已断开',
           });
+          setOnline(false);
         }
       });
     });
@@ -256,7 +258,11 @@ export default function Trans() {
             src={`https://api.dicebear.com/9.x/bottts/avif`}
             mode="aspectFill"
           />
-          <View className={Style['author-status']}></View>
+          <View
+            className={`${Style['author-status']} ${
+              online ? Style['online'] : Style['offline']
+            }`}
+          ></View>
         </View>
       </Navbar>
       <Body>
