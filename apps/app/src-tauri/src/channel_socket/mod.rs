@@ -80,10 +80,12 @@ pub async fn channel_socket_receive(on_event: Channel<OnReceived>) {
         let socket = SOCKET.lock().unwrap();
         socket.as_ref().unwrap().clone()
     };
-
     tokio::spawn(async move {
-        receive_packet(socket, |on_received| async {
-            on_event.send(on_received).unwrap();
+        receive_packet(socket, move |on_received| {
+            let on_event = on_event.clone();
+            async move {
+                on_event.send(on_received).unwrap();
+            }
         })
         .await;
     });
@@ -91,65 +93,72 @@ pub async fn channel_socket_receive(on_event: Channel<OnReceived>) {
 
 pub async fn send_packet<A: ToSocketAddrs>(socket: Arc<UdpSocket>, socket_ip: A, message: Vec<u8>) {
     static mut UNISEQ: u32 = 0;
-        let id = unsafe {
-            let current = UNISEQ;
-            UNISEQ = UNISEQ.wrapping_add(1);
-            current
-        };
+    let id = unsafe {
+        let current = UNISEQ;
+        UNISEQ = UNISEQ.wrapping_add(1);
+        current
+    };
 
-        let chunks: Vec<Vec<u8>> = message
-            .chunks(CHUNK_SIZE)
-            .map(|chunk| chunk.to_vec())
-            .collect();
+    let chunks: Vec<Vec<u8>> = message
+        .chunks(CHUNK_SIZE)
+        .map(|chunk| chunk.to_vec())
+        .collect();
 
-        let total_chunks = chunks.len() as u32;
+    let total_chunks = chunks.len() as u32;
 
-        for (i, chunk) in chunks.into_iter().enumerate() {
-            let sub_packet = wrap_sub_packet(id, i as u32, total_chunks, &chunk);
-            socket
-                .send_to(&sub_packet, &socket_ip)
-                .await
-                .expect("Failed to send data");
-        }
+    for (i, chunk) in chunks.into_iter().enumerate() {
+        let sub_packet = wrap_sub_packet(id, i as u32, total_chunks, &chunk);
+        socket
+            .send_to(&sub_packet, &socket_ip)
+            .await
+            .expect("Failed to send data");
+    }
 }
 
 pub async fn receive_packet<F, Fut>(socket: Arc<UdpSocket>, cb: F)
 where
-    F: Fn(OnReceived) -> Fut,
+    F: Fn(OnReceived) -> Fut + Clone + Send + 'static,
     Fut: std::future::Future<Output = ()> + Send,
 {
-    let mut packets: HashMap<u32, Vec<Option<Vec<u8>>>> = HashMap::new();
-    
+    let packets = Arc::new(tokio::sync::Mutex::new(HashMap::new()));
+
     loop {
         let mut buffer = vec![0; CHUNK_SIZE + 24];
         let (amt, src) = socket
             .recv_from(&mut buffer)
             .await
             .expect("Failed to receive data");
-        let packet = unwrap_sub_packet(&buffer[..amt]);
+        let packets = packets.clone();
+        let cb = cb.clone();
+        tokio::spawn(async move {
+            let packet = unwrap_sub_packet(&buffer[..amt]);
 
-        let packet_list = packets
-            .entry(packet.id)
-            .or_insert_with(|| vec![None; packet.length as usize]);
+            let mut packets = packets.lock().await;
+            
+            let packet_list = packets
+                .entry(packet.id)
+                .or_insert_with(|| vec![None; packet.length as usize]);
 
-        packet_list[packet.index as usize] = Some(packet.message);
+            packet_list[packet.index as usize] = Some(packet.message);
 
-        if packet_list.iter().all(|p| p.is_some()) {
-            let complete_message: Vec<u8> = packet_list
-                .iter()
-                .flat_map(|p| p.as_ref().unwrap().clone())
-                .collect();
+            if packet_list.iter().all(|p| p.is_some()) {
+                let complete_message: Vec<u8> = packet_list
+                    .iter()
+                    .flat_map(|p| p.as_ref().unwrap().clone())
+                    .collect();
 
-            cb(OnReceived {
-                message: complete_message,
-                remote_info: src,
-                ts: std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64,
-            }).await;
+                cb(OnReceived {
+                    message: complete_message,
+                    remote_info: src,
+                    ts: std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap()
+                        .as_millis() as u64,
+                })
+                .await;
 
-            packets.remove(&packet.id);
-        }
+                packets.remove(&packet.id);
+            }
+        });
     }
 }

@@ -104,7 +104,7 @@ pub async fn native_channel_listen(app: AppHandle, socket_id: String) -> u32 {
             sync_rx,
             sock: socket.clone(),
             task: tokio::spawn(async move {
-                receive_packet(socket.clone(), |on_received| {
+                receive_packet(socket.clone(), move |on_received| {
                     let message = on_received.message.clone();
                     let socket = socket.clone();
                     let app = app.clone();
