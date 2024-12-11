@@ -9,7 +9,7 @@ import { Plink } from './payload';
 export async function getPlinkCode(port: number) {
   const data = await getCurrentPlink(port);
   const base64 = encode(data);
-  console.log('getPlinkCode', base64);
+  console.log(base64);
   return base64;
 }
 

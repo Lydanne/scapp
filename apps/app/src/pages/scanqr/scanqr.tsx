@@ -5,6 +5,7 @@ import { View } from '@tarojs/components';
 
 import Footer from 'src/components/footer/footer';
 import Page from 'src/components/page/page';
+import { usePopupInput } from 'src/components/popup-input/use-popup-input';
 import { parsePlinkCode } from 'src/libs/plink';
 import ChannelManager from 'src/libs/plink/ChannelManager';
 import type { SocketIP } from 'src/libs/plink/types';
@@ -16,6 +17,7 @@ import Style from './scanqr.module.scss';
 export default function Scanqr() {
   const { back, to } = useRouter();
   const scanData = useRef('');
+  const { PopupInputElement, showPopupInput } = usePopupInput();
 
   const onClickTake = () => {
     console.log('onClickTake');
@@ -26,6 +28,20 @@ export default function Scanqr() {
         ChannelManager.channel?.connect(plink.socketIP as SocketIP);
       }
     }, 100);
+  };
+
+  const onClickConnect = async () => {
+    const linkText = await showPopupInput({
+      title: '输入链接',
+      placeholder: '请输入链接',
+    });
+    console.log('linkText', linkText);
+    if (!linkText) {
+      return;
+    }
+    const plink = parsePlinkCode(linkText);
+    console.log('scanData', plink);
+    ChannelManager.channel?.connect(plink.socketIP as SocketIP);
   };
 
   const onScan = (data: string) => {
@@ -41,7 +57,7 @@ export default function Scanqr() {
       <Footer>
         <View className={Style['btns']}>
           <View className={Style['btns-icon']}>
-            <ImageRectangle size={24} color="#666" />
+            <ImageRectangle size={24} color="#666" onClick={onClickConnect} />
           </View>
           <View className={Style['btns-mid']} onClick={onClickTake}>
             <View className={Style['mid-border']}></View>
@@ -51,6 +67,7 @@ export default function Scanqr() {
           </View>
         </View>
       </Footer>
+      <PopupInputElement></PopupInputElement>
     </Page>
   );
 }
