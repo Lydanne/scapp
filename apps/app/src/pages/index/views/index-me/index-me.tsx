@@ -8,6 +8,7 @@ import Body from 'src/components/body/body';
 import Navbar from 'src/components/navbar/navbar';
 import { Base64 } from 'src/libs/base64';
 import { APP } from 'src/libs/tapi/platform';
+import { router } from 'src/libs/tapi/router';
 
 import Style from './index-me.module.scss';
 
@@ -33,6 +34,10 @@ export default function IndexMe() {
     }, 1000);
   };
 
+  const onClickSpeedTest = () => {
+    router.to('/pages/speed-test/speed-test');
+  };
+
   return (
     <>
       <Navbar style={{ background: '#05C15F', color: '#fff' }}>设备状态</Navbar>
@@ -43,9 +48,9 @@ export default function IndexMe() {
           <View className={Style['top-sub']}>网络状态: 100</View>
         </View>
         <View className={Style['menu-top']}>
-          <View className={Style['menu-top-item']}>
+          <View className={Style['menu-top-item']} onClick={onClickSpeedTest}>
             <View className={Style['item-icon']}></View>
-            <View className={Style['item-label']}>设备信息</View>
+            <View className={Style['item-label']}>网络测速</View>
           </View>
           <View className={Style['menu-top-item']}>
             <View className={Style['item-icon']}></View>
