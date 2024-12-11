@@ -6,7 +6,7 @@ export class Router {
   static singleProps: any = undefined;
   constructor() {}
 
-  to(path: string, props: any) {
+  to(path: string, props: any = {}) {
     Router.singleProps = props;
     return new Promise((resolve, reject) => {
       Taro.navigateTo({
