@@ -1,0 +1,10 @@
+[package]
+name = "server"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+server-end = { workspace = true }
+dotenvy = "0.15"
+
+nidrs = { workspace = true }

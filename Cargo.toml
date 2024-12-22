@@ -1,2 +1,27 @@
 [workspace]
-members = ["apps/app/src-tauri", "libs/base64-rs"]
+members = [
+  "apps/app/src-tauri",
+  "apps/server",
+  "libs/base64-rs",
+  "libs/server-end",
+  "libs/shared",
+  "libs/macros",
+  "libs/datasets",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+homepage = "https://github.com/nidrs/nidrs.git"
+repository = "https://github.com/nidrs/nidrs.git"
+license = "MIT"
+
+[workspace.dependencies]
+nidrs = { version = "0.3.0", features = ["tower", "serde", "openapi"] }
+nidrs-macro = { version = "0.2.1" }
+nidrs-extern = { version = "0.2.1" }
+
+shared = { path = "libs/shared" }
+macros = { path = "libs/macros" }
+datasets = { path = "libs/datasets" }
+server-end = { path = "libs/server-end" }
