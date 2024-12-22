@@ -1,26 +1,27 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    downlogs (id) {
-        id -> Int4,
-        resource_id -> Int4,
-        user_id -> Int4,
-        status -> Int4,
+    members (id) {
+        id -> Integer,
+        user_id -> Integer,
+        room_id -> Integer,
+        status -> Integer,
         created_at -> Timestamp,
+        updated_at -> Timestamp,
+        deleted_at -> Nullable<Timestamp>,
     }
 }
 
 diesel::table! {
-    resources (id) {
-        id -> Int4,
-        room_id -> Int4,
-        name -> Varchar,
-        size -> Int4,
-        key -> Varchar,
-        length -> Int4,
-        creator_id -> Int4,
-        down_count -> Int4,
-        blank -> Bool,
+    packets (id) {
+        id -> Integer,
+        data -> Text,
+        progress -> Integer,
+        err_code -> Text,
+        err_msg -> Text,
+        to_user_id -> Integer,
+        from_user_id -> Integer,
+        room_id -> Integer,
         created_at -> Timestamp,
         updated_at -> Timestamp,
         deleted_at -> Nullable<Timestamp>,
@@ -29,10 +30,15 @@ diesel::table! {
 
 diesel::table! {
     rooms (id) {
-        id -> Int4,
-        name -> Varchar,
-        blank -> Bool,
-        creator_id -> Int4,
+        id -> Integer,
+        name -> Text,
+        num -> Integer,
+        avatar -> Text,
+        ip -> Text,
+        connect_count -> Integer,
+        status -> Integer,
+        creator_id -> Integer,
+        last_visit_at -> Nullable<Timestamp>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
         deleted_at -> Nullable<Timestamp>,
@@ -41,34 +47,30 @@ diesel::table! {
 
 diesel::table! {
     users (id) {
-        id -> Int4,
-        unionid -> Varchar,
-        platform -> Varchar,
-        openid -> Varchar,
-        name -> Varchar,
-        derive -> Varchar,
-        out_ip -> Varchar,
-        in_ip -> Varchar,
-        blank -> Bool,
+        id -> Integer,
+        name -> Text,
+        server_id -> Text,
+        platform -> Text,
+        unionid -> Text,
+        openid -> Text,
+        derive -> Text,
+        avatar -> Text,
+        ip -> Text,
+        last_visit_at -> Nullable<Timestamp>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
         deleted_at -> Nullable<Timestamp>,
     }
 }
 
-diesel::table! {
-    users_extra (id) {
-        id -> Int4,
-        user_id -> Int4,
-        first_launch_path -> Varchar,
-        first_launch_scene -> Varchar,
-    }
-}
+diesel::joinable!(members -> rooms (room_id));
+diesel::joinable!(members -> users (user_id));
+diesel::joinable!(packets -> rooms (room_id));
+diesel::joinable!(rooms -> users (creator_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
-    downlogs,
-    resources,
+    members,
+    packets,
     rooms,
     users,
-    users_extra,
 );

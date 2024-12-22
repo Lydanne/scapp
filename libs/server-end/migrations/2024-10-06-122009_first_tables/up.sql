@@ -1,6 +1,6 @@
 -- 用户表 - 存储用户基本信息
 CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     name VARCHAR(64) NOT NULL DEFAULT '',          -- 用户名
     server_id VARCHAR(32) NOT NULL DEFAULT '',     -- 服务器ID
     platform VARCHAR(20) NOT NULL DEFAULT '',      -- 平台
@@ -19,7 +19,7 @@ CREATE INDEX idx_openid_platform ON users(openid, platform);
 
 -- 房间表 - 存储聊天房间信息
 CREATE TABLE rooms (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     name VARCHAR(64) NOT NULL DEFAULT '',          -- 房间名称
     num INTEGER NOT NULL,                          -- 房间号
     avatar VARCHAR(255) NOT NULL DEFAULT '',       -- 房间头像
@@ -38,7 +38,7 @@ CREATE INDEX idx_creator_status ON rooms(creator_id, status);
 
 -- 成员表 - 存储房间成员关系
 CREATE TABLE members (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     user_id INTEGER NOT NULL,                      -- 用户ID
     room_id INTEGER NOT NULL,                      -- 房间ID
     status INTEGER NOT NULL DEFAULT 0,             -- 状态 0:在线 1:离线
@@ -53,8 +53,8 @@ CREATE INDEX idx_user_status ON members(user_id, status);
 
 -- 消息包表 - 存储聊天消息
 CREATE TABLE packets (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    data JSON NOT NULL,                           -- 消息内容
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    data TEXT NOT NULL,                           -- 消息内容
     progress INTEGER NOT NULL DEFAULT 0,           -- 进度 0-100
     err_code VARCHAR(32) NOT NULL DEFAULT '',      -- 错误码
     err_msg VARCHAR(255) NOT NULL DEFAULT '',      -- 错误信息

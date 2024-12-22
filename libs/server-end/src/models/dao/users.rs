@@ -2,34 +2,45 @@ use crate::models::schema::users;
 use chrono::NaiveDateTime;
 use diesel::{connection::LoadConnection, prelude::*};
 use nidrs::{injectable, openapi::schema, AppResult, Inject};
-use nidrs_diesel::{PoolManager, PostgresPoolManager};
+use nidrs_diesel::{PoolManager, SqlitePoolManager};
 use serde::{Deserialize, Serialize};
 
 #[schema]
 #[derive(Selectable, Queryable, Debug, Serialize)]
 #[diesel(table_name = users)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct User {
     pub id: i32,
     pub name: String,
+    pub server_id: String,
+    pub platform: String,
     pub unionid: String,
     pub openid: String,
     pub derive: String,
-    pub blank: bool,
+    pub avatar: String,
+    pub ip: String,
+    pub last_visit_at: Option<NaiveDateTime>,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
+    pub deleted_at: Option<NaiveDateTime>,
 }
 
 #[derive(Insertable, Serialize, Deserialize)]
 #[diesel(table_name = users)]
 pub struct CreateUser {
     pub name: String,
+    pub server_id: String,
+    pub platform: String,
     pub unionid: String,
     pub openid: String,
     pub derive: String,
+    pub avatar: String,
+    pub ip: String,
 }
 
 #[injectable()]
 pub struct UserEntity {
-    pool: Inject<PostgresPoolManager>,
+    pool: Inject<SqlitePoolManager>,
 }
 
 impl UserEntity {
@@ -51,6 +62,10 @@ impl UserEntity {
                     unionid: "default".to_string(),
                     openid,
                     derive: "".to_string(),
+                    avatar: "".to_string(),
+                    ip: "".to_string(),
+                    server_id: "".to_string(),
+                    platform: "".to_string(),
                 };
 
                 diesel::insert_into(users::table)
