@@ -16,8 +16,8 @@ pub struct UserController {
 
 impl UserController {
     #[api]
-    #[post("/register")]
-    pub async fn register(&self, dto: Json<LoginDto>) -> AppResult<Json<User>> {
+    #[post("/login")]
+    pub async fn login(&self, dto: Json<LoginDto>) -> AppResult<Json<User>> {
         let user = self.user_service.login(dto.openid.to_owned()).await?;
         return Ok(Json(user));
     }

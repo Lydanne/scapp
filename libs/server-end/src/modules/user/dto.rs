@@ -4,5 +4,12 @@ use serde::{Deserialize, Serialize};
 #[schema]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LoginDto {
+    pub name: String,
+    pub server_id: String,
+    pub platform: String,
+    pub unionid: String,
     pub openid: String,
+    pub derive: String,
+    pub avatar: String,
+    pub ip: String,
 }
