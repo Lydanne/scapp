@@ -35,4 +35,9 @@ impl UserService {
         let user = self.user_entity.find_by_openid(dto.platform.clone(), dto.unionid.clone(), dto.openid.clone()).await?;
         return Ok(user);
     }
+
+    pub async fn get_user_by_id(&self, id: i32) -> AppResult<User> {
+        let user = self.user_entity.find_by_id(id).await?;
+        Ok(user)
+    }
 }

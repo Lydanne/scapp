@@ -1,7 +1,9 @@
+
 use nidrs::macros::{controller, get};
 use nidrs::openapi::api;
 use nidrs::{post, AppError, AppResult, Exception, Inject};
 use nidrs_extern::anyhow;
+use nidrs_extern::axum::extract::Path;
 use nidrs_extern::axum::http::StatusCode;
 use nidrs_extern::axum::Json;
 use nidrs_macro::meta;
@@ -31,4 +33,23 @@ impl UserController {
             user,
         }))
     }
+
+    #[api]
+    #[get("/info")]
+    pub async fn info(&self, dto: Json<LoginDto>) -> AppResult<Json<LoginTokenDto>> {
+        let user = self.user_service.login(dto.0).await?;
+        Ok(Json(LoginTokenDto {
+            token: "".to_string(),
+            user,
+        }))
+    }
+
+    // #[api]
+    #[meta(disable_auto_json = true)]
+    #[get("/:id/info")]
+    pub async fn user_info_by_id(&self, id: Path<String>) -> AppResult<Json<User>> {
+        let user = self.user_service.get_user_by_id(id.0.parse::<i32>().unwrap()).await?;
+        Ok(Json(user))
+    }
 }
+
