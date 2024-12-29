@@ -54,20 +54,9 @@ impl UserEntity {
             .await
     }
 
-    pub async fn create(&self, openid: String) -> AppResult<usize> {
+    pub async fn create(&self, new_user: CreateUser) -> AppResult<usize> {
         self.pool
-            .query(|mut conn| {
-                let new_user = CreateUser {
-                    name: "".to_string(),
-                    unionid: "default".to_string(),
-                    openid,
-                    derive: "".to_string(),
-                    avatar: "".to_string(),
-                    ip: "".to_string(),
-                    server_id: "".to_string(),
-                    platform: "".to_string(),
-                };
-
+            .query(move|mut conn| {
                 diesel::insert_into(users::table)
                     .values(&new_user)
                     .execute(&mut conn)
@@ -96,13 +85,26 @@ impl UserEntity {
             .await
     }
 
-    pub async fn find_by_openid(&self, openid: String) -> AppResult<User> {
+    pub async fn find_by_openid(&self, platform: String, unionid: String, openid: String) -> AppResult<User> {
         self.pool
             .query(move |mut conn| {
                 users::table
+                    .filter(users::deleted_at.is_null())
+                    .filter(users::platform.eq(platform))
+                    .filter(users::unionid.eq(unionid))
                     .filter(users::openid.eq(openid))
                     .select(User::as_select())
                     .first::<User>(&mut conn)
+            })
+            .await
+    }
+
+    pub async fn update_last_visit_at(&self, id: i32) -> AppResult<usize> {
+        self.pool
+            .query(move |mut conn| {
+                diesel::update(users::table.find(id))
+                    .set(users::last_visit_at.eq(chrono::Utc::now().naive_utc()))
+                    .execute(&mut conn)
             })
             .await
     }
