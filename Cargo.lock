@@ -2483,8 +2483,6 @@ checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 [[package]]
 name = "nidrs"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52f2a7dc8a47438e60e541731b5571c5a71827416591d0bca5642a50d57253c3"
 dependencies = [
  "nidrs-extern",
  "nidrs-macro",
@@ -2494,8 +2492,6 @@ dependencies = [
 [[package]]
 name = "nidrs-diesel"
 version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "80ef987be15b9aeecbcf86984129e3a843668f5f3aa7c1fa9dc3ff27a6958402"
 dependencies = [
  "diesel",
  "nidrs",
@@ -2506,8 +2502,6 @@ dependencies = [
 [[package]]
 name = "nidrs-extern"
 version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00fb19eb1009769519eccefae2559eaeafc966788ecd76c532b5585986d12b33"
 dependencies = [
  "anyhow",
  "axum",
@@ -2531,8 +2525,6 @@ dependencies = [
 [[package]]
 name = "nidrs-macro"
 version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25deb888afba7a720aafeb70baca39febfa0814a2afdf8792387b0bc124d0c6c"
 dependencies = [
  "nidrs-extern",
  "once_cell",
@@ -2547,8 +2539,6 @@ dependencies = [
 [[package]]
 name = "nidrs-openapi"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc2cefcc25d04a35bca7e0efd100dd9b27ebd4d875aabbc26ebd8cff332807f3"
 dependencies = [
  "axum",
  "nidrs-extern",
@@ -2566,8 +2556,6 @@ dependencies = [
 [[package]]
 name = "nidrs-openapi-macro"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5375a25f573033e27ae1b79a8bffcbbd6ff8bcddf40d5d1e60750bd779aaf447"
 dependencies = [
  "nidrs-extern",
  "once_cell",
@@ -4348,8 +4336,6 @@ dependencies = [
 [[package]]
 name = "syn-args"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63f1c23235a2ffac3fcd3a3bf78fd81df432a7f1d8a50ab030269a1da8a16501"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4360,8 +4346,6 @@ dependencies = [
 [[package]]
 name = "syn-args-derive"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0820ac4d42cfc82e312064c3761f16d7a3ae4beb90d8628b3a7e9794efc98625"
 dependencies = [
  "once_cell",
  "proc-macro2",
