@@ -44,11 +44,10 @@ impl UserController {
         }))
     }
 
-    // #[api]
-    #[meta(disable_auto_json = true)]
+    #[api]
     #[get("/:id/info")]
-    pub async fn user_info_by_id(&self, id: Path<String>) -> AppResult<Json<User>> {
-        let user = self.user_service.get_user_by_id(id.0.parse::<i32>().unwrap()).await?;
+    pub async fn user_info_by_id(&self, id: Path<i32>) -> AppResult<Json<User>> {
+        let user = self.user_service.get_user_by_id(id.0).await?;
         Ok(Json(user))
     }
 }
