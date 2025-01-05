@@ -41,8 +41,8 @@ impl UserController {
     #[api]
     #[uses(AuthInterceptor)]
     #[get("/info")]
-    pub async fn info(&self, user: ActiveUser) -> AppResult<String> {
-        Ok("".to_string())
+    pub async fn info(&self, user: ActiveUser) -> AppResult<Json<User>> {
+        Ok(Json(user.0))
     }
 
     #[api]
