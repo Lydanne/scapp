@@ -36,12 +36,11 @@ impl UserController {
 
     #[api]
     #[get("/info")]
-    pub async fn info(&self, dto: Json<LoginDto>) -> AppResult<Json<LoginTokenDto>> {
-        let user = self.user_service.login(dto.0).await?;
-        Ok(Json(LoginTokenDto {
-            token: "".to_string(),
-            user,
-        }))
+    pub async fn info(&self) -> AppResult<String> {
+        use nidrs::openapi::ToParamDto;
+        println!("info {:?}", LoginTokenDto::to_param_dto(nidrs::openapi::ParamDtoIn::Body));
+
+        Ok("".to_string())
     }
 
     #[api]
@@ -51,4 +50,3 @@ impl UserController {
         Ok(Json(user))
     }
 }
-

@@ -2549,6 +2549,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.87",
+ "syn-args",
  "syn-serde",
 ]
 
@@ -4207,7 +4208,7 @@ dependencies = [
 
 [[package]]
 name = "syn-args"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4217,7 +4218,7 @@ dependencies = [
 
 [[package]]
 name = "syn-args-derive"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "once_cell",
  "proc-macro2",
