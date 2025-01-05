@@ -6,7 +6,7 @@ use nidrs_diesel::{PoolManager, SqlitePoolManager};
 use serde::{Deserialize, Serialize};
 
 #[schema]
-#[derive(Selectable, Queryable, Debug, Serialize)]
+#[derive(Selectable, Queryable, Debug, Serialize, Clone)]
 #[diesel(table_name = users)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct User {

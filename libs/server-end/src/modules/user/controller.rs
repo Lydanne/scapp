@@ -1,5 +1,7 @@
 
-use nidrs::macros::{controller, get};
+use std::sync::Arc;
+
+use nidrs::macros::{controller, get, uses};
 use nidrs::openapi::api;
 use nidrs::{post, AppError, AppResult, Exception, Inject};
 use nidrs_extern::anyhow;
@@ -8,11 +10,13 @@ use nidrs_extern::axum::http::StatusCode;
 use nidrs_extern::axum::Json;
 use nidrs_macro::meta;
 
+use crate::extractor::active_user::ActiveUser;
 use crate::models::dao::users::{CreateUser, User};
 
 use super::dto::{LoginDto, LoginTokenDto};
 use super::service::UserService;
 use crate::utils::jwt::create_token;
+use crate::interceptors::AuthInterceptor;
 
 #[controller("/user")]
 pub struct UserController {
@@ -35,11 +39,9 @@ impl UserController {
     }
 
     #[api]
+    #[uses(AuthInterceptor)]
     #[get("/info")]
-    pub async fn info(&self) -> AppResult<String> {
-        use nidrs::openapi::ToParamDto;
-        println!("info {:?}", LoginTokenDto::to_param_dto(nidrs::openapi::ParamDtoIn::Body));
-
+    pub async fn info(&self, user: ActiveUser) -> AppResult<String> {
         Ok("".to_string())
     }
 
