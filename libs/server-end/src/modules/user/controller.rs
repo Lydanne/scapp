@@ -39,7 +39,7 @@ impl UserController {
     }
 
     #[api]
-    #[api_security]
+    #[api_security(Bearer)]
     #[uses(AuthInterceptor)]
     #[get("/info")]
     pub async fn info(&self, user: ActiveUser) -> AppResult<Json<User>> {
