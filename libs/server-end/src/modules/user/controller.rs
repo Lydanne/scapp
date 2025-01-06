@@ -2,7 +2,7 @@
 use std::sync::Arc;
 
 use nidrs::macros::{controller, get, uses};
-use nidrs::openapi::api;
+use nidrs::openapi::{api, api_security};
 use nidrs::{post, AppError, AppResult, Exception, Inject};
 use nidrs_extern::anyhow;
 use nidrs_extern::axum::extract::Path;
@@ -39,6 +39,7 @@ impl UserController {
     }
 
     #[api]
+    #[api_security]
     #[uses(AuthInterceptor)]
     #[get("/info")]
     pub async fn info(&self, user: ActiveUser) -> AppResult<Json<User>> {
