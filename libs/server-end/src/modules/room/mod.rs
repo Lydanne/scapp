@@ -7,13 +7,11 @@ pub mod service;
 use crate::models::dao::rooms::RoomEntity;
 use controller::RoomController;
 use service::RoomService;
-use crate::interceptors::AuthInterceptor;
-use crate::modules::user::UserModule;
+use crate::modules::auth::AuthModule;
 
 #[module({
-    imports: [UserModule],
+    imports: [AuthModule],
     controllers: [RoomController],
-    interceptors: [AuthInterceptor],
     services: [RoomService, RoomEntity],
     exports: [RoomService],
 })]

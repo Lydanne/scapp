@@ -15,10 +15,3 @@ pub struct LoginDto {
     pub avatar: String,
     pub ip: String,
 }
-
-#[schema]
-#[derive(Debug, Serialize)]
-pub struct LoginTokenDto {
-    pub token: String,
-    pub user: User,
-}

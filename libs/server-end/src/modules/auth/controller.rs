@@ -1,15 +1,18 @@
 use nidrs::macros::{controller, get};
 use nidrs::openapi::api;
-use nidrs::{post, AppResult, Inject};
+use nidrs::{post, AppError, AppResult, Exception, Inject};
+use nidrs_extern::anyhow;
+use nidrs_extern::axum::http::StatusCode;
 use nidrs_extern::axum::Json;
-use nidrs_macro::meta;
 
-use super::dto::{WxLoginDto, WxLoginResDto};
-// use crate::modules::user::service::UserService;
+use crate::utils::jwt::create_token;
+
+use super::dto::{LoginDto, LoginTokenDto, WxLoginDto, WxLoginResDto};
+use super::service::AuthService;
 
 #[controller("/auth")]
 pub struct AuthController {
-    // auth_service: Inject<UserService>,
+    auth_service: Inject<AuthService>,
 }
 
 impl AuthController {
@@ -22,4 +25,19 @@ impl AuthController {
             openid: "oWxxx".to_string(),
         }))
     }
+
+    #[api]
+    #[post("/login")]
+    pub async fn login(&self, dto: Json<LoginDto>) -> AppResult<Json<LoginTokenDto>> {
+        let user = self.auth_service.login(dto.0).await?;
+        let token = create_token(user.id.to_string()).map_err(|_| AppError::Exception(
+            Exception::new(StatusCode::INTERNAL_SERVER_ERROR, anyhow::anyhow!("Failed to create token"))
+        ))?;
+        
+        Ok(Json(LoginTokenDto {
+            token,
+            user,
+        }))
+    }
+
 }

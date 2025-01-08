@@ -13,7 +13,6 @@ use nidrs_macro::meta;
 use crate::extractor::active_user::ActiveUser;
 use crate::models::dao::users::{CreateUser, User};
 
-use super::dto::{LoginDto, LoginTokenDto};
 use super::service::UserService;
 use crate::utils::jwt::create_token;
 use crate::interceptors::AuthInterceptor;
@@ -24,20 +23,6 @@ pub struct UserController {
 }
 
 impl UserController {
-    #[api]
-    #[post("/login")]
-    pub async fn login(&self, dto: Json<LoginDto>) -> AppResult<Json<LoginTokenDto>> {
-        let user = self.user_service.login(dto.0).await?;
-        let token = create_token(user.id.to_string()).map_err(|_| AppError::Exception(
-            Exception::new(StatusCode::INTERNAL_SERVER_ERROR, anyhow::anyhow!("Failed to create token"))
-        ))?;
-        
-        Ok(Json(LoginTokenDto {
-            token,
-            user,
-        }))
-    }
-
     #[api]
     #[api_security("$bearer")]
     #[uses(AuthInterceptor)]

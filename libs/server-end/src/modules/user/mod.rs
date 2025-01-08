@@ -8,10 +8,10 @@ use crate::models::dao::users::UserEntity;
 use controller::UserController;
 use service::UserService;
 use crate::interceptors::AuthInterceptor;
-
+use crate::modules::auth::AuthModule;
 
 #[module({
-  imports: [],
+  imports: [AuthModule],
   controllers: [UserController],
   interceptors: [AuthInterceptor],
   services: [UserService, UserEntity],
