@@ -8,6 +8,7 @@ pub mod service;
 
 use crate::modules::auth::AuthModule;
 use crate::modules::user::UserModule;
+use crate::modules::room::RoomModule;
 use controller::AppController;
 use service::AppService;
 
@@ -19,6 +20,7 @@ use service::AppService;
         }),
         UserModule,
         AuthModule,
+        RoomModule,
     ],
     controllers: [AppController],
     services: [AppService],
