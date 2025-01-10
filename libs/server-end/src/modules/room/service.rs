@@ -28,10 +28,7 @@ impl RoomService {
             })
             .await?;
         if count == 0 {
-            throw!(Exception::new(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                anyhow::Error::msg("Error")
-            ));
+            throw!(nidrs::InternalServerException::new("create room error"));
         }
         let room = self.room_entity.find_by_num(dto.num).await?;
 
