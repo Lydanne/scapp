@@ -1,8 +1,9 @@
 use crate::models::schema::users;
+use nidrs_diesel::sqlite::SqlitePoolManager;
+use diesel_async::RunQueryDsl;
 use chrono::NaiveDateTime;
 use diesel::{connection::LoadConnection, prelude::*};
 use nidrs::{injectable, openapi::schema, AppResult, Inject};
-use nidrs_diesel::{PoolManager, SqlitePoolManager};
 use serde::{Deserialize, Serialize};
 
 #[schema]
@@ -56,10 +57,10 @@ impl UserEntity {
 
     pub async fn create(&self, new_user: CreateUser) -> AppResult<usize> {
         self.pool
-            .query(move|mut conn| {
+            .query(move|mut conn| async move {
                 diesel::insert_into(users::table)
                     .values(&new_user)
-                    .execute(&mut conn)
+                    .execute(&mut conn).await
             })
             .await
     }

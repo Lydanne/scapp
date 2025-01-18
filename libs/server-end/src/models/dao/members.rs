@@ -1,8 +1,9 @@
 use crate::models::schema::members;
+use nidrs_diesel::sqlite::SqlitePoolManager;
+use diesel_async::RunQueryDsl;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
-use nidrs_diesel::{PoolManager, SqlitePoolManager};
 use nidrs::{injectable, openapi::schema, AppResult, Inject};
 
 
@@ -39,10 +40,10 @@ pub struct MemberEntity {
 impl MemberEntity {
     pub async fn create(&self, new_member: CreateMember) -> AppResult<usize> {
         self.pool
-            .query(move|mut conn| {
+            .query(move|mut conn| async move {
                 diesel::insert_into(members::table)
                     .values(&new_member)
-                    .execute(&mut conn)
+                    .execute(&mut conn).await
             })
             .await
     }

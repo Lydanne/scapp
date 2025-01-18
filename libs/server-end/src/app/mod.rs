@@ -1,5 +1,6 @@
 use nidrs::macros::module;
-use nidrs_diesel::{DieselModule, DieselOptions, SqlitePoolManager};
+use nidrs_diesel::{DieselModule, DieselOptions};
+use nidrs_diesel::sqlite::SqlitePoolManager;
 
 pub mod controller;
 pub mod dto;
@@ -15,7 +16,6 @@ use service::AppService;
 #[module({
     imports: [
         DieselModule::for_root(DieselOptions{
-            // driver: PostgresPoolManager::new(std::env::var("DATABASE_URL").unwrap()),
             driver: SqlitePoolManager::new(std::env::var("DATABASE_URL").unwrap()),
         }),
         UserModule,
