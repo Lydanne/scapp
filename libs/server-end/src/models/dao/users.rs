@@ -55,12 +55,13 @@ impl UserEntity {
             .await
     }
 
-    pub async fn create(&self, new_user: CreateUser) -> AppResult<usize> {
+    pub async fn create(&self, new_user: CreateUser) -> AppResult<User> {
         self.pool
             .query(move|mut conn| async move {
                 diesel::insert_into(users::table)
                     .values(&new_user)
-                    .execute(&mut conn).await
+                    .returning(User::as_returning())
+                    .get_result(&mut conn).await
             })
             .await
     }

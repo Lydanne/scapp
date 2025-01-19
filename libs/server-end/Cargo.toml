@@ -16,7 +16,7 @@ nidrs = { workspace = true }
 nidrs-macro = { workspace = true }
 nidrs-extern = { workspace = true }
 nidrs-diesel = { path = "../../../nidrs/packages/nidrs-diesel", features = ["sqlite_async"] }
-diesel = { version = "2.2.4", features = ["chrono"] }
+diesel = { version = "2.2.4", features = ["chrono", "returning_clauses_for_sqlite_3_35"] }
 diesel-async = { version = "0.5.2" }
 
 chrono = { version = "0.4", features = ["serde"] }

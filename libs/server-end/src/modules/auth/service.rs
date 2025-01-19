@@ -24,7 +24,7 @@ impl AuthService {
             return Ok(user);
         }
 
-        let create_count = self.user_entity.create(CreateUser {
+        let user = self.user_entity.create(CreateUser {
             name: dto.name,
             server_id: dto.server_id,
             platform: dto.platform.clone(),
@@ -35,11 +35,6 @@ impl AuthService {
             ip: dto.ip,
         }).await?;
 
-        if create_count == 0 {
-            return Err(AppError::Exception(Exception::new(StatusCode::BAD_REQUEST, anyhow::anyhow!("Failed to create user"))));
-        }
-
-        let user = self.user_entity.find_by_openid(dto.platform.clone(), dto.unionid.clone(), dto.openid.clone()).await?;
         return Ok(user);
     }
 }

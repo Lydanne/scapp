@@ -44,12 +44,13 @@ pub struct RoomEntity {
 }
 
 impl RoomEntity {
-    pub async fn create(&self, new_room: CreateRoom) -> AppResult<usize> {
+    pub async fn create(&self, new_room: CreateRoom) -> AppResult<Room> {
         self.pool
             .query(move|mut conn| async move {
                 diesel::insert_into(rooms::table)
                     .values(&new_room)
-                    .execute(&mut conn).await
+                    .returning(Room::as_returning())
+                    .get_result(&mut conn).await
             })
             .await
     }

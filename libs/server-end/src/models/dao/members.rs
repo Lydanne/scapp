@@ -38,12 +38,13 @@ pub struct MemberEntity {
 }
 
 impl MemberEntity {
-    pub async fn create(&self, new_member: CreateMember) -> AppResult<usize> {
+    pub async fn create(&self, new_member: CreateMember) -> AppResult<Member> {
         self.pool
             .query(move|mut conn| async move {
                 diesel::insert_into(members::table)
                     .values(&new_member)
-                    .execute(&mut conn).await
+                    .returning(Member::as_returning())
+                    .get_result(&mut conn).await
             })
             .await
     }
