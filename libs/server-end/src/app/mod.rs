@@ -15,9 +15,7 @@ use service::AppService;
 
 #[module({
     imports: [
-        DieselModule::for_root(DieselOptions{
-            driver: SqlitePoolManager::new(std::env::var("DATABASE_URL").unwrap()),
-        }),
+        DieselModule::for_root(DieselOptions::new(SqlitePoolManager::new(std::env::var("DATABASE_URL").unwrap()))),
         UserModule,
         AuthModule,
         RoomModule,

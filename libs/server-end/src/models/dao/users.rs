@@ -1,5 +1,5 @@
 use crate::models::schema::users;
-use nidrs_diesel::sqlite::SqlitePoolManager;
+use nidrs_diesel::{sqlite::SqlitePoolManager, AsyncQuery};
 use diesel_async::RunQueryDsl;
 use chrono::NaiveDateTime;
 use diesel::{connection::LoadConnection, prelude::*};

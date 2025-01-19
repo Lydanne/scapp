@@ -1,5 +1,5 @@
 use crate::models::schema::rooms;
-use nidrs_diesel::sqlite::SqlitePoolManager;
+use nidrs_diesel::{sqlite::SqlitePoolManager, AsyncQuery};
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
