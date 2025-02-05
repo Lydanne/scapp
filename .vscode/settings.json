@@ -1,4 +1,5 @@
 {
   "cSpell.words": ["alibs"],
-  "testing.openTesting": "neverOpen"
+  "testing.openTesting": "neverOpen",
+  "testing.automaticallyOpenTestResults": "neverOpen"
 }
